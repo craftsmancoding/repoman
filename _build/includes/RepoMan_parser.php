@@ -12,6 +12,8 @@ abstract class RepoMan_parser {
 	public $comment_start = '<!--REPOMAN_COMMENT_START';
 	public $comment_end = 'REPOMAN_COMMENT_END-->';
 	
+	public $extensions = array('.php');
+	
 	/**
 	 * Used to get parameters out of a (PHP) docblock.
 	 *

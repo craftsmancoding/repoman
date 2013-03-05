@@ -41,7 +41,7 @@ class RepoManMgrPage {
 	 */
 	public function __construct($modx) {
 		$this->modx = &$modx;
-		$this->repoman = new RepoMan();
+		$this->repoman = new RepoMan($modx);
 		
 		$this->props['pagetitle'] = 'Repo Man';
 		
@@ -221,10 +221,14 @@ class RepoManMgrPage {
 			return $this->_render();
 		}
 
-		$this->props['content'] = 'Syncing';
+		$this->props['content'] = 'Syncing...';
 		
 		//foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($repo_dir)) as $filename) {
-		return $this->repoman->sync_modx($this->repo_dir.'/'.$repo);
+		$log = $this->repoman->sync_modx($this->repo_dir.'/'.$repo);
+		
+		$this->props['content'] .= '<pre>';
+		$this->props['content'] .= print_r($log,true);
+		$this->props['content'] .= '</pre>';
 /*
 		$dir = $this->repo_dir.'/'.$repo.'/core/components/'.$repo.'/elements/';
 		$items = '';

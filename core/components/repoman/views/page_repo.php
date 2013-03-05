@@ -12,6 +12,6 @@ TODO: export
 <?php print $readme; ?>
 
 <div style="margin-top:20px;">
-	<a href="<?php print $sync_url; ?>">Sync MODX</a> <br/> 
-	<a href="<?php print $index_url; ?>">Back</a> <br/>
+	<a href="<?php print $sync_url; ?>" class="repoman_button">Sync MODX</a>
+	<a href="<?php print $index_url; ?>" class="repoman_button">Back</a>
 </div>

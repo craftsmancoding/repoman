@@ -169,7 +169,7 @@ class RepoManMgrPage {
 					}
 					$repos .= $this->_load('tr_repo'
 						, array(
-							'view_link'=>REPOMAN_MGR_URL .'&action=sync&repo='.$shortname,
+							'sync_link'=>REPOMAN_MGR_URL .'&action=sync&repo='.$shortname,
 							'view_link'=>REPOMAN_MGR_URL .'&action=view&repo='.$shortname,
 							'repo'=>$shortname,
 							'class'=>$class

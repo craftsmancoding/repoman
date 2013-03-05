@@ -36,6 +36,9 @@
 	.repoman_desc {
 		font-style: italic;
 	}
+	table.repoman_table td {
+		padding: 10px;
+	}
 	tr.repoman_row {
 		height: 30px;
 	}
@@ -50,6 +53,14 @@
 	}
 	tr.repoman_odd {
 		background-color: #C8C8C8;	
+	}
+	
+	a.repoman_button {
+	    appearance: button;
+	    -moz-appearance: button;
+	    -webkit-appearance: button;
+	    text-decoration: none; font: menu; color: ButtonText;
+	    display: inline-block; padding: 2px 8px;	
 	}
 </style>
 

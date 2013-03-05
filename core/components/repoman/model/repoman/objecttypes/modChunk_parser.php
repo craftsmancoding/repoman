@@ -1,6 +1,6 @@
 <?php
 /**
- *
+ * REMEMBER: chunks are not cached anywhere except per Resource
  *
  */
 class modChunk_parser extends RepoMan_parser {

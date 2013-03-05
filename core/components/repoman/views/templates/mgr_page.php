@@ -30,12 +30,18 @@
 	#repoman_footer {
 		margin-top:20px;
 	}
+	.repoman_label {
+		font-weight: bold;
+	}
+	.repoman_desc {
+		font-style: italic;
+	}
 </style>
 
 <div id="repoman_mgr_page">
 	<h2>Repo Man</h2>
 	
-	<h4><?php print $pagetitle; ?></h4>
+	<h3><?php print $pagetitle; ?></h3>
 	
 	<?php print $msg; ?>
 	

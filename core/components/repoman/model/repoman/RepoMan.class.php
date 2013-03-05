@@ -45,7 +45,7 @@ class RepoMan {
 	}
 
 	/**
-	 * Logging function.
+	 * Logging function.  Separate from MODX log because we need transparency.
 	 *
 	 * @param string $msg to be logged
 	 * @param integer $level 1 = Error, 2 = Warn, 3 = Info
@@ -158,8 +158,13 @@ class RepoMan {
 			}	
 		}
 		
-		// Sort?
-		// Translate folder names into object names
+		// Translate folder names into object names (key) and then a SplFileInfo object (value), e.g.
+		// 		modChunk => SplFileInfo Object
+ 		//            	(
+        // 	           		[pathName:SplFileInfo:private] => /path/to/chunks/mychunk.html
+        //             		[fileName:SplFileInfo:private] => mychunk.html
+        //        		)
+        // see http://php.net/manual/en/class.splfileinfo.php
 		$objecttypes = array();
 		foreach ($folders as $f) {
 			if(isset($this->folder_object_map[$f])) {
@@ -168,9 +173,10 @@ class RepoMan {
 				$objecttypes[$o] = array();
 				$Parser = $o.'_parser';
 				require_once('objecttypes/'.$Parser.'.php');
+				$P = new $Parser();
 				foreach (new RecursiveDirectoryIterator($dir.'/'.$f) as $filename) {
 					if (!is_dir($filename)) {
-						$exts = array_map('preg_quote', $Parser->$extensions);
+						$exts = array_map('preg_quote', $P->extensions);
 						$pattern = implode('|',$exts);
 						if (preg_match('/('.$pattern.')$/i',$filename)) {							
 							$objecttypes[$this->folder_object_map[$f]][] = $filename;
@@ -182,17 +188,60 @@ class RepoMan {
 				$this->_log("Unknown element type: $f", 2, __LINE__);
 			}
 		}
-		$this->_log('Object Types: ' . print_r($objecttypes,true), 3, __LINE__);
+		// $this->_log('Object Types: ' . print_r($objecttypes,true), 3, __LINE__);
 
-		// Loop through the objects in the order they need to appear
+		// Loop through the object-types in the order they need to appear
 		foreach ($this->object_order as $o) {
-			if (isset($objecttypes[$o])) {
-				$Parser = $o.'_parser';
-				require_once('objecttypes/'.$Parser.'.php');
+			if (!isset($objecttypes[$o])) {
+				$this->_log("No objects of type $o found.  Skipping...", 4, __LINE__);
+				continue;
+			}
+			
+			$Parser = $o.'_parser';
+			require_once('objecttypes/'.$Parser.'.php');
+			
+			$P = new $Parser();
+			$exts = array_map('preg_quote', $P->extensions);
+			$pattern = implode('|',$exts);
+			
+			// Loop through all objects (e.g. all modChunks)
+			foreach ($objecttypes[$o] as $f) {
+				$name = preg_replace('/('.$pattern.')$/i','', $f->getFilename());					
+				//print file_get_contents($f->getRealPath()); exit;
+				$atts = $P->get_attributes_from_dox(file_get_contents($f->getRealPath()));
+				if ($atts === false) {
+					$this->_log("No doc block found for $name", 1, __LINE__);
+					continue;
+				}
+				// override name (some flexibility here due to inconsistent naming in MODX db)
+				if (isset($atts['name'])) {
+					$name = $atts['name']; 
+				}
+				elseif (isset($atts[$P->name_attribute])) {
+					$name = $atts[$P->name_attribute];
+				}
 				
-				$P = new $Parser();
-				$file = file_get_contents($objecttypes[$o]);
-				$P->get_attributes_from_dox($file);
+				// Create/update the object
+				$O = $this->modx->getObject($o, $name);
+				if (!$O) {
+					$O = $this->modx->newObject($o);
+					$O->set($P->name_attribute,$name);
+				}
+				foreach ($atts as $k => $v) {
+					$O->set($k, $v);
+				}
+				// Make static. REMEMBER: static_file is relative to MODX base path!!
+				$rel_path = preg_replace('#^'.MODX_BASE_PATH.'#','',$f->getRealPath());
+				$O->set('static',1);
+				$O->set('static_file', $rel_path);
+				$O->set('source', 1); // Media source
+				
+				if (!$O->save()) {
+					$this->_log("Problem saving $o $name", 1, __LINE__);
+				}
+				else {
+					$this->_log("Updated $o $name", 3, __LINE__);
+				}
 			}
 		}
 	}
@@ -261,7 +310,7 @@ class RepoMan {
 		$this->_set_assets_url($namespace, $repo_path);
 		$this->_set_base_path($namespace, $repo_path);
 		
-		$this->modx->cacheManager-> refresh(array('system_settings' => array()));
+		$this->modx->cacheManager->refresh(array('system_settings' => array()));
 			
 		// TODO: read from config?
 		$dir = $repo_path .'/core/components/'.$namespace.'/elements';

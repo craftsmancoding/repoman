@@ -10,6 +10,8 @@ class modTemplate_parser extends RepoMan_parser {
 	
 	public $extensions = array('.template.html','.html');
 	
+	public $name_attribute = 'templatename';
+	
 	/**
 	 * Special behavior here for HTML doc blocks.
 	 */

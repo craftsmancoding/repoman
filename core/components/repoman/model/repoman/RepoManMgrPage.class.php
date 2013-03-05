@@ -130,11 +130,31 @@ class RepoManMgrPage {
 	 */
 	public function index() {
 		
+		if (!empty($_POST)) {			
+			$Setting = $this->modx->getObject('modSystemSetting', 'cache_scripts');
+			$Setting->set('value', $this->modx->getOption('cache_scripts',$_POST));
+			$Setting->save();
+			$Setting = $this->modx->getObject('modSystemSetting', 'cache_resource');
+			$Setting->set('value', $this->modx->getOption('cache_resource',$_POST));
+			$Setting->save();
+			$this->modx->cacheManager->refresh(array('system_settings' => array()));
+		}		
+		/*
+		-----------------------------------
+		System Settings relevant to Caching
+		-----------------------------------
+		cache_scripts  : set to No to ensure that you always read the PHP from file
+		cache_resource : set to No to ensure that Chunks etc. are always read from file
+		*/
+		$props['cache_scripts'] = $this->modx->getOption('cache_scripts');
+		$props['cache_resource'] = $this->modx->getOption('cache_resource');
 
+		$this->props['content'] = $this->_load('settings', $props);
+		
 		// Get the repo folders in the repo directory
 		$options = array();
 		
-		$this->props['pagetitle'] = 'Your Repositories';
+		$this->props['pagetitle'] = 'System Settings';
 		$repos = '';
 		//foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($repo_dir)) as $filename) {
 		foreach (new RecursiveDirectoryIterator($this->repo_dir) as $filename) {
@@ -155,7 +175,8 @@ class RepoManMgrPage {
 		}
 		else {
 			// Wrap
-			$this->props['content'] = $this->_load('ul', array('content' =>$repos,'class'=>'repos'));
+			$this->props['content'] .= '<h2 style="margin-top:20px;">Your Repositories</h2>';
+			$this->props['content'] .= $this->_load('ul', array('content' =>$repos,'class'=>'repos'));
 		}
 		
 		return $this->_render();
@@ -173,7 +194,7 @@ class RepoManMgrPage {
 	 * View a single repo
 	 */
 	public function view() {
-		$this->props['pagetitle'] = 'View Repo';		
+		$this->props['pagetitle'] = 'Invalid Repo';		
 		$repo = '';
 		if (isset($_GET['repo'])) {
 			$repo = $_GET['repo'];
@@ -182,7 +203,7 @@ class RepoManMgrPage {
 		if ($this->props['msg'] = $this->_invalid_repo_name($repo)) {
 			return $this->_render();
 		}
-
+		$this->props['pagetitle'] = $repo;	
 		
 		if (!$readme = $this->repoman->get_readme($this->repo_dir .'/'.$repo)) {
 			$readme = $this->_get_msg('No README.md file found.','warning');
@@ -229,22 +250,15 @@ class RepoManMgrPage {
 		$this->props['content'] .= '<pre>';
 		$this->props['content'] .= print_r($log,true);
 		$this->props['content'] .= '</pre>';
-/*
-		$dir = $this->repo_dir.'/'.$repo.'/core/components/'.$repo.'/elements/';
-		$items = '';
-		foreach (new RecursiveDirectoryIterator($dir) as $filename) {
-			if (is_dir($filename)) {
-				$shortname = preg_replace('#^'.$this->repo_dir.'/#','',$filename);
-				if ($shortname != '.' && $shortname != '..') {
-					$items .= $this->_load('li'
-						, array('link'=>REPOMAN_MGR_URL .'&action=view&repo='.$shortname
-						, 'item'=>$shortname)
-					);
-				}
-			}	
-		}
-		return $items;
-*/
+
+		$this->props['content'] = $this->_load('page_sync', 
+			array(
+				'log'=> '<pre>'.print_r($log,true).'</pre>',
+				'index_url' => REPOMAN_MGR_URL, 
+				'view_url' => REPOMAN_MGR_URL .'&action=view&repo='.$repo, 
+			)
+		);
+
 		
 		return $this->_render();	
 	}

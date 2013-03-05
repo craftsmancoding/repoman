@@ -145,7 +145,10 @@ class RepoMan {
 	 * @param string $dir containing element-folders, e.g. /path/to/core/components/my_pkg/elements
 	 */
 	private function _create_elements($dir) {
-			
+		if (!is_dir($dir)) {
+			$this->_log("Directory does not exist: $dir", 1, __LINE__);
+			return;
+		}
 		// Which object directories are available?
 		$folders = array();
 		//foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir)) as $filename) {

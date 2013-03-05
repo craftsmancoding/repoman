@@ -36,10 +36,25 @@
 	.repoman_desc {
 		font-style: italic;
 	}
+	tr.repoman_row {
+		height: 30px;
+	}
+	td.repoman_name_cell {
+		width:400px;
+	}
+	td.repoman_view_cell {
+		width:80px;
+	}
+	tr.repoman_even {
+		background-color: #F8F8F8;
+	}
+	tr.repoman_odd {
+		background-color: #C8C8C8;	
+	}
 </style>
 
 <div id="repoman_mgr_page">
-	<h2>Repo Man</h2>
+	<h2><a href="<?php print REPOMAN_MGR_URL; ?>">Repo Man</a></h2>
 	
 	<h3><?php print $pagetitle; ?></h3>
 	

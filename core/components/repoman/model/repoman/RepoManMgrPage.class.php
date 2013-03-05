@@ -156,14 +156,24 @@ class RepoManMgrPage {
 		
 		$this->props['pagetitle'] = 'System Settings';
 		$repos = '';
+		$i = 0;
 		//foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($repo_dir)) as $filename) {
 		foreach (new RecursiveDirectoryIterator($this->repo_dir) as $filename) {
 			if (is_dir($filename)) {
 				$shortname = preg_replace('#^'.$this->repo_dir.'/#','',$filename);
 				if ($shortname != '.' && $shortname != '..') {
-					$repos .= $this->_load('li_repo'
-						, array('link'=>REPOMAN_MGR_URL .'&action=view&repo='.$shortname
-						, 'item'=>$shortname)
+					$i++;
+					$class = 'repoman_odd';
+					if ($i % 2 == 0) {
+						$class = 'repoman_even';	
+					}
+					$repos .= $this->_load('tr_repo'
+						, array(
+							'view_link'=>REPOMAN_MGR_URL .'&action=sync&repo='.$shortname,
+							'view_link'=>REPOMAN_MGR_URL .'&action=view&repo='.$shortname,
+							'repo'=>$shortname,
+							'class'=>$class
+						)
 					);
 				}
 			}	
@@ -176,7 +186,7 @@ class RepoManMgrPage {
 		else {
 			// Wrap
 			$this->props['content'] .= '<h2 style="margin-top:20px;">Your Repositories</h2>';
-			$this->props['content'] .= $this->_load('ul', array('content' =>$repos,'class'=>'repos'));
+			$this->props['content'] .= $this->_load('table', array('content' =>$repos,'class'=>'repos'));
 		}
 		
 		return $this->_render();

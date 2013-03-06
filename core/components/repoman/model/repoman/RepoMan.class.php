@@ -275,7 +275,6 @@ class RepoMan {
 	 * @return string (contents of README.md file) or false if not found
 	 */
 	public function get_readme($repo_path) {
-		return false;
 		foreach ($this->readme_filenames as $f) {
 			$readme = $repo_path.'/'.$f;
 			if (file_exists($readme)) {

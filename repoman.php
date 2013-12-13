@@ -173,10 +173,14 @@ $modx->initialize('mgr');
 $modx->setLogLevel(modX::LOG_LEVEL_INFO);
 $modx->setLogTarget('ECHO'); 
 flush();
-//$Menu = $modx->getObject('modAction', array('namespace'=>'moxycart')); print_r($Menu->toArray());exit;
+
 $modx->log(modX::LOG_LEVEL_INFO, 'Processing package at '.$pkg_path);
 
 $package_name = strtolower(basename($pkg_path));
+
+//------------------------------------------------------------------------------
+//! Repoman Namespace and Settings
+//------------------------------------------------------------------------------
 
 // Create/Update Namespace
 $N = $modx->getObject('modNamespace',$package_name);
@@ -216,9 +220,30 @@ if (!file_exists($pkg_path.'/assets/components/'.$package_name.'/')) {
     $modx->log(modX::LOG_LEVEL_WARN, "Asset directory did not exist ".$pkg_path.'/assets/components/'.$package_name.'/ -- you may ignore this warning if your package is not using assets. Otherwise verify your paths and make sure they are lowercase.');
 }
 
+// Create/Update the package.assets_path setting (if not set already)
+$key = $package_name .'.assets_path';
+
+$assets_path = $pkg_path .'/assets/';
+
+$Setting = $modx->getObject('modSystemSetting', $key);
+if (!$Setting) {
+    $Setting = $modx->newObject('modSystemSetting');	
+    $Setting->set('key', $key);
+    $Setting->set('xtype', 'textfield');
+    $Setting->set('namespace', $package_name);
+    $Setting->set('area', 'default');
+}
+
+$Setting->set('value', $assets_path);
+
+if (!$Setting->save()) {
+    $modx->log(modX::LOG_LEVEL_ERROR, "Failed to save System Setting $key");		
+}
+$modx->log(modX::LOG_LEVEL_INFO, "Created/Updated System Setting $key: $assets_path");
+
 // Create/Update the package.core_path setting (if not set already)
 $key = $package_name .'.core_path';
-
+$modx->log(modX::LOG_LEVEL_INFO, "Created/Updated System Setting $key: $assets_url");
 $core_path = $pkg_path .'/core/';
 
 $Setting = $modx->getObject('modSystemSetting', $key);
@@ -257,6 +282,10 @@ else {
     if (file_exists($migrations_path.'/install.php')) {
         $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/install.php");
         include($migrations_path.'/install.php');
+    }
+    if (file_exists($migrations_path.'/seed.php')) {
+        $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/seed.php");
+        include($migrations_path.'/seed.php');
     }
 }
 
@@ -427,8 +456,11 @@ if (file_exists($file)) {
             if (!$Setting) {
                 $Setting = $modx->newObject('modSystemSetting');
             }
+            else {
+                unset($s['value']); // avoid overwriting any existing values
+            }
             $Setting->fromArray($s,'',true,true);
-
+            
             if(!$Setting->save()) {
                $modx->log(modX::LOG_LEVEL_ERROR,'Could not save System Setting: '.$s['key']);
             }
@@ -499,5 +531,8 @@ if (file_exists($file)) {
         $modx->log(modX::LOG_LEVEL_ERROR,'menus.php did not contain an array! '.$file);
     }
 }
+
+print "\n";
+print "Repoman import complete.\n";
 
 /*EOF*/

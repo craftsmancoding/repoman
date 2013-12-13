@@ -92,7 +92,7 @@ function get_category_id($str) {
  * @return string
  */
 function path_to_rel($path) {
-    return preg_replace('#^'.MODX_BASE_PATH.'#','',$path); // convert path to url
+    return str_replace(MODX_BASE_PATH,'',$path); // convert path to url
 }
 
 /**
@@ -196,7 +196,7 @@ $modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $package_name");
 
 // Create/Update the package.assets_url setting (if not set already)
 $key = $package_name .'.assets_url';
-$rel_path = preg_replace('#^'.MODX_BASE_PATH.'#','',$pkg_path); // convert path to url
+$rel_path = str_replace(MODX_BASE_PATH,'',$pkg_path); // convert path to url
 $assets_url = MODX_BASE_URL.$rel_path .'/assets/';
 
 $Setting = $modx->getObject('modSystemSetting', $key);

@@ -161,7 +161,8 @@ if (!isset($argv[1])) {
 }
 
 //$pkg_path = realpath($argv[1]);
-$pkg_path = truepath($argv[1]);
+$pkg_path = strtr(realpath($argv[1]), '\\', '/');
+
 
 if (!file_exists($pkg_path) || !is_dir($pkg_path)) {
     print "ERROR: Package does not exist or is not a directory.\n";

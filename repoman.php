@@ -96,6 +96,48 @@ function path_to_rel($path) {
 }
 
 /**
+ * from http://stackoverflow.com/questions/4049856/replace-phps-realpath
+ * This function is to replace PHP's extremely buggy realpath().
+ * @param string The original path, can be relative etc.
+ * @return string The resolved path, it might not exist.
+ */
+function truepath($path){
+    // whether $path is unix or not
+    $unipath = strlen($path)==0 || $path{0}!='/';
+
+    // attempts to detect if path is relative in which case, add cwd
+    if(strpos($path,':')===false && $unipath) {
+        $path=getcwd().DIRECTORY_SEPARATOR.$path;
+    }
+
+    // resolve path parts (single dot, double dot and double delimiters)
+    $path = str_replace(array('/', '\\'), DIRECTORY_SEPARATOR, $path);
+    $parts = array_filter(explode(DIRECTORY_SEPARATOR, $path), 'strlen');
+    $absolutes = array();
+    foreach ($parts as $part) {
+        if ('.'  == $part) continue;
+        if ('..' == $part) {
+            array_pop($absolutes);
+        } else {
+            $absolutes[] = $part;
+        }
+    }
+    $path = implode(DIRECTORY_SEPARATOR, $absolutes);
+    
+    // resolve any symlinks
+    if(file_exists($path) && linkinfo($path)>0) {
+        $path=readlink($path);
+    }
+    
+    // put initial separator for *nix
+    if (DIRECTORY_SEPARATOR == '/') {
+        return '/'.$path;
+    }
+
+    return $path;
+}
+
+/**
  *
  *
  */
@@ -118,7 +160,8 @@ if (!isset($argv[1])) {
     exit(1);
 }
 
-$pkg_path = realpath($argv[1]);
+//$pkg_path = realpath($argv[1]);
+$pkg_path = truepath($argv[1]);
 
 if (!file_exists($pkg_path) || !is_dir($pkg_path)) {
     print "ERROR: Package does not exist or is not a directory.\n";

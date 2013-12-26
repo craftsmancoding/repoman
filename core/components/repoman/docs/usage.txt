@@ -1,0 +1,18 @@
+Repoman Usage:
+
+    php repoman.php <function> <option>
+
+Available Functions:
+
+    build - build a MODX package from the files in the package path.
+    help - show help for any given function.
+    install - install into MODX any elements and run any database migrations for the package at package path.
+    migrate - run any database migrations for the package at package path.
+    seed - import seed data into custom database tables.
+    uninstall - remove from MODX any elements that Repoman has installed for the package at package path.
+    
+
+To get help on a function, you can run:
+
+    php repoman.php help <function_name>
+

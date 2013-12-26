@@ -1,0 +1,9 @@
+Build
+
+Build a MODX package from the files in the package directory.
+
+Usage:
+
+    php repoman.php build <package_path>
+
+Make sure you have updated your package's config.php with the latest information.

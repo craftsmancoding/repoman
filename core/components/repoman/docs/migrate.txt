@@ -1,0 +1,8 @@
+Migrate
+
+Run any database migrations defined in the project's database/migrations/ folder.
+
+Usage
+
+    php repoman.php migrate <package_path>
+

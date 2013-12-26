@@ -1,0 +1,17 @@
+help
+
+Repoman help.
+
+Usage:
+
+php repoman.php help <function>
+
+
+Available Functions:
+
+build
+import
+install
+migrate
+seed
+uninstall

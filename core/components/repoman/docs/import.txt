@@ -1,0 +1,4 @@
+Import
+
+
+    php repoman.php import <package_path>

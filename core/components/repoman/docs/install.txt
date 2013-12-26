@@ -1,0 +1,10 @@
+Install
+
+Install into MODX all the package elements and run all package migrations.
+
+Usage:
+
+    php repoman.php install /path/to/package
+    
+
+Running "install" is equivalent to running both "import" then "migrate"

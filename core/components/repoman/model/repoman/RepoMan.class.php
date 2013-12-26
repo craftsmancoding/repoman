@@ -1,71 +1,76 @@
 <?php
 /**
- *
+ * This class has some static methods for utility functions that can be used
+ * before the class is instantiated.
  *
  *
  */
-require_once('RepoMan_parser.php');
-class RepoMan {
 
-	// TODO: make these configurable?
-	public $folder_object_map = array(
-		'chunks' => 'modChunk',
-		'chunk' => 'modChunk',
-		'modChunk' => 'modChunk',
-		
-		'snippets' => 'modSnippet',
-		'plugins' => 'modPlugin'
-	);
+class Repoman {
 
-	public $readme_filenames = array('README.md','readme.md');
-
-	// 1st must come objects with no foreign keys.  All of an object's dependencies must appear before
-	// the object appears, similar to the order of CREATE TABLES in an InnoDB database.
-	public $object_order = array(
-		'modPropertySet',
-		'modElementPropertySet',
-		'modCategory', 
-		'modChunk',
-		'modSnippet',
-		'modPlugin'
-	);
-	
 	public $modx;
+	
+	public $config = array();
+
+	// public $readme_filenames = array('README.md','readme.md');
+
+    /**
+     * Any tags to skip in the doc block, e.g. @param, that may have significance for PHPDoc and 
+     * for general documentation, but which are not intended for RepoMan and do not describe
+     * object attributes. Omit "@" from the attribute names.
+     * See http://en.wikipedia.org/wiki/PHPDoc
+     */
+    public static $skip_tags = array('param','return','abstract','access','author','copyright',
+        'deprecated','deprec','example','exception','global','ignore','internal','link','magic',
+        'package','see','since','staticvar','subpackage','throws','todo','var','version'
+    );
+
 
 	// Events
-	public $log = array();
-	// 1 = show only errors. 2 = show errors and warnings, 3 = show everything 
-	public $verbosity = 3;
+/*
+    public $log = array(
+        'target'=>'FILE',
+        'options' => array(
+            'filename'=>'repoman.log'
+        )
+    );
+*/
+    public static $cache_opts = array();
+    const CACHE_DIR = 'repoman';
+        
 	/**
 	 *
 	 * @param object MODX reference
 	 */
-	public function __construct($modx) {
+	public function __construct($modx,$config=array()) {
 		$this->modx = &$modx;
+		$this->config = $config;
+		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR);
 	}
 
+
 	/**
-	 * Logging function.  Separate from MODX log because we need transparency.
+	 * For creating Repoman's system settings (not for user created settings)
 	 *
-	 * @param string $msg to be logged
-	 * @param integer $level 1 = Error, 2 = Warn, 3 = Info
-	 * @param integer $line number
+	 *     pkg_name.assets_path
+	 *     pkg_name.assets_url
+	 *     pkg_name.core_path
+	 *
+	 * @param string $name
 	 */
-	private function _log($msg, $level=1, $line='???') {
-		if ($this->verbosity >= $level) {
-			$this->log[] = $msg . " [LINE $line]";
+	private function _create_setting($namespace, $key, $value) {
+        if (empty($namespace)) {
+            throw new Exception('namespace parameter cannot be empty.');
+        }
+
+		$N = $this->modx->getObject('modNamespace',$namespace);
+		if (!$N) {
+            throw new Exception('Invalid namespace ');
 		}
-	}
-
-	/**
-	 * Sets the package.assets_path setting (if not set already)
-	 *
-	 */
-	private function _set_assets_path($package_name, $path) {
-	 	$key = $package_name .'.assets_path';
-	 	$assets_path = $path .'/assets/components/'.$package_name.'/';
+	
 		$Setting = $this->modx->getObject('modSystemSetting', $key);
 		if (!$Setting) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Creating new System Setting: $key");
 			$Setting = $this->modx->newObject('modSystemSetting');	
 		}
 
@@ -73,13 +78,15 @@ class RepoMan {
 		$Setting->set('key', $key);
 		$Setting->set('value', $assets_path);
 		$Setting->set('xtype', 'textfield');
-		$Setting->set('namespace', $package_name);
+		$Setting->set('namespace', $namespace);
 		$Setting->set('area', 'default');
 		
 		$Setting->save();
 		
-		$this->_log("$key set to $assets_path", 3, __LINE__);
+		$this->modx->cacheManager->set('modSystemSetting/'.$key, date('Y-m-d H:i:s'), 0, self::$cache_opts);
 		
+		$this->modx->log(modX::LOG_LEVEL_INFO, "System Setting created/updated: $name");
+
 		return $assets_path;
 	}
 			
@@ -251,22 +258,40 @@ class RepoMan {
 	
 	/**
 	 * Create/Update the namespace
-	 * @param string $package_name
+	 * @param string $package_name (lowercase)
 	 * @param string $path to the repo
 	 */
-	private function _create_namespace($package_name, $path) {
-		$N = $this->modx->getObject('modNamespace',$package_name);
+	private function _create_namespace($name, $path) {
+        if (empty($name)) {
+            throw new Exception('namespace parameter cannot be empty.');
+        }
+        if (preg_match('/[^a-z0-9_\-]/', $name)) {
+            throw new Exception('Invalid namespace :'.$name);
+        }
+		$N = $this->modx->getObject('modNamespace',$name);
 		if (!$N) {
 			$N = $this->modx->newObject('modNamespace');
-			$N->set('name', $package_name);
+			$N->set('name', $name);
 		}
 		$N->set('path', $path);
-		$N->set('assets_path',$path.'/assets/components/'.$package_name.'/');
+		$N->set('assets_path',$path.'/assets/components/'.$name.'/');
 		$N->save();
-		
-		$this->_log("Namespace $package_name created.", 3, __LINE__);
+
+		// Prepare Cache folder for tracking object creation
+		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR.'/'.$name);
+
+		//$this->modx->cacheManager->set('tags/'.$info['hash'], $tag, 0, self::$cache_opts);
+		$this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $name");
 	}
 
+	/**
+	 * Our config getter
+	 * @param string $key
+	 * @return mixed
+	 */
+	public function get($key) {
+	   return (isset($this->config[$key])) ? $this->config[$key] : null;
+	}
 	
 	/**
 	 * Get the readme file from a repo
@@ -285,45 +310,241 @@ class RepoMan {
 	}
 	
 	
-	/**
-	 * This is the raison d'etre of the entire package: this scans a local
-	 * working copy (i.e. a local repository) for objects, then pushes them
-	 * into MODX, creating or updating objects as required, creating static
-	 * uncached elements whenever possible so that your local repo is the 
-	 * master copy of your package.
+	/** 
+	 * Get configuration for a given package path.
+	 * This reads the config.php (if present), and merges it with global config
+	 * settings.
 	 *
-	 * Important here is the order: certain objects must be created first, e.g.
-	 * a category must exist before you can add an object to it.
-	 *
-	 * 1. Register namespace (if not already registered). Remember: {base_path}, {core_path}, {assets_path} are oddities. No other settings are supported.
-	 * e.g. {assets_path}components/repoman/core/components/repoman/
-	 * 2. Create System settings (if not already created): pkg.core_path, pkg.asset_path, pkg.asset_url
-	 * 3. Scan directory for objects: for each, create or update
-	 
-	 * @param string $repo_path including package name (omit trailing slash)
-	 * @return ???
+     * @param string $pkg_path
+     * @param array $overrides any run-time overrides
+	 * @return array
 	 */
-	public function sync_modx($repo_path) {
-
-		$namespace = basename($repo_path); // same as the package's short name
-		
-		$this->_create_namespace($namespace, $repo_path);
-		$this->_set_assets_path($namespace, $repo_path);
-		$this->_set_assets_url($namespace, $repo_path);
-		$this->_set_base_path($namespace, $repo_path);
-		
-		$this->modx->cacheManager->refresh(array('system_settings' => array()));
-			
-		// TODO: read from config?
-		$dir = $repo_path .'/core/components/'.$namespace.'/elements';
-		
-		$this->_create_elements($dir);
-		
-		// create resources?
-		// create ??? uh... resolvers???
-		// Which object directories are available?
-		
-		return $this->log;
+	public static function load_config($pkg_path, $overrides=array()) {
+	
+        $global = include dirname(__FILE__).'/global.config.php';
+        $config = array();
+        if (file_exists($pkg_path.'/config.php')) {
+            $config = include $pkg_path.'/config.php';
+            if (!is_array($config)) {    
+                $config = array();
+            }
+        }
+        
+        return array_merge($global, $config, $overrides);
 	}
+	
+	//------------------------------------------------------------------------------
+	//! Public
+	//------------------------------------------------------------------------------
+
+    /**
+     * Goal here is to generate an array that can be passed as filter criteria to
+     * getObject so that we can identify and load existing objects (instead of 
+     * haphazardly creating new objects all the time). In practice, we don't 
+     * always use the primary key to load an object (e.g. we don't specify the pk in 
+     * the package's repository) so for each classname, we need a field (or fields)
+     * to consider when searching for existing records.  E.g. for modSnippet or modChunk, 
+     * we want to look only at the name, but for modResource we might look at context and uri.
+     *
+     * @param string $classname
+     * @param array $array data for a single object representing $classname
+     * @return array
+     */
+    function get_criteria($classname, $array) {
+        $fields = array();
+        switch ($classname) {
+            case 'modMenu':
+                $fields = array('text');
+                break;
+            case 'modAction':
+                $fields = array('namespace','controller');
+                break;
+            case 'modContentType':
+            case 'modDashboard':
+            case 'modUserGroup':
+            case 'modUserGroupRole':
+            case 'modPropertySet':
+            case 'modTemplateVar':
+            case 'modSnippet':
+            case 'modChunk':
+            case 'modPlugin':
+                $fields = array('name');
+                break;
+            case 'modTemplate':
+                $fields = array('templatename');
+                break;
+            case 'modUser':
+                $fields = array('username');
+                break;
+            case 'modContext':
+            case 'modSystemSetting':
+                $fields = array('key');
+                break;
+            case 'modResource':
+                $fields = array('uri','context_key');
+                break;
+            case 'modCategory':
+                $fields = array('category');
+                break;
+            case 'modDashboardWidget':
+                $fields = array('name','namespace');
+                break;
+        }
+        
+        $criteria = array();
+        foreach ($fields as $f) {
+            if (isset($array[$f]) && !empty($array[$f])) {
+                $criteria[$f] = $array[$f];
+            }
+        }
+        
+        return $criteria;
+    }
+
+
+    /** 
+     * Unified build script.
+     *
+     */
+    public function build($pkg_dir, $args) {
+    
+    }
+    
+	
+
+    
+    /** 
+     * Import pkg elements into MODX
+     *
+     */
+    public function import($pkg_dir) {
+        
+        $pkg_dir = self::getdir($pkg_dir);
+        
+        self::_create_namespace($this->get('namespace'),$pkg_dir);
+
+        // Settings
+        $key = $this->get('namespace') .'.assets_url';
+        $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_dir); // convert path to url
+        $assets_url = MODX_BASE_URL.$rel_path .'/assets/';
+        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
+        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_dir.'/assets/');
+        self::_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_dir .'/core/');        
+     
+        // The gratis Category
+        $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));
+        if (!$Category) {
+            $Category = $this->modx->newObject('modCategory');
+            $Category->set('category', $package_name);
+            $Category->save();
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Category created: ".$this->get('category'));
+        }
+        
+        // Import Elements
+        
+    }
+
+    /**
+     * Install all elements and 
+     *
+     *
+     */
+    public function install($pkg_dir) {
+        $pkg_dir = self::getdir($pkg_dir);
+        //throw new Exception('Invalid something...');
+        self::import($pkg_dir);
+        self::migrate($pgk_dir);
+    }
+
+    public function migrate($pkg_dir) {
+    
+    }
+
+	/**
+	 * Shows manual page for a given $function.
+	 *
+	 * @param string $function
+	 * @return string
+	 */
+	public static function rtfm($function) {
+        $doc = dirname(dirname(dirname(__FILE__))).'/docs/'.basename($function).'.txt';
+        if (file_exists($doc)) {
+            return file_get_contents($doc);
+        }
+        return "No manual page found.\n";
+	}
+
+    public function seed($pkg_dir) {
+    
+    }
+        
+    public function uninstall() {
+    
+    }
+
+    /**
+     * Given an absolute path, e.g. /home/user/public_html/assets/file.php
+     * return the file path relative to the MODX base path, e.g. assets/file.php
+     * @param string $path
+     * @param string $base : the /full/path/to/base/ (MODX_BASE_PATH)
+     * @return string
+     */
+    public function path_to_rel($path,$base) {
+        return str_replace($base,'',$path); // convert path to url
+    }
+        	
+    /**
+     * Read parameters out of a (PHP) docblock... like a repoman repossessing 
+     * outstanding leased objects.
+     *
+     * @param string $string the unparsed contents of a file
+     * @param string $dox_start string designating the start of a doc block
+     * @param string $dox_start string designating the start of a doc block 
+     * @return array on success | false on no doc block found
+     */
+    public static function repossess($string,$dox_start='/*',$dox_end='*/') {
+        
+        $dox_start = preg_quote($dox_start,'#');
+        $dox_end = preg_quote($dox_end,'#');
+    
+        preg_match("#$dox_start(.*)$dox_end#msU", $string, $matches);
+    
+        if (!isset($matches[1])) {
+                return false; // No doc block found!
+        }
+        
+        // Get the docblock                
+        $dox = $matches[1];
+        
+        // Loop over each line in the comment block
+        $a = array(); // attributes
+        foreach(preg_split('/((\r?\n)|(\r\n?))/', $dox) as $line){
+            preg_match('/^\s*\**\s*@(\w+)(.*)$/',$line,$m);
+            if (isset($m[1]) && isset($m[2]) && !in_array($m[1], self::$skip_tags)) {
+                    $a[$m[1]] = trim($m[2]);
+            }
+        }
+        
+        return $a;
+    }
+	
+	/**
+	 * Verify a directory, converting for any OS variants and convert
+	 * any relative paths to absolute . 
+	 *
+	 * @param string $path path (or relative path) to package
+	 * @return string full path without trailing slash
+	 */
+	public static function getdir($path) {
+        $path = strtr(realpath($path), '\\', '/');
+        if (!file_exists($path)){
+            throw new Exception('Directory does not exist: '.$path);
+        }
+        elseif(!is_dir($path)) {
+            throw new Exception('Path is not a directory: '.$path,'ERROR');
+        }
+        return $path;
+	}
+	
 }
 /*EOF*/

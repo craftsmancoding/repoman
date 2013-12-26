@@ -146,6 +146,11 @@ switch ($function) {
     case 'migrate':
     case 'seed':
     case 'uninstall':
+        if (!isset($argv[2])) {
+            print message('Missing <pkg_path> parameter.','ERROR');
+            print Repoman::rtfm($function);
+            exit(2);
+        }
         try {
             $pkg_path = Repoman::getdir($argv[2]);
         }  

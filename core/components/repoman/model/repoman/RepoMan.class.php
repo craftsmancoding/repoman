@@ -68,26 +68,24 @@ class Repoman {
             throw new Exception('Invalid namespace ');
 		}
 	
-		$Setting = $this->modx->getObject('modSystemSetting', $key);
+		$Setting = $this->modx->getObject('modSystemSetting', array('key'=>$key));
 		if (!$Setting) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "Creating new System Setting: $key");
 			$Setting = $this->modx->newObject('modSystemSetting');	
 		}
 
-		$Setting = $this->modx->newObject('modSystemSetting');
 		$Setting->set('key', $key);
-		$Setting->set('value', $assets_path);
+		$Setting->set('value', $value);
 		$Setting->set('xtype', 'textfield');
 		$Setting->set('namespace', $namespace);
 		$Setting->set('area', 'default');
 		
 		$Setting->save();
+		$date = date('Y-m-d H:i:s');
+		$this->modx->cacheManager->set('modSystemSetting/'.$key, $date, 0, self::$cache_opts);
 		
-		$this->modx->cacheManager->set('modSystemSetting/'.$key, date('Y-m-d H:i:s'), 0, self::$cache_opts);
-		
-		$this->modx->log(modX::LOG_LEVEL_INFO, "System Setting created/updated: $name");
+		$this->modx->log(modX::LOG_LEVEL_INFO, "System Setting created/updated: $key");
 
-		return $assets_path;
 	}
 			
 	/**
@@ -418,7 +416,7 @@ class Repoman {
      *
      */
     public function import($pkg_dir) {
-        
+       
         $pkg_dir = self::getdir($pkg_dir);
         
         self::_create_namespace($this->get('namespace'),$pkg_dir);
@@ -435,7 +433,7 @@ class Repoman {
         $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));
         if (!$Category) {
             $Category = $this->modx->newObject('modCategory');
-            $Category->set('category', $package_name);
+            $Category->set('category', $this->get('package_name'));
             $Category->save();
             $this->modx->log(modX::LOG_LEVEL_INFO, "Category created: ".$this->get('category'));
         }
@@ -469,7 +467,7 @@ class Repoman {
 	public static function rtfm($function) {
         $doc = dirname(dirname(dirname(__FILE__))).'/docs/'.basename($function).'.txt';
         if (file_exists($doc)) {
-            return file_get_contents($doc);
+            return file_get_contents($doc) . "\n\n";
         }
         return "No manual page found.\n";
 	}

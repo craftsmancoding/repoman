@@ -205,6 +205,7 @@ catch (Exception $e) {
     print message($e->getMessage(),'ERROR');
 }
 
+print message($function .' complete.','SUCCESS');
 exit;
 
 

@@ -1,15 +1,18 @@
 <?php
 /**
- *
+ * REMEMBER: chunks are not cached anywhere except per Resource
  *
  */
-class modChunk_parser extends RepoMan_parser {
+class modChunk_parser extends Repoman_parser {
 
+    public $dir_key = 'chunks_dir';
+    public $ext_key = 'chunks_ext';
+    public $objecttype = 'modChunk';
+    
 	public $dox_start = '<!--';
 	public $dox_end = '-->';
 	
-	public $extensions = array('.chunk.html','.html','.chunk.tpl','.tpl');
-	
+		
 	/**
 	 * Special behavior here for HTML doc blocks.
 	 */

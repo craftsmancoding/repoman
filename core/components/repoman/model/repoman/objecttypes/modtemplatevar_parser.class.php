@@ -3,12 +3,15 @@
  *
  *
  */
-class modTemplate_parser extends RepoMan_parser {
+class modTemplateVar_parser extends Repoman_parser {
 
+    public $dir_key = 'tvs_dir';
+    public $ext_key = 'tvs_ext';
+    public $objecttype = 'modTemplateVar';
+    
 	public $dox_start = '<!--';
 	public $dox_end = '-->';
 	
-	public $extensions = array('.template.html','.html');
 	
 	/**
 	 * Special behavior here for HTML doc blocks.

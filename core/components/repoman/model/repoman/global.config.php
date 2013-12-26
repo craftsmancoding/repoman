@@ -23,8 +23,26 @@ return array(
     
     'namespace' => strtolower(basename($pkg_path)),
     'category' => basename($pkg_path), // Package Name
-    'docblocks_reqd' => false,
-    'import_docs' => '*', // you may include an array specifying basenames of specific files
+    'require_docblocks' => false, // if true, your elements *must* define docblocks in order to be imported
+    'build_docs' => '*', // you may include an array specifying basenames of specific files in the build
     'log_level' => modX::LOG_LEVEL_INFO,
+    
+    // Dirs relative to core/components/$pkg_name/ 
+    'chunks_dir' => 'elements/chunks',
+    'plugins_dir' => 'elements/plugins',
+    'snippets_dir' => 'elements/snippets',
+    'templates_dir' => 'elements/templates',
+    'tvs_dir' => 'elements/tvs',
+
+    // Extensions for searching the element directories
+    'chunks_ext' => '*.*',
+    'plugins_ext' => '*.php',
+    'snippets_ext' => '*.php',
+    'templates_ext' => '*.*',
+    'tvs_ext' => '*.*',
+    
+    // For dev importing, for elements to reference static file
+    'force_static' => true,
+    
 );
 /*EOF*/

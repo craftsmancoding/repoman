@@ -14,16 +14,7 @@ class Repoman {
 
 	// public $readme_filenames = array('README.md','readme.md');
 
-    /**
-     * Any tags to skip in the doc block, e.g. @param, that may have significance for PHPDoc and 
-     * for general documentation, but which are not intended for RepoMan and do not describe
-     * object attributes. Omit "@" from the attribute names.
-     * See http://en.wikipedia.org/wiki/PHPDoc
-     */
-    public static $skip_tags = array('param','return','abstract','access','author','copyright',
-        'deprecated','deprec','example','exception','global','ignore','internal','link','magic',
-        'package','see','since','staticvar','subpackage','throws','todo','var','version'
-    );
+
 
 
 	// Events
@@ -89,169 +80,27 @@ class Repoman {
 	}
 			
 	/**
-	 * Sets the package.assets_url setting (if not set already)
+	 * Get an array of elements for the given $objecttype
 	 *
+	 * @param string $objecttype
+	 * @param string $pkg_dir the repo location, e.g. /home/usr/public_html/assets/repos/mypkg
+	 * @return array of objects of type $objecttype
 	 */
-	private function _set_assets_url($package_name, $path) {
-	 	$key = $package_name .'.assets_url';
+	private function _get_elements($objecttype,$pkg_dir) {
+        
+        require_once dirname(__FILE__).'/repoman_parser.class.php';
+        require_once dirname(__FILE__).'/objecttypes/'.strtolower($objecttype).'_parser.class.php';
+        
+        $classname = $objecttype.'_parser';
+        $Parser = new $classname($this->modx,$this->config);
+        
+        return $Parser->gather($pkg_dir);
+        
+        
+        $objects = array();
+        if (file_exists($dir) && is_dir($dir)) {
+        }
 
-	 	// Strip out the path to find the relative path
-	 	$rel_path = preg_replace('#^'.MODX_BASE_PATH.'#','',$path);	 	
-	 	$assets_url = MODX_BASE_URL.$rel_path .'/assets/components/'.$package_name.'/';
-	 	
-		$Setting = $this->modx->getObject('modSystemSetting', $key);
-		if (!$Setting) {
-			$Setting = $this->modx->newObject('modSystemSetting');	
-		}
-
-		$Setting = $this->modx->newObject('modSystemSetting');
-		$Setting->set('key', $key);
-		$Setting->set('value', $assets_url);
-		$Setting->set('xtype', 'textfield');
-		$Setting->set('namespace', $package_name);
-		$Setting->set('area', 'default');
-		
-		$Setting->save();
-		$this->_log("$key set to $assets_url", 3, __LINE__);
-		
-		return $assets_url;
-	}
-
-	/**
-	 * Sets the package.base_url setting (if not set already)
-	 *
-	 */	
-	private function _set_base_path($package_name,$path) {
-	 	$key = $package_name .'.base_path';
-	 	$base_path = $path .'/core/components/'.$package_name.'/';
-		$Setting = $this->modx->getObject('modSystemSetting', $key);
-		if (!$Setting) {
-			$Setting = $this->modx->newObject('modSystemSetting');	
-		}
-
-		$Setting = $this->modx->newObject('modSystemSetting');
-		$Setting->set('key', $key);
-		$Setting->set('value', $base_path);
-		$Setting->set('xtype', 'textfield');
-		$Setting->set('namespace', $package_name);
-		$Setting->set('area', 'default');
-		
-		$Setting->save();	
-		
-		$this->_log("$key set to $base_path", 3, __LINE__);
-		
-		return $base_path;
-	}
-
-	/**
-	 * Scan the elements directory for object types... create the elements (Chunks, Snippets, etc.).
-	 * The order is important!  Objects with no foreign keys must be created first 
-	 * (e.g. Categories before Templates).
-	 * @param string $dir containing element-folders, e.g. /path/to/core/components/my_pkg/elements
-	 */
-	private function _create_elements($dir) {
-		if (!is_dir($dir)) {
-			$this->_log("Directory does not exist: $dir", 1, __LINE__);
-			return;
-		}
-		// Which object directories are available?
-		$folders = array();
-		//foreach (new RecursiveIteratorIterator(new RecursiveDirectoryIterator($dir)) as $filename) {
-		foreach (new RecursiveDirectoryIterator($dir) as $filename) {
-			if (is_dir($filename)) {
-				$shortname = preg_replace('#^'.$dir.'/#','',$filename);
-				if ($shortname != '.' && $shortname != '..') {
-					$folders[] = $shortname;
-				}
-			}	
-		}
-		
-		// Translate folder names into object names (key) and then a SplFileInfo object (value), e.g.
-		// 		modChunk => SplFileInfo Object
- 		//            	(
-        // 	           		[pathName:SplFileInfo:private] => /path/to/chunks/mychunk.html
-        //             		[fileName:SplFileInfo:private] => mychunk.html
-        //        		)
-        // see http://php.net/manual/en/class.splfileinfo.php
-		$objecttypes = array();
-		foreach ($folders as $f) {
-			if(isset($this->folder_object_map[$f])) {
-				// Get the objects in the folder
-				$o = $this->folder_object_map[$f];
-				$objecttypes[$o] = array();
-				$Parser = $o.'_parser';
-				require_once('objecttypes/'.$Parser.'.php');
-				$P = new $Parser();
-				foreach (new RecursiveDirectoryIterator($dir.'/'.$f) as $filename) {
-					if (!is_dir($filename)) {
-						$exts = array_map('preg_quote', $P->extensions);
-						$pattern = implode('|',$exts);
-						if (preg_match('/('.$pattern.')$/i',$filename)) {							
-							$objecttypes[$this->folder_object_map[$f]][] = $filename;
-						}	
-					}
-				}
-			}
-			else {
-				$this->_log("Unknown element type: $f", 2, __LINE__);
-			}
-		}
-		// $this->_log('Object Types: ' . print_r($objecttypes,true), 3, __LINE__);
-
-		// Loop through the object-types in the order they need to appear
-		foreach ($this->object_order as $o) {
-			if (!isset($objecttypes[$o])) {
-				$this->_log("No objects of type $o found.  Skipping...", 4, __LINE__);
-				continue;
-			}
-			
-			$Parser = $o.'_parser';
-			require_once('objecttypes/'.$Parser.'.php');
-			
-			$P = new $Parser();
-			$exts = array_map('preg_quote', $P->extensions);
-			$pattern = implode('|',$exts);
-			
-			// Loop through all objects (e.g. all modChunks)
-			foreach ($objecttypes[$o] as $f) {
-				$name = preg_replace('/('.$pattern.')$/i','', $f->getFilename());					
-				//print file_get_contents($f->getRealPath()); exit;
-				$atts = $P->get_attributes_from_dox(file_get_contents($f->getRealPath()));
-				if ($atts === false) {
-					$this->_log("No doc block found for $name", 1, __LINE__);
-					continue;
-				}
-				// override name (some flexibility here due to inconsistent naming in MODX db)
-				if (isset($atts['name'])) {
-					$name = $atts['name']; 
-				}
-				elseif (isset($atts[$P->name_attribute])) {
-					$name = $atts[$P->name_attribute];
-				}
-				
-				// Create/update the object
-				$O = $this->modx->getObject($o, $name);
-				if (!$O) {
-					$O = $this->modx->newObject($o);
-					$O->set($P->name_attribute,$name);
-				}
-				foreach ($atts as $k => $v) {
-					$O->set($k, $v);
-				}
-				// Make static. REMEMBER: static_file is relative to MODX base path!!
-				$rel_path = preg_replace('#^'.MODX_BASE_PATH.'#','',$f->getRealPath());
-				$O->set('static',1);
-				$O->set('static_file', $rel_path);
-				$O->set('source', 1); // Media source
-				
-				if (!$O->save()) {
-					$this->_log("Problem saving $o $name", 1, __LINE__);
-				}
-				else {
-					$this->_log("Updated $o $name", 3, __LINE__);
-				}
-			}
-		}
 	}
 	
 	/**
@@ -434,12 +283,28 @@ class Repoman {
         if (!$Category) {
             $Category = $this->modx->newObject('modCategory');
             $Category->set('category', $this->get('package_name'));
-            $Category->save();
-            $this->modx->log(modX::LOG_LEVEL_INFO, "Category created: ".$this->get('category'));
         }
         
         // Import Elements
+        $chunks = self::_get_elements('modChunk',$pkg_dir);
+        $plugins = self::_get_elements('modPlugin',$pkg_dir);
+        $snippets = self::_get_elements('modSnippet',$pkg_dir);
+        $templates = self::_get_elements('modTemplate',$pkg_dir);
+        $tvs = self::_get_elements('modTemplateVar',$pkg_dir);
         
+        if ($chunks) $Category->addMany($chunks);
+        if ($plugins) $Category->addMany($plugins);
+        if ($snippets) $Category->addMany($snippets);
+        if ($templates) $Category->addMany($templates);
+        if ($tvs) $Category->addMany($tvs);
+        
+        $Category->save();
+        $this->modx->log(modX::LOG_LEVEL_INFO, "Category created: ".$this->get('category'));
+
+        // Regular Objects
+        
+        // Migrations
+
     }
 
     /**
@@ -480,52 +345,7 @@ class Repoman {
     
     }
 
-    /**
-     * Given an absolute path, e.g. /home/user/public_html/assets/file.php
-     * return the file path relative to the MODX base path, e.g. assets/file.php
-     * @param string $path
-     * @param string $base : the /full/path/to/base/ (MODX_BASE_PATH)
-     * @return string
-     */
-    public function path_to_rel($path,$base) {
-        return str_replace($base,'',$path); // convert path to url
-    }
-        	
-    /**
-     * Read parameters out of a (PHP) docblock... like a repoman repossessing 
-     * outstanding leased objects.
-     *
-     * @param string $string the unparsed contents of a file
-     * @param string $dox_start string designating the start of a doc block
-     * @param string $dox_start string designating the start of a doc block 
-     * @return array on success | false on no doc block found
-     */
-    public static function repossess($string,$dox_start='/*',$dox_end='*/') {
-        
-        $dox_start = preg_quote($dox_start,'#');
-        $dox_end = preg_quote($dox_end,'#');
-    
-        preg_match("#$dox_start(.*)$dox_end#msU", $string, $matches);
-    
-        if (!isset($matches[1])) {
-                return false; // No doc block found!
-        }
-        
-        // Get the docblock                
-        $dox = $matches[1];
-        
-        // Loop over each line in the comment block
-        $a = array(); // attributes
-        foreach(preg_split('/((\r?\n)|(\r\n?))/', $dox) as $line){
-            preg_match('/^\s*\**\s*@(\w+)(.*)$/',$line,$m);
-            if (isset($m[1]) && isset($m[2]) && !in_array($m[1], self::$skip_tags)) {
-                    $a[$m[1]] = trim($m[2]);
-            }
-        }
-        
-        return $a;
-    }
-	
+        		
 	/**
 	 * Verify a directory, converting for any OS variants and convert
 	 * any relative paths to absolute . 
@@ -539,7 +359,7 @@ class Repoman {
             throw new Exception('Directory does not exist: '.$path);
         }
         elseif(!is_dir($path)) {
-            throw new Exception('Path is not a directory: '.$path,'ERROR');
+            throw new Exception('Path is not a directory: '.$path);
         }
         return $path;
 	}

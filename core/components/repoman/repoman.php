@@ -125,9 +125,6 @@ if (!isset($argv[1])) {
     exit(1);
 }
 
-
-
-
 // Disambiguation:
 $function = strtolower($argv[1]);
 $pkg_path = '';

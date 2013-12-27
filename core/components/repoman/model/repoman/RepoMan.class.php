@@ -18,6 +18,38 @@ class Repoman {
 
     public static $cache_opts = array();
     const CACHE_DIR = 'repoman';
+
+    // Used for package building
+    public $cat_attributes = array(
+        xPDOTransport::PRESERVE_KEYS => true,
+        xPDOTransport::UPDATE_OBJECT => false,
+        xPDOTransport::UNIQUE_KEY => array('category'),
+    	xPDOTransport::RELATED_OBJECTS => true,
+        xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+            'Snippets' => array(
+                xPDOTransport::PRESERVE_KEYS => false,
+                xPDOTransport::UPDATE_OBJECT => true,
+                xPDOTransport::UNIQUE_KEY => 'name',
+            ),
+            'Chunks' => array (
+                xPDOTransport::PRESERVE_KEYS => false,
+                xPDOTransport::UPDATE_OBJECT => true,
+                xPDOTransport::UNIQUE_KEY => 'name',
+            ),
+            'Plugins' => array (
+                xPDOTransport::PRESERVE_KEYS => false,
+                xPDOTransport::UPDATE_OBJECT => true,
+                xPDOTransport::UNIQUE_KEY => 'name',
+    			xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+    		        'PluginEvents' => array(
+    		            xPDOTransport::PRESERVE_KEYS => true,
+    		            xPDOTransport::UPDATE_OBJECT => false,
+    		            xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
+    		        ),
+        		),
+            ),
+        )    
+    );
         
 	/**
 	 *
@@ -267,29 +299,7 @@ class Repoman {
         
         return array_merge($global, $config, $overrides);
 	}
-	
-	//------------------------------------------------------------------------------
-	//! Public
-	//------------------------------------------------------------------------------
-	
-    /** 
-     * Unified build script.
-     *
-     */
-    public function build($pkg_dir, $args) {
-        $this->config['is_build'] = true; 
-        
-    }
-    
-	/**
-	 * Our config getter
-	 * @param string $key
-	 * @return mixed
-	 */
-	public function get($key) {
-	   return (isset($this->config[$key])) ? $this->config[$key] : null;
-	}
-		
+
     /**
      * Goal here is to generate an array that can be passed as filter criteria to
      * getObject so that we can identify and load existing objects (instead of 
@@ -355,6 +365,137 @@ class Repoman {
         return $criteria;
     }
 
+	/** 
+	 *
+	 * See http://www.php.net/manual/en/function.rmdir.php
+	 *
+	 */
+    public static function rrmdir($dir) {
+        foreach(glob($dir . '/*') as $file) {
+            if(is_dir($file))
+                Repoman::rrmdir($file);
+            else
+                unlink($file);
+        }
+        rmdir($dir);
+    }
+    
+	/**
+	 * Shows manual page for a given $function.
+	 *
+	 * @param string $function
+	 * @return string
+	 */
+	public static function rtfm($function) {
+        $doc = dirname(dirname(dirname(__FILE__))).'/docs/'.basename($function).'.txt';
+        if (file_exists($doc)) {
+            return file_get_contents($doc) . "\n\n";
+        }
+        return "No manual page found.\n";
+	}
+       	
+	//------------------------------------------------------------------------------
+	//! Public
+	//------------------------------------------------------------------------------
+	
+    /** 
+     * Unified build script.
+     *
+     */
+    public function build($pkg_dir) {
+        $this->config['is_build'] = true; 
+        $this->config['force_static'] = false;
+        
+        $required = array('package_name','namespace','version','release','category');
+        foreach($required as $k) {
+            if (!$this->get($k)) {
+                throw new Exception('Missing required configuration parameter: '.$k);
+            }
+        }
+        
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Beginning build of package '.$this->get('package_name'));
+        
+        $this->modx->loadClass('transport.modPackageBuilder', '', false, true);
+        $builder = new modPackageBuilder($this->modx);
+        $builder->createPackage($this->get('package_name'), $this->get('version'), $this->get('release'));
+        $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
+        
+        $Category = $modx->newObject('modCategory');
+        $Category->set('category', $this->get('category'));
+
+        // Import Elements
+        $chunks = self::_get_elements('modChunk',$pkg_dir);
+        $plugins = self::_get_elements('modPlugin',$pkg_dir);
+        $snippets = self::_get_elements('modSnippet',$pkg_dir);
+        $templates = self::_get_elements('modTemplate',$pkg_dir);
+        $tvs = self::_get_elements('modTemplateVar',$pkg_dir);
+        if ($chunks) $Category->addMany($chunks);
+        if ($plugins) $Category->addMany($plugins);
+        if ($snippets) $Category->addMany($snippets);
+        if ($templates) $Category->addMany($templates);
+        if ($tvs) $Category->addMany($tvs);
+        
+        $vehicle = $builder->createVehicle($Category, $this->cat_attributes);
+        
+        
+        // Objects
+        
+        // Files
+
+        // Migrations
+
+
+        // Documents
+        $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/docs/';
+        if (file_exists($dir) && is_dir($dir)) {
+            $docs = array(
+                'readme'=>'No readme defined.',
+                'changelog'=>'No changelog defined.',
+                'license'=>'No license defined.'
+            );
+            $files = array();
+            $build_docs = $this->get('build_docs');
+            if (!empty($build_docs) && is_array($build_docs)) {
+                foreach ($build_docs as $d) {
+                    $files[] = $dir . $d;
+                }
+            }
+            else {            
+                $files = glob($dir.'*.{html,txt}',GLOB_BRACE);
+            }
+            
+            foreach($files as $f) {
+                $stub = basename($f,'.txt');
+                $stub = basename($stub,'.html');
+                $docs[$stub] = file_get_contents($f);
+                $this->modx->log(modX::LOG_LEVEL_INFO, "Adding doc $stub for $f");
+            }
+            
+            if (!empty($docs)) {
+                $builder->setPackageAttributes($docs);
+            }
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'No documents found in '.$dir);
+        }
+        
+        
+        
+        // Zip up the package
+        $builder->pack();
+        
+
+    }
+    
+	/**
+	 * Our config getter
+	 * @param string $key
+	 * @return mixed
+	 */
+	public function get($key) {
+	   return (isset($this->config[$key])) ? $this->config[$key] : null;
+	}
+		
 	/**
 	 * Get the readme file from a repo
 	 *
@@ -548,20 +689,7 @@ class Repoman {
         
     }
 
-	/**
-	 * Shows manual page for a given $function.
-	 *
-	 * @param string $function
-	 * @return string
-	 */
-	public static function rtfm($function) {
-        $doc = dirname(dirname(dirname(__FILE__))).'/docs/'.basename($function).'.txt';
-        if (file_exists($doc)) {
-            return file_get_contents($doc) . "\n\n";
-        }
-        return "No manual page found.\n";
-	}
-       
+
     /**
      * Attempts to uninstall the default namespace, system settings, modx objects,
      * and any database migrations. The behavior is dependent on the MODX cache b/c
@@ -617,21 +745,6 @@ class Repoman {
             $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
             include $migrations_path.'/uninstall.php';
         }        
-    }
-
-	/** 
-	 *
-	 * See http://www.php.net/manual/en/function.rmdir.php
-	 *
-	 */
-    public static function rrmdir($dir) {
-        foreach(glob($dir . '/*') as $file) {
-            if(is_dir($file))
-                Repoman::rrmdir($file);
-            else
-                unlink($file);
-        }
-        rmdir($dir);
     }
 	
 }

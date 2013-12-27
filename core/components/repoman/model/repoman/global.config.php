@@ -44,10 +44,12 @@ return array(
     'templates_ext' => '*.*',
     'tvs_ext' => '*.*',
     
-    // For dev importing, for elements to reference static file
+    // For import/install (dev), force elements to reference static file for easier editing
     'force_static' => true,
     
-    'dry_run' => false, // useful for runtime setting: --dry_run 
+    'dry_run' => false, // use runtime setting: --dry_run to see which objects will be created.
+    'dir_perms' => 0777,
+    'seed' => null, // default database seed file to include during standard migrations
     
 );
 /*EOF*/

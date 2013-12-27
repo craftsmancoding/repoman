@@ -221,32 +221,27 @@ class Repoman {
         }
 	}
 
+    //------------------------------------------------------------------------------
+    //! Static
+    //------------------------------------------------------------------------------
 	/**
-	 * Our config getter
-	 * @param string $key
-	 * @return mixed
-	 */
-	public function get($key) {
-	   return (isset($this->config[$key])) ? $this->config[$key] : null;
-	}
-	
-	/**
-	 * Get the readme file from a repo
+	 * Verify a directory, converting for any OS variants and convert
+	 * any relative paths to absolute . 
 	 *
-	 * @param string $repo_path full path to file, without trailing slash
-	 * @return string (contents of README.md file) or false if not found
+	 * @param string $path path (or relative path) to package
+	 * @return string full path without trailing slash
 	 */
-	public function get_readme($repo_path) {
-		foreach ($this->readme_filenames as $f) {
-			$readme = $repo_path.'/'.$f;
-			if (file_exists($readme)) {
-				return file_get_contents($readme);
-			}
-		}
-		return false;
+	public static function getdir($path) {
+        $path = strtr(realpath($path), '\\', '/');
+        if (!file_exists($path)){
+            throw new Exception('Directory does not exist: '.$path);
+        }
+        elseif(!is_dir($path)) {
+            throw new Exception('Path is not a directory: '.$path);
+        }
+        return $path;
 	}
-	
-	
+    	
 	/** 
 	 * Get configuration for a given package path.
 	 * This reads the config.php (if present), and merges it with global config
@@ -276,7 +271,25 @@ class Repoman {
 	//------------------------------------------------------------------------------
 	//! Public
 	//------------------------------------------------------------------------------
-
+	
+    /** 
+     * Unified build script.
+     *
+     */
+    public function build($pkg_dir, $args) {
+        $this->config['is_build'] = true; 
+        
+    }
+    
+	/**
+	 * Our config getter
+	 * @param string $key
+	 * @return mixed
+	 */
+	public function get($key) {
+	   return (isset($this->config[$key])) ? $this->config[$key] : null;
+	}
+		
     /**
      * Goal here is to generate an array that can be passed as filter criteria to
      * getObject so that we can identify and load existing objects (instead of 
@@ -342,17 +355,21 @@ class Repoman {
         return $criteria;
     }
 
-
-    /** 
-     * Unified build script.
-     *
-     */
-    public function build($pkg_dir, $args) {
-        $this->config['is_build'] = true; 
-        
-    }
-    
-	
+	/**
+	 * Get the readme file from a repo
+	 *
+	 * @param string $repo_path full path to file, without trailing slash
+	 * @return string (contents of README.md file) or false if not found
+	 */
+	public function get_readme($repo_path) {
+		foreach ($this->readme_filenames as $f) {
+			$readme = $repo_path.'/'.$f;
+			if (file_exists($readme)) {
+				return file_get_contents($readme);
+			}
+		}
+		return false;
+	}
 
     
     /** 
@@ -423,13 +440,112 @@ class Repoman {
      */
     public function install($pkg_dir) {
         $pkg_dir = self::getdir($pkg_dir);
-        //throw new Exception('Invalid something...');
         self::import($pkg_dir);
         self::migrate($pkg_dir);
     }
 
+    /**
+     * Run database migrations: create/remove custom database tables.
+     *
+     */
     public function migrate($pkg_dir) {
-    
+        
+        global $modx;
+        
+        // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
+        // if this has been installed via a package, then skip??
+        // TODO: make this configurable... Dept. of Redundency Dept.
+        $migrations_path = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        $seeds_path = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
+
+        if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
+            return;
+        }
+
+        if (file_exists($migrations_path.'/uninstall.php')) {
+            $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
+            include $migrations_path.'/uninstall.php';
+        }
+        if (file_exists($migrations_path.'/install.php')) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/install.php");
+            include $migrations_path.'/install.php';
+        }
+        // Loop over remaining migrations
+        $files = glob($migrations_path.'/*.php');
+
+        foreach($files as $f) {
+            $base = basename($f);
+            if (in_array($base, array('install.php','uninstall.php'))) {
+                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Skipping '.$base);
+                continue;
+            }
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Running migration '.basename($f));
+            include $f;
+        }
+            
+        // Optional Seed data
+        $seed = $this->get('seed');
+        if ($seed) {
+            $seed = basename($seed,'.php');
+            $seed_file = $seeds_path.'/'.$seed.'.php';
+            if (!file_exists($seed_file)) {
+                throw new Exception('Seed file does not exist: '.$seed_file);
+            }
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Importing seed data from '.$seed_file);
+            include $seed_file;
+        }
+    }
+
+    /**
+     * Dev tool for parsing XML schema.  xyz.mysql.schema.xml maps to the model/xyz/ directory.
+     *
+     * Configuration options:
+     *
+     *  --schema (required)
+     *  --regenerate_classes
+     */
+    public function parse($pkg_dir) {
+        $schema = $this->get('schema'); // name of the schema
+        $regenerate_classes = $this->get('regenerate_classes');
+        $dir_perms = $this->get('dir_perms');
+        
+        if (empty($schema)) throw new Exception('"schema" parameter is required.');
+        
+        // TODO: make this configurable
+        $schema_file = $pkg_dir .'/core/components/'.$this->get('namespace').'/model/schema/'.$schema.'.mysql.schema.xml';
+        if (!file_exists($schema_file)) throw new Exception('Schema file does not exist: '.$schema_file);
+        $model_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/model/';
+        $class_dir = $model_dir.$this->get('schema').'/';
+        $mysql_dir = $class_dir.'mysql';
+                
+        // Load existing stuff? Not needed for parsing...
+        //$this->modx->addPackage($this->get('schema'),$model_dir);
+        $manager = $this->modx->getManager();
+        $generator = $manager->getGenerator();
+        
+        $dirs = array($mysql_dir, $class_dir);  
+        foreach ($dirs as $d) {
+            if ( !file_exists($d) ) {
+                if (!mkdir($d, $dir_perms, true) ) {
+                    throw new Exception('Could not create directory '.$d);
+                }
+            }
+            if (!is_writable($d) ) {
+                throw new Exception('Directory is not writeable '.$d);
+            }
+        }
+         
+        // Use this to generate classes and maps from your schema
+        if ($regenerate_classes) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Attempting to remove class files at '.$class_dir);
+            self::rrmdir($class_dir);
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Attempting to remove class files at '.$mysql_dir);
+            self::rrmdir($mysql_dir);
+        }
+
+        $generator->parseSchema($schema_file,$model_dir);        
+        
     }
 
 	/**
@@ -445,11 +561,7 @@ class Repoman {
         }
         return "No manual page found.\n";
 	}
-
-    public function seed($pkg_dir) {
-    
-    }
-        
+       
     /**
      * Attempts to uninstall the default namespace, system settings, modx objects,
      * and any database migrations. The behavior is dependent on the MODX cache b/c
@@ -459,7 +571,7 @@ class Repoman {
      *
      * php repoman.php uninstall --namespace=something
      */
-    public function uninstall() {
+    public function uninstall($pkg_dir) {
 
         $cache_dir = MODX_CORE_PATH.'cache/repoman/'.$this->get('namespace');
         if (file_exists($cache_dir) && is_dir($cache_dir)) {
@@ -491,30 +603,22 @@ class Repoman {
             $this->modx->log(modX::LOG_LEVEL_WARN, 'No cached import data at '.$cache_dir);
         }
         
-
+        // uninstall migrations
+        global $modx;
         
-        // migrate uninstall.php
+        $migrations_path = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+
+        if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
+            return;
+        }
+
+        if (file_exists($migrations_path.'/uninstall.php')) {
+            $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
+            include $migrations_path.'/uninstall.php';
+        }        
     }
 
-        		
-	/**
-	 * Verify a directory, converting for any OS variants and convert
-	 * any relative paths to absolute . 
-	 *
-	 * @param string $path path (or relative path) to package
-	 * @return string full path without trailing slash
-	 */
-	public static function getdir($path) {
-        $path = strtr(realpath($path), '\\', '/');
-        if (!file_exists($path)){
-            throw new Exception('Directory does not exist: '.$path);
-        }
-        elseif(!is_dir($path)) {
-            throw new Exception('Path is not a directory: '.$path);
-        }
-        return $path;
-	}
-	
 	/** 
 	 *
 	 * See http://www.php.net/manual/en/function.rmdir.php

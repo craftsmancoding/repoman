@@ -53,6 +53,7 @@ abstract class Repoman_parser {
         $objects = array();
 
         // Calculate the element's directory given the repo dir...
+        // TODO: this should be configurable! Dept. of redundancy Dept.
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get($this->dir_key).'/';
 
         if (!file_exists($dir) || !is_dir($dir)) {

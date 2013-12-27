@@ -138,7 +138,7 @@ switch ($function) {
     case 'import':
     case 'install':
     case 'migrate':
-    case 'seed':
+    case 'parse':
         if (!isset($argv[2])) {
             print message('Missing <pkg_path> parameter.','ERROR');
             print Repoman::rtfm($function);
@@ -205,93 +205,5 @@ catch (Exception $e) {
 }
 
 print message($function .' complete '.date('Y-m-d H:i:s'),'SUCCESS');
-exit;
-
-
-
-$modx->log(modX::LOG_LEVEL_INFO, 'Processing package at '.$pkg_path);
-
-$package_name = strtolower(basename($pkg_path));
-
-//------------------------------------------------------------------------------
-// !Migrations
-//------------------------------------------------------------------------------
-$migrations_path = $pkg_path .'/core/components/'.$package_name.'/migrations';
-if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
-    $modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
-}
-else {
-    if (file_exists($migrations_path.'/uninstall.php')) {
-        $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
-        include($migrations_path.'/uninstall.php');
-    }
-    if (file_exists($migrations_path.'/install.php')) {
-        $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/install.php");
-        include($migrations_path.'/install.php');
-    }
-    if (file_exists($migrations_path.'/seed.php')) {
-        $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/seed.php");
-        include($migrations_path.'/seed.php');
-    }
-}
-
-
-//------------------------------------------------------------------------------
-//! Menus
-//------------------------------------------------------------------------------
-$file = $pkg_path.'/core/components/'.$package_name.'/objects/menus.php';
-if (file_exists($file)) {
-    $menus = include($file);
-    if (is_array($menus)) {
-        foreach($menus as $m) {
-            if (!isset($m['text'])) {
-                $modx->log(modX::LOG_LEVEL_ERROR,'Invalid menu: missing primary key (text)');
-                continue;
-            }
-            $Menu = $modx->getObject('modMenu',array('text'=>$m['text']));
-            if (!$Menu) {
-                $Menu = $modx->newObject('modMenu');
-            }
-            $Menu->fromArray($m,'',true,true);
-
-            if (isset($m['Action'])) {
-                $modx->log(modX::LOG_LEVEL_INFO,'Attaching an action to menu '.$m['text']); 
-                $a = $m['Action'];
-                if (!is_array($a)) {
-                    $modx->log(modX::LOG_LEVEL_ERROR,'Menu Action must be an array.'); 
-                }
-                elseif(!isset($a['controller'])) {
-                    $modx->log(modX::LOG_LEVEL_ERROR,'Action must specify a controller.'); 
-                }
-                else {
-                    if (!isset($a['namespace'])) {
-                        $modx->log(modX::LOG_LEVEL_INFO,'Using default namespace.'); 
-                        $a['namespace'] = $package_name;
-                    }
-                    $Action = $modx->getObject('modAction',array('namespace'=>$a['namespace'],'controller'=>$a['controller']));
-                    if (!$Action) {
-                        $Action = $modx->newObject('modAction');
-                        $modx->log(modX::LOG_LEVEL_ERROR,'Creating new Action.'); 
-                    }
-                    $Action->fromArray($a,'', true, true);
-                    $Menu->addOne($Action);
-                }
-            }
-
-            if(!$Menu->save()) {
-               $modx->log(modX::LOG_LEVEL_ERROR,'Could not save Menu: '.$m['text']);
-            }
-            else {
-                $modx->log(modX::LOG_LEVEL_INFO,'Menu created/updated: '.$m['text']);           
-            }
-        }
-    }
-    else {
-        $modx->log(modX::LOG_LEVEL_ERROR,'menus.php did not contain an array! '.$file);
-    }
-}
-
-print "\n";
-print "Repoman import complete.\n";
 
 /*EOF*/

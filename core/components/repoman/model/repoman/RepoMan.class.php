@@ -12,20 +12,10 @@ class Repoman {
 	
 	public $config = array();
 
+    // Used to provide transparency
+    public static $queue = array();
 	// public $readme_filenames = array('README.md','readme.md');
 
-
-
-
-	// Events
-/*
-    public $log = array(
-        'target'=>'FILE',
-        'options' => array(
-            'filename'=>'repoman.log'
-        )
-    );
-*/
     public static $cache_opts = array();
     const CACHE_DIR = 'repoman';
         
@@ -50,16 +40,13 @@ class Repoman {
 	 * @param string $name
 	 */
 	private function _create_setting($namespace, $key, $value) {
+
         if (empty($namespace)) {
             throw new Exception('namespace parameter cannot be empty.');
         }
-
-		$N = $this->modx->getObject('modNamespace',$namespace);
-		if (!$N) {
-            throw new Exception('Invalid namespace ');
-		}
 	
 		$Setting = $this->modx->getObject('modSystemSetting', array('key'=>$key));
+
 		if (!$Setting) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "Creating new System Setting: $key");
 			$Setting = $this->modx->newObject('modSystemSetting');	
@@ -71,12 +58,12 @@ class Repoman {
 		$Setting->set('namespace', $namespace);
 		$Setting->set('area', 'default');
 		
-		$Setting->save();
-		$date = date('Y-m-d H:i:s');
-		$this->modx->cacheManager->set('modSystemSetting/'.$key, $date, 0, self::$cache_opts);
-		
-		$this->modx->log(modX::LOG_LEVEL_INFO, "System Setting created/updated: $key");
-
+		Repoman::$queue[] = 'modSystemSetting: '.$key;		
+		if (!$this->get('dry_run')) {
+            $Setting->save();
+    		$data = self::get_criteria('modSystemSetting', $Setting->toArray());
+    		$this->modx->log(modX::LOG_LEVEL_INFO, "System Setting created/updated: $key");
+        }
 	}
 			
 	/**
@@ -95,12 +82,107 @@ class Repoman {
         $Parser = new $classname($this->modx,$this->config);
         
         return $Parser->gather($pkg_dir);
+	}
+	
+	/**
+	 * Slurp up an object and track down its relations
+	 *
+	 * 
+	 * [ContextSetting] => Array
+        (
+            [class] => modContextSetting
+            [local] => key
+            [foreign] => key
+            [cardinality] => one
+            [owner] => local
+        )
         
+	 * @param string $classname
+	 * @param array $objectdata
+	 * @return object
+	 */
+    private function _get_object($classname,$objectdata) {
+        $Object = $this->modx->getObject($classname, $this->get_criteria($classname, $objectdata));
+        if (!$Object) {
+            $Object = $this->modx->newObject($classname);
+        }
         
-        $objects = array();
-        if (file_exists($dir) && is_dir($dir)) {
+        // Mass assignment $Object->fromArray() does not work: some fields are blocked
+        foreach ($objectdata as $k => $v) {
+            $Object->set($k, $v);
         }
 
+        $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
+        foreach ($related as $rclass => $def) {
+            if (isset($objectdata[$rclass])) {
+            // && $def['owner'] == 'local'
+                $rel_data = $objectdata[$rclass];
+                if (!is_array($rel_data)) throw new Exception('Data in '.$classname.'['.$rclass.'] not an array.');
+                if ($def['cardinality'] == 'one') {
+                    //if (!isset($rel_data[ $def['foreign'] ])) throw new Exception('Missing key "'.$def['foreign'].'" in '.$classname.'['.$rclass.']');
+                    $one = $this->_get_object($def['class'],$rel_data); // Avoid E_STRICT notices
+                    $Object->addOne($one);
+                }
+                else {
+                    if (!isset($rel_data[0])) {
+                        $rel_data = array($rel_data);
+                    }
+                    $many = array();
+                    foreach ($rel_data as $r) {
+                       // if (!isset($r[ $def['foreign'] ])) throw new Exception('Missing key "'.$def['foreign'].'" in '.$classname.'['.$rclass.']');
+                        $many[] = $this->_get_object($def['class'],$r);   
+                    }
+                    $Object->addMany($many);
+                }
+            }
+        }
+        
+        return $Object;
+    }
+    
+	/**
+	 * Iterate over the objects directory to load up all non-element objects
+	 *
+	 * @param string $pkg_dir
+	 */
+	private function _get_objects($pkg_dir) {
+        $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');
+        if (!file_exists($dir) || !is_dir($dir)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO,'No object directory detected at '.$dir);
+            return;
+        }
+        $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling object directory '.$dir);
+
+        $files = glob($dir.'/*.php');
+
+        foreach($files as $f) {
+            $classname = basename($f,'.php');
+            $fields = $this->modx->getFields($classname);
+            if (empty($fields)) throw new Exception('Unrecognized object classname: '.$classname);
+            $data = include $f;
+            if (!is_array($data)) throw new Exception('Data in '.$f.' not an array.');
+            if (!isset($data[0])) {
+                $data = array($data);
+            }
+            
+            $i = 0;
+            foreach ($data as $objectdata) {
+                $Object = $this->_get_object($classname,$objectdata);
+                $data = self::get_criteria($classname, $Object->toArray());
+                Repoman::$queue[] = $classname.': '.implode('-',$data);
+                if(!$this->get('dry_run')) {
+                    if ($Object->save()) {
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Saved '.$classname);
+                        
+                        $this->modx->cacheManager->set($classname.'/'.$i, $data, 0, self::$cache_opts);
+                        $i++;
+                    }
+                    else {
+                        throw new Exception('Error saving '.$classname);
+                    }
+                }
+            }
+	   }
 	}
 	
 	/**
@@ -109,26 +191,34 @@ class Repoman {
 	 * @param string $path to the repo
 	 */
 	private function _create_namespace($name, $path) {
+
         if (empty($name)) {
             throw new Exception('namespace parameter cannot be empty.');
         }
         if (preg_match('/[^a-z0-9_\-]/', $name)) {
             throw new Exception('Invalid namespace :'.$name);
         }
+
 		$N = $this->modx->getObject('modNamespace',$name);
 		if (!$N) {
 			$N = $this->modx->newObject('modNamespace');
 			$N->set('name', $name);
 		}
-		$N->set('path', $path);
+		$N->set('path', $path.'/core/components/'.$name.'/');
 		$N->set('assets_path',$path.'/assets/components/'.$name.'/');
-		$N->save();
+		
+		Repoman::$queue[] = 'Namespace: '.$name."\n"
+		  ."       core_path:   ".$N->get('path')."\n"
+		  ."       assets_path: ".$N->get('assets_path');
 
-		// Prepare Cache folder for tracking object creation
-		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR.'/'.$name);
-
-		//$this->modx->cacheManager->set('tags/'.$info['hash'], $tag, 0, self::$cache_opts);
-		$this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $name");
+        if (!$this->get('dry_run')) {
+    		$N->save();
+    		// Prepare Cache folder for tracking object creation
+    		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR.'/'.$name);
+    		$data = Repoman::get_criteria('modNamespace',$N->toArray());
+            $this->modx->cacheManager->set('modNamespace/'.$N->get('name'), $data, 0, Repoman::$cache_opts);
+    		$this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $name");
+        }
 	}
 
 	/**
@@ -175,6 +265,9 @@ class Repoman {
             if (!is_array($config)) {    
                 $config = array();
             }
+            if (isset($config['package_name']) && !isset($config['category'])) {
+                $config['category'] = $config['package_name'];
+            }
         }
         
         return array_merge($global, $config, $overrides);
@@ -197,7 +290,7 @@ class Repoman {
      * @param array $array data for a single object representing $classname
      * @return array
      */
-    function get_criteria($classname, $array) {
+    public static function get_criteria($classname, $array) {
         $fields = array();
         switch ($classname) {
             case 'modMenu':
@@ -215,6 +308,7 @@ class Repoman {
             case 'modSnippet':
             case 'modChunk':
             case 'modPlugin':
+            case 'modNamespace':
                 $fields = array('name');
                 break;
             case 'modTemplate':
@@ -254,7 +348,8 @@ class Repoman {
      *
      */
     public function build($pkg_dir, $args) {
-    
+        $this->config['is_build'] = true; 
+        
     }
     
 	
@@ -265,11 +360,10 @@ class Repoman {
      *
      */
     public function import($pkg_dir) {
-       
-        $pkg_dir = self::getdir($pkg_dir);
-        
-        self::_create_namespace($this->get('namespace'),$pkg_dir);
 
+        $pkg_dir = self::getdir($pkg_dir);        
+        self::_create_namespace($this->get('namespace'),$pkg_dir);
+       
         // Settings
         $key = $this->get('namespace') .'.assets_url';
         $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_dir); // convert path to url
@@ -281,8 +375,12 @@ class Repoman {
         // The gratis Category
         $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));
         if (!$Category) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Creating new category: ".$this->get('category'));
             $Category = $this->modx->newObject('modCategory');
-            $Category->set('category', $this->get('package_name'));
+            $Category->set('category', $this->get('category'));
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Using existing category: ".$this->get('category'));        
         }
         
         // Import Elements
@@ -298,11 +396,22 @@ class Repoman {
         if ($templates) $Category->addMany($templates);
         if ($tvs) $Category->addMany($tvs);
         
-        $Category->save();
-        $this->modx->log(modX::LOG_LEVEL_INFO, "Category created: ".$this->get('category'));
+        if (!$this->get('dry_run') && $Category->save()) {
+            $data = self::get_criteria('modCategory', $Category->toArray());
+    		$this->modx->cacheManager->set('modCategory/'.$this->get('category'), $data, 0, self::$cache_opts);
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Category created/updated: ".$this->get('category'));
+        }
 
-        // Regular Objects
-        
+        // Regular Objects        
+        self::_get_objects($pkg_dir);
+ 
+        if ($this->get('dry_run')) {
+            $msg = "\n==================================\n";
+            $msg .= "    Dry Run Enqueued objects:\n";
+            $msg .= "===================================\n";
+            $this->modx->log(modX::LOG_LEVEL_INFO, $msg.implode("\n",Repoman::$queue));		
+        }
+
         // Migrations
 
     }
@@ -316,7 +425,7 @@ class Repoman {
         $pkg_dir = self::getdir($pkg_dir);
         //throw new Exception('Invalid something...');
         self::import($pkg_dir);
-        self::migrate($pgk_dir);
+        self::migrate($pkg_dir);
     }
 
     public function migrate($pkg_dir) {
@@ -341,8 +450,50 @@ class Repoman {
     
     }
         
+    /**
+     * Attempts to uninstall the default namespace, system settings, modx objects,
+     * and any database migrations. The behavior is dependent on the MODX cache b/c
+     * all new objects are registered in the repoman custom cache partition.
+     *
+     * No input parameters are required: this looks at the "namespace" config setting.
+     *
+     * php repoman.php uninstall --namespace=something
+     */
     public function uninstall() {
-    
+
+        $cache_dir = MODX_CORE_PATH.'cache/repoman/'.$this->get('namespace');
+        if (file_exists($cache_dir) && is_dir($cache_dir)) {
+            $obj_dirs = array_diff(scandir($cache_dir), array('..', '.'));
+
+            foreach ($obj_dirs as $objectname_dir) {
+                if (!is_dir($cache_dir.'/'.$objectname_dir)) {
+                    continue; // wtf? Did you manually edit the cache dirs?
+                }
+
+                $objects = array_diff(scandir($cache_dir.'/'.$objectname_dir), array('..', '.'));
+                $objecttype = basename($objectname_dir);
+                foreach($objects as $o) {
+                    $criteria = include $cache_dir.'/'.$objectname_dir.'/'.$o;
+                    $Obj = $this->modx->getObject($objecttype, $criteria);
+                    if ($Obj) {
+                        $Obj->remove();
+                    }
+                    else {
+                        // Some objects are removed b/c of relations before we get to them
+                        $this->modx->log(modX::LOG_LEVEL_DEBUG, $objecttype.' could not be located '.print_r($criteria,true));
+                    }
+                }
+            }
+            
+            Repoman::rrmdir($cache_dir);
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_WARN, 'No cached import data at '.$cache_dir);
+        }
+        
+
+        
+        // migrate uninstall.php
     }
 
         		
@@ -363,6 +514,21 @@ class Repoman {
         }
         return $path;
 	}
+	
+	/** 
+	 *
+	 * See http://www.php.net/manual/en/function.rmdir.php
+	 *
+	 */
+    public static function rrmdir($dir) {
+        foreach(glob($dir . '/*') as $file) {
+            if(is_dir($file))
+                Repoman::rrmdir($file);
+            else
+                unlink($file);
+        }
+        rmdir($dir);
+    }
 	
 }
 /*EOF*/

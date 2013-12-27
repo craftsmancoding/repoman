@@ -8,7 +8,7 @@
  */
 return array(
     'package_name' => basename($pkg_path),
-    'package_name_lower' => strtolower(basename($pkg_path)),
+    'namespace' => strtolower(basename($pkg_path)),
     'description' => 'This package was built with Repoman (https://github.com/craftsmancoding/repoman)',
     'version' => '1.0.0',
     'release' => '',
@@ -21,8 +21,7 @@ return array(
     'clone_url' => '',  // git@github.com:username/pkg.git or https://github.com/username/pkg.git
     'copyright' => date('Y'),
     
-    'namespace' => strtolower(basename($pkg_path)),
-    'category' => basename($pkg_path), // Package Name
+    'category' => basename($pkg_path), // For elements
     'require_docblocks' => false, // if true, your elements *must* define docblocks in order to be imported
     'build_docs' => '*', // you may include an array specifying basenames of specific files in the build
     'log_level' => modX::LOG_LEVEL_INFO,
@@ -33,6 +32,10 @@ return array(
     'snippets_dir' => 'elements/snippets',
     'templates_dir' => 'elements/templates',
     'tvs_dir' => 'elements/tvs',
+    
+    'migrations_dir' => 'database/migrations',
+    'objects_dir' => 'database/objects',
+    'seeds_dir' => 'database/seeds',
 
     // Extensions for searching the element directories
     'chunks_ext' => '*.*',
@@ -43,6 +46,8 @@ return array(
     
     // For dev importing, for elements to reference static file
     'force_static' => true,
+    
+    'dry_run' => false, // useful for runtime setting: --dry_run 
     
 );
 /*EOF*/

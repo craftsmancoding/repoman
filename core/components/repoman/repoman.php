@@ -116,14 +116,6 @@ $modx = new modx();
 $modx->initialize('mgr');
 $modx->setLogLevel(modX::LOG_LEVEL_INFO);
 $modx->setLogTarget('ECHO'); 
-/*
-$xpdo->setLogTarget(array(
-   'target' => 'FILE',
-   'options' => array(
-       'filename' => 'install.' . strftime('%Y-%m-%dT%H:%M:%S')
-    )
-));
-*/
 flush();
 
 // Get req'd <function> parameter
@@ -140,12 +132,13 @@ if (!isset($argv[1])) {
 $function = strtolower($argv[1]);
 $pkg_path = '';
 switch ($function) {
+    case 'uninstall':
+        // But only the namespace is required... prob'ly safer to require a pkg_path param
     case 'build':
     case 'import':
     case 'install':
     case 'migrate':
     case 'seed':
-    case 'uninstall':
         if (!isset($argv[2])) {
             print message('Missing <pkg_path> parameter.','ERROR');
             print Repoman::rtfm($function);
@@ -156,6 +149,7 @@ switch ($function) {
         }  
         catch (Exception $e) {
             print message($e->getMessage(),'ERROR');
+            exit(3);
         }
 
         break;
@@ -192,6 +186,10 @@ foreach($argv as $a) {
     }
 }
 
+if (!file_exists($pkg_path.'/config.php')) {
+    print message('No config.php file detected.','WARNING');
+}
+
 $config = Repoman::load_config($pkg_path,$overrides);
 
 // Run time stuff
@@ -203,9 +201,10 @@ try {
 }  
 catch (Exception $e) {
     print message($e->getMessage(),'ERROR');
+    exit(4);
 }
 
-print message($function .' complete.','SUCCESS');
+print message($function .' complete '.date('Y-m-d H:i:s'),'SUCCESS');
 exit;
 
 
@@ -213,95 +212,6 @@ exit;
 $modx->log(modX::LOG_LEVEL_INFO, 'Processing package at '.$pkg_path);
 
 $package_name = strtolower(basename($pkg_path));
-
-//------------------------------------------------------------------------------
-//! Repoman Namespace and Settings
-//------------------------------------------------------------------------------
-
-// Create/Update Namespace
-$N = $modx->getObject('modNamespace',$package_name);
-if (!$N) {
-	$N = $modx->newObject('modNamespace');
-	$N->set('name', $package_name);
-}
-$N->set('path', $pkg_path.'/core/components/'.$package_name.'/'); // a.k.a. core_path
-$N->set('assets_path',$pkg_path.'/assets/components/'.$package_name.'/');
-$N->save();
-$modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $package_name");
-
-
-// Create/Update the package.assets_url setting (if not set already)
-$key = $package_name .'.assets_url';
-$rel_path = str_replace(MODX_BASE_PATH,'',$pkg_path); // convert path to url
-$assets_url = MODX_BASE_URL.$rel_path .'/assets/';
-
-$Setting = $modx->getObject('modSystemSetting', $key);
-if (!$Setting) {
-    $Setting = $modx->newObject('modSystemSetting');	
-    $Setting->set('key', $key);
-    $Setting->set('xtype', 'textfield');
-    $Setting->set('namespace', $package_name);
-    $Setting->set('area', 'default');
-}
-
-$Setting->set('value', $assets_url);		
-
-if (!$Setting->save()) {
-    $modx->log(modX::LOG_LEVEL_ERROR, "Failed to save System Setting $key");		
-}
-
-$modx->log(modX::LOG_LEVEL_INFO, "Created/Updated System Setting $key: $assets_url");
-
-if (!file_exists($pkg_path.'/assets/components/'.$package_name.'/')) {
-    $modx->log(modX::LOG_LEVEL_WARN, "Asset directory did not exist ".$pkg_path.'/assets/components/'.$package_name.'/ -- you may ignore this warning if your package is not using assets. Otherwise verify your paths and make sure they are lowercase.');
-}
-
-// Create/Update the package.assets_path setting (if not set already)
-$key = $package_name .'.assets_path';
-
-$assets_path = $pkg_path .'/assets/';
-
-$Setting = $modx->getObject('modSystemSetting', $key);
-if (!$Setting) {
-    $Setting = $modx->newObject('modSystemSetting');	
-    $Setting->set('key', $key);
-    $Setting->set('xtype', 'textfield');
-    $Setting->set('namespace', $package_name);
-    $Setting->set('area', 'default');
-}
-
-$Setting->set('value', $assets_path);
-
-if (!$Setting->save()) {
-    $modx->log(modX::LOG_LEVEL_ERROR, "Failed to save System Setting $key");		
-}
-$modx->log(modX::LOG_LEVEL_INFO, "Created/Updated System Setting $key: $assets_path");
-
-// Create/Update the package.core_path setting (if not set already)
-$key = $package_name .'.core_path';
-$modx->log(modX::LOG_LEVEL_INFO, "Created/Updated System Setting $key: $assets_url");
-$core_path = $pkg_path .'/core/';
-
-$Setting = $modx->getObject('modSystemSetting', $key);
-if (!$Setting) {
-    $Setting = $modx->newObject('modSystemSetting');	
-    $Setting->set('key', $key);
-    $Setting->set('xtype', 'textfield');
-    $Setting->set('namespace', $package_name);
-    $Setting->set('area', 'default');
-}
-
-$Setting->set('value', $core_path);
-
-if (!$Setting->save()) {
-    $modx->log(modX::LOG_LEVEL_ERROR, "Failed to save System Setting $key");		
-}
-
-$modx->log(modX::LOG_LEVEL_INFO, "Created/Updated System Setting $key: $core_path");
-
-if (!file_exists($pkg_path.'/core/components/'.$package_name.'/')) {
-    $modx->log(modX::LOG_LEVEL_WARN, "Core directory did not exist ".$pkg_path.'/core/components/'.$package_name.'/ -- you may ignore this warning if your package is not using any core files (although this would be highly unusual). Verify your paths and make sure they are lowercase.');
-}
 
 //------------------------------------------------------------------------------
 // !Migrations
@@ -324,349 +234,6 @@ else {
         include($migrations_path.'/seed.php');
     }
 }
-
-
-//------------------------------------------------------------------------------
-//! Categories
-//------------------------------------------------------------------------------
-$Category = $modx->getObject('modCategory', array('category'=>$package_name));
-if (!$Category) {
-    $Category = $modx->newObject('modCategory');
-    $Category->set('category', $package_name);
-    $Category->save();
-    $modx->log(modX::LOG_LEVEL_INFO, "Category created.");
-}
-
-
-//------------------------------------------------------------------------------
-//! Snippets
-//------------------------------------------------------------------------------
-$dir = $pkg_path.'/core/components/'.$package_name.'/elements/snippets/';
-$objects = array();
-if (file_exists($dir) && is_dir($dir)) {
-    $files = glob($dir.'*.php');
-    foreach($files as $f) {
-        $content = file_get_contents($f);
-        $attributes = Repoman::repossess($content);
-        if (!isset($attributes['name'])) {
-            $name = basename($f,'.php');
-            $attributes['name'] = basename($name,'.snippet');
-        }
-        $Obj = $modx->getObject('modSnippet',array('name'=>$attributes['name']));
-        if (!$Obj) {
-            $Obj = $modx->newObject('modSnippet');
-        }
-        if (!isset($attributes['category'])) {
-            $attributes['category'] = $Category->get('id'); // Default
-        }
-        else {
-            $attributes['category'] = get_cagtegory_id($attributes['category']);
-        }
-        // Force Static
-        $attributes['static'] = 1;
-        $attributes['static_file'] = path_to_rel($f);
-        
-        $Obj->fromArray($attributes);
-        $Obj->setContent($content);
-        
-        if(!$Obj->save()) {
-           $modx->log(modX::LOG_LEVEL_ERROR,'Could not save Snippet: '.$attributes['name']);
-        }
-        else {
-            $modx->log(modX::LOG_LEVEL_INFO,'Snippet created/updated: '.$attributes['name']);           
-        }    
-    }
-}
-
-
-//------------------------------------------------------------------------------
-//! Chunks
-//------------------------------------------------------------------------------
-$dir = $pkg_path.'/core/components/'.$package_name.'/elements/chunks/';
-$objects = array();
-if (file_exists($dir) && is_dir($dir)) {
-    $files = glob($dir.'*.*');
-    foreach($files as $f) {
-        $content = file_get_contents($f);
-        $attributes = get_attributes_from_dox($content);
-        if (!isset($attributes['name'])) {
-            $name = basename($f,'.tpl');
-            $attributes['name'] = basename($name,'.chunk');
-        }
-        $Obj = $modx->getObject('modChunk',array('name'=>$attributes['name']));
-        if (!$Obj) {
-            $Obj = $modx->newObject('modChunk');
-        }
-        if (!isset($attributes['category'])) {
-            $attributes['category'] = $Category->get('id'); // Default
-        }
-        else {
-            $attributes['category'] = get_cagtegory_id($attributes['category']);
-        }
-        // Force Static
-        $attributes['static'] = 1;
-        $attributes['static_file'] = path_to_rel($f);
-        
-        $Obj->fromArray($attributes);
-        $Obj->setContent($content);
-        
-        if(!$Obj->save()) {
-           $modx->log(modX::LOG_LEVEL_ERROR,'Could not save Chunk: '.$attributes['name']);
-        }
-        else {
-            $modx->log(modX::LOG_LEVEL_INFO,'Chunk created/updated: '.$attributes['name']);           
-        }    
-    }
-}
-
-//------------------------------------------------------------------------------
-//! Plugins
-//------------------------------------------------------------------------------
-$dir = $pkg_path.'/core/components/'.$package_name.'/elements/plugins/';
-$objects = array();
-if (file_exists($dir) && is_dir($dir)) {
-    $files = glob($dir.'*.php');
-    foreach($files as $f) {
-        $events = array();
-        $content = file_get_contents($f);
-        $attributes = get_attributes_from_dox($content);
-        if (!isset($attributes['name'])) {
-            $name = basename($f,'.php');
-            $attributes['name'] = basename($name,'.plugin');
-        }
-        $Obj = $modx->getObject('modPlugin',array('name'=>$attributes['name']));
-        if (!$Obj) {
-            $Obj = $modx->newObject('modPlugin');
-        }
-        if (!isset($attributes['category'])) {
-            $attributes['category'] = $Category->get('id'); // Default
-        }
-        else {
-            $attributes['category'] = get_cagtegory_id($attributes['category']);
-        }
-        // Force Static
-        $attributes['static'] = 1;
-        $attributes['static_file'] = path_to_rel($f);
-        
-        // if Events...
-        if (isset($attributes['events'])) {
-            $event_names = explode(',',$attributes['events']);
-            foreach ($event_names as $e) {
-                $Event = $modx->newObject('modPluginEvent');
-                $Event->set('event',trim($e));
-                $events[] = $Event;
-            }
-        }
-        $Obj->fromArray($attributes);
-        $Obj->setContent($content);
-        $name = $Obj->get('name');
-        if (empty($name)) {
-            $name = basename($f,'.php');
-            $name = basename($name,'.plugin');
-            $Obj->set('name',$name);
-        }
-        $Obj->addMany($events);
-
-        if(!$Obj->save()) {
-           $modx->log(modX::LOG_LEVEL_ERROR,'Could not save Plugin: '.$attributes['name']);
-        }
-        else {
-            $modx->log(modX::LOG_LEVEL_INFO,'Plugin created/updated: '.$attributes['name']);           
-        }
-    }
-}
-
-//------------------------------------------------------------------------------
-//! Objects (General)
-//------------------------------------------------------------------------------
-//------------------------------------------------------------------------------
-// ! Objects (general)
-//------------------------------------------------------------------------------
-$dir = $pkg_path.'/core/components/'.$package_name_lower.'/database/objects/';
-if (file_exists($dir) && is_dir($dir)) {
-    $modx->log(modX::LOG_LEVEL_INFO,'Crawling directory '.$dir); 
-    $files = glob($dir.'*.php');
-    foreach($files as $f) {
-        $classname = basename($f,'.php');
-        $fields = $modx->getFields($classname);
-        if (empty($fields)) {
-            $modx->log(modX::LOG_LEVEL_ERROR,'Unrecognized object classname: '.$classname); 
-            continue;
-        }
-        $data = include $f;
-        if (!is_array($data)) {
-            $modx->log(modX::LOG_LEVEL_ERROR,'Data in '.$f.' not an array.');
-            continue; 
-        }
-
-        $aggs = $modx->getAggregates($classname);
-        $comps = $modx->getComposites($classname);
-
-        // Loop through each object defined in the array in this file
-        $modx->log(modX::LOG_LEVEL_INFO,'Adding '.$classname.' objects from file.');
-        foreach ($data as $d) {
-
-            // Object already exists?
-            $obj = $modx->getObject($classname, get_criteria($classname,$d));
-            if (!$obj) {
-                $modx->log(modX::LOG_LEVEL_INFO,'Creating new '.$classname.' object.');
-                $obj = $modx->newObject($classname);
-            }
-            else {
-                $pk = $modx->getPK($classname);
-                if ($pk) {
-                    if (!is_array($pk)) {
-                        $modx->log(modX::LOG_LEVEL_INFO,'Updating existing '.$classname.' object ('.$obj->get($pk).')');
-                    }
-                    else {
-                        $modx->log(modX::LOG_LEVEL_INFO,'Updating existing '.$classname.' object.');
-                    }
-                }
-            }
-            $obj->fromArray($d);
-
-            // Add Aggregates
-            foreach ($aggs as $a => $def) {  
-                if (isset($d[$a])) {
-                    if ($def['cardinality'] == 'many') {
-                        $many = array();
-                        if (is_array($d[$a])) {
-                            foreach ($d[$a] as $rel) {
-                                $Related = $modx->newObject($def['class']);
-                                $Related->fromArray($rel);
-                                $modx->log(modX::LOG_LEVEL_INFO,'Adding aggregate '.$def['class']);
-                                // TODO: Wormhole!!!
-                                $many[] = $Related;
-                            }
-                            $obj->addMany($manys);
-                        }
-                        else {
-                            $Related = $modx->newObject($def['class']);
-                            $Related->fromArray($d[$a]);
-                            $modx->log(modX::LOG_LEVEL_INFO,'Adding aggregate '.$def['class']);
-                            // TODO: Wormhole!!!
-                            $obj->addMany(array($Related));
-                        }
-                    }
-                    elseif ($def['cardinality'] == 'one') {
-                        if (!is_array($d[$a])) {
-                            $Related = $modx->newObject($def['class']);
-                            $Related->fromArray($d[$a]);
-                            $modx->log(modX::LOG_LEVEL_INFO,'Adding aggregate '.$def['class']);
-                            // TODO: Wormhole!!!
-                            $obj->addOne($Related);
-                        }
-                    }
-                    else {
-                        $modx->log(modX::LOG_LEVEL_ERROR,'Incompatible cardinality for '.$a);
-                        continue; 
-                    }
-                } 
-            }
-
-
-            // Add Composites
-            foreach ($comps as $c => $def) {  
-                if (isset($d[$c])) {
-                    $many = array();
-                    if ($def['cardinality'] == 'many') {
-                        $many = array();
-                        if (is_array($d[$c])) {
-                            foreach ($d[$c] as $rel) {
-                                $Related = $modx->newObject($def['class']);
-                                $Related->fromArray($rel);
-                                $modx->log(modX::LOG_LEVEL_INFO,'Adding aggregate '.$def['class']);
-                                // TODO: Wormhole!!!
-                                $many[] = $Related;
-                            }
-                            $obj->addMany($manys);
-                        }
-                        else {
-                            $Related = $modx->newObject($def['class']);
-                            $Related->fromArray($d[$c]);
-                            $modx->log(modX::LOG_LEVEL_INFO,'Adding aggregate '.$def['class']);
-                            // TODO: Wormhole!!!
-                            $obj->addMany(array($Related));
-                        }
-                    }
-                    elseif ($def['cardinality'] == 'one') {
-                        if (!is_array($d[$c])) {
-                            $Related = $modx->newObject($def['class']);
-                            $Related->fromArray($d[$c]);
-                            $modx->log(modX::LOG_LEVEL_INFO,'Adding aggregate '.$def['class']);
-                            // TODO: Wormhole!!!
-                            $obj->addOne($Related);
-                        }
-                    }
-                    else {
-                        $modx->log(modX::LOG_LEVEL_ERROR,'Incompatible cardinality for '.$c);
-                        continue; 
-                    }
-                } 
-            }
-            
-            if($obj->save()) {
-                $modx->log(modX::LOG_LEVEL_INFO,'Saved '.$def['class']);
-            }
-            else {
-                $modx->log(modX::LOG_LEVEL_ERROR,'Could not save '.$def['class']);
-            }
-        }
-                
-        
-
-        
-        
-
-        foreach ($comps as $c => $def) {
-            if (isset($fields[$c])) {
-                 
-            }        
-        }
-        
-    }
-}
-else {
-    $modx->log(modX::LOG_LEVEL_INFO, "No General Objects found. Directory does not exist: $dir");
-}
-
-exit;
-
-//------------------------------------------------------------------------------
-//! Settings
-//------------------------------------------------------------------------------
-$file = $pkg_path.'/core/components/'.$package_name.'/objects/settings.php';
-if (file_exists($file)) {
-    $settings = include($file);
-    if (is_array($settings)) {
-        foreach($settings as $s) {
-            if (!isset($s['key'])) {
-                $modx->log(modX::LOG_LEVEL_ERROR,'Invalid setting: missing primary key (key)');
-                continue;
-            }
-            $Setting = $modx->getObject('modSystemSetting',array('key'=>$s['key']));
-            if (!$Setting) {
-                $Setting = $modx->newObject('modSystemSetting');
-            }
-            else {
-                unset($s['value']); // avoid overwriting any existing values
-            }
-            $Setting->fromArray($s,'',true,true);
-            
-            if(!$Setting->save()) {
-               $modx->log(modX::LOG_LEVEL_ERROR,'Could not save System Setting: '.$s['key']);
-            }
-            else {
-                $modx->log(modX::LOG_LEVEL_INFO,'System Setting created/updated: '.$s['key']);           
-            }
-
-        }
-    }
-    else {
-        $modx->log(modX::LOG_LEVEL_ERROR,'settings.php did not contain an array! '.$file);
-    }
-}
-
 
 
 //------------------------------------------------------------------------------

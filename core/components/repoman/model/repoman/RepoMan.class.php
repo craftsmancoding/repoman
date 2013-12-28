@@ -3,8 +3,9 @@
  * This class has some static methods for utility functions that can be used
  * before the class is instantiated.
  *
- *
  */
+// We need this for the xPDOTransport class constants
+require_once MODX_CORE_PATH.'xpdo/transport/xpdotransport.class.php';
 
 class Repoman {
 
@@ -19,7 +20,10 @@ class Repoman {
     public static $cache_opts = array();
     const CACHE_DIR = 'repoman';
 
-    // Used for package building
+    // Used for package building: we can't reference xPDOTransport constants until
+    // we've loaded the modPackageBuilder class
+    // $modx->loadClass('transport.modPackageBuilder', '', false, true);
+/*
     public $cat_attributes = array(
         xPDOTransport::PRESERVE_KEYS => true,
         xPDOTransport::UPDATE_OBJECT => false,
@@ -50,6 +54,7 @@ class Repoman {
             ),
         )    
     );
+*/
         
 	/**
 	 *
@@ -93,7 +98,7 @@ class Repoman {
 		Repoman::$queue[] = 'modSystemSetting: '.$key;		
 		if (!$this->get('dry_run')) {
             $Setting->save();
-    		$data = self::get_criteria('modSystemSetting', $Setting->toArray());
+    		$data = $this->get_criteria('modSystemSetting', $Setting->toArray());
     		$this->modx->log(modX::LOG_LEVEL_INFO, "System Setting created/updated: $key");
         }
 	}
@@ -147,11 +152,9 @@ class Repoman {
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
         foreach ($related as $rclass => $def) {
             if (isset($objectdata[$rclass])) {
-            // && $def['owner'] == 'local'
                 $rel_data = $objectdata[$rclass];
                 if (!is_array($rel_data)) throw new Exception('Data in '.$classname.'['.$rclass.'] not an array.');
                 if ($def['cardinality'] == 'one') {
-                    //if (!isset($rel_data[ $def['foreign'] ])) throw new Exception('Missing key "'.$def['foreign'].'" in '.$classname.'['.$rclass.']');
                     $one = $this->_get_object($def['class'],$rel_data); // Avoid E_STRICT notices
                     $Object->addOne($one);
                 }
@@ -161,7 +164,6 @@ class Repoman {
                     }
                     $many = array();
                     foreach ($rel_data as $r) {
-                       // if (!isset($r[ $def['foreign'] ])) throw new Exception('Missing key "'.$def['foreign'].'" in '.$classname.'['.$rclass.']');
                         $many[] = $this->_get_object($def['class'],$r);   
                     }
                     $Object->addMany($many);
@@ -173,9 +175,10 @@ class Repoman {
     }
     
 	/**
-	 * Iterate over the objects directory to load up all non-element objects
+	 * Iterate over the objects directory to load up all non-element objects.
 	 *
 	 * @param string $pkg_dir
+	 * @return array of objects : keys for the classname
 	 */
 	private function _get_objects($pkg_dir) {
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');
@@ -185,6 +188,7 @@ class Repoman {
         }
         $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling object directory '.$dir);
 
+        $objects = array();
         $files = glob($dir.'/*.php');
 
         foreach($files as $f) {
@@ -200,21 +204,10 @@ class Repoman {
             $i = 0;
             foreach ($data as $objectdata) {
                 $Object = $this->_get_object($classname,$objectdata);
-                $data = self::get_criteria($classname, $Object->toArray());
-                Repoman::$queue[] = $classname.': '.implode('-',$data);
-                if(!$this->get('dry_run')) {
-                    if ($Object->save()) {
-                        $this->modx->log(modX::LOG_LEVEL_INFO,'Saved '.$classname);
-                        
-                        $this->modx->cacheManager->set($classname.'/'.$i, $data, 0, self::$cache_opts);
-                        $i++;
-                    }
-                    else {
-                        throw new Exception('Error saving '.$classname);
-                    }
-                }
+                $objects[$classname][] = $Object;
             }
 	   }
+	   return $objects;
 	}
 	
 	/**
@@ -247,7 +240,7 @@ class Repoman {
     		$N->save();
     		// Prepare Cache folder for tracking object creation
     		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR.'/'.$name);
-    		$data = Repoman::get_criteria('modNamespace',$N->toArray());
+    		$data = $this->get_criteria('modNamespace',$N->toArray());
             $this->modx->cacheManager->set('modNamespace/'.$N->get('name'), $data, 0, Repoman::$cache_opts);
     		$this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $name");
         }
@@ -263,7 +256,7 @@ class Repoman {
 	 * @param string $path path (or relative path) to package
 	 * @return string full path without trailing slash
 	 */
-	public static function getdir($path) {
+	public static function get_dir($path) {
         $path = strtr(realpath($path), '\\', '/');
         if (!file_exists($path)){
             throw new Exception('Directory does not exist: '.$path);
@@ -274,6 +267,78 @@ class Repoman {
         return $path;
 	}
     	
+    /**
+     * When building packages, these attributes govern how objects are updated
+     * when the package is installed.  One difficulty here is that one instance 
+     * of an object may have many related objects (and thus require deeply nested
+     * build attributes), whereas another object instance may have no related objects.
+     * So this function traces out all of an object's relations and grows the build
+     * attributes accordingly.
+     *
+     * @param string $classname
+     *
+     * @return array 
+     */
+    public function get_build_attributes($Obj) {
+
+        if (!isset($Obj->_class)) {
+            throw new Exception('Class not defined for object.');
+        }
+        $classname = $Obj->_class;
+        $attributes = $this->get('build_attributes');
+        if (!isset($attributes[$classname])) {
+            throw new Exception('Build attributes not defined for class '.$classname);
+        }
+        // The attributes for the base
+        $out = $attributes[$classname];
+        // Any related objects?
+        $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
+        foreach ($related as $alias => $def) {            
+            if (!empty($Obj->$alias)) {
+                $out[xPDOTransport::RELATED_OBJECTS] = true;
+                $rel_class = $def['class'];
+                if ($def['cardinality'] == 'one') {
+                    $relObj = $Obj->getOne($alias);
+                }
+                else {
+                    $relObjs = $Obj->getMany($alias);
+                    $relObj = array_shift($relObjs);
+                }
+                $out[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$rel_class] = $this->get_build_attributes($relObj);
+            }
+        }
+        return $out;
+    }
+
+    /**
+     * Goal here is to generate an array that can be passed as filter criteria to
+     * getObject so that we can identify and load existing objects (instead of 
+     * haphazardly creating new objects all the time). In practice, we don't 
+     * always use the primary key to load an object (e.g. we don't specify the pk in 
+     * the package's repository) so for each classname, we need a field (or fields)
+     * to consider when searching for existing records.  E.g. for modSnippet or modChunk, 
+     * we want to look only at the name, but for modResource we might look at context and uri.
+     *
+     * @param string $classname
+     * @param array $attributes data for a single object representing $classname
+     * @return array
+     */
+    public function get_criteria($classname, $attributes) {
+        $attributes = $this->get('build_attributes');
+        if (!isset($attributes[$classname])) {
+            throw new Exception('xPDOTransport::UNIQUE_KEY not defined for class '.$classname);
+        }
+        $fields = (array) $attributes[$classname][xPDOTransport::UNIQUE_KEY];
+        $criteria = array();
+        foreach ($fields as $f) {
+            if (isset($attributes[$f]) && !empty($attributes[$f])) {
+                $criteria[$f] = $attributes[$f];
+            }
+        }
+                
+        return $criteria;
+    }
+
 	/** 
 	 * Get configuration for a given package path.
 	 * This reads the config.php (if present), and merges it with global config
@@ -299,72 +364,7 @@ class Repoman {
         
         return array_merge($global, $config, $overrides);
 	}
-
-    /**
-     * Goal here is to generate an array that can be passed as filter criteria to
-     * getObject so that we can identify and load existing objects (instead of 
-     * haphazardly creating new objects all the time). In practice, we don't 
-     * always use the primary key to load an object (e.g. we don't specify the pk in 
-     * the package's repository) so for each classname, we need a field (or fields)
-     * to consider when searching for existing records.  E.g. for modSnippet or modChunk, 
-     * we want to look only at the name, but for modResource we might look at context and uri.
-     *
-     * @param string $classname
-     * @param array $array data for a single object representing $classname
-     * @return array
-     */
-    public static function get_criteria($classname, $array) {
-        $fields = array();
-        switch ($classname) {
-            case 'modMenu':
-                $fields = array('text');
-                break;
-            case 'modAction':
-                $fields = array('namespace','controller');
-                break;
-            case 'modContentType':
-            case 'modDashboard':
-            case 'modUserGroup':
-            case 'modUserGroupRole':
-            case 'modPropertySet':
-            case 'modTemplateVar':
-            case 'modSnippet':
-            case 'modChunk':
-            case 'modPlugin':
-            case 'modNamespace':
-                $fields = array('name');
-                break;
-            case 'modTemplate':
-                $fields = array('templatename');
-                break;
-            case 'modUser':
-                $fields = array('username');
-                break;
-            case 'modContext':
-            case 'modSystemSetting':
-                $fields = array('key');
-                break;
-            case 'modResource':
-                $fields = array('uri','context_key');
-                break;
-            case 'modCategory':
-                $fields = array('category');
-                break;
-            case 'modDashboardWidget':
-                $fields = array('name','namespace');
-                break;
-        }
-        
-        $criteria = array();
-        foreach ($fields as $f) {
-            if (isset($array[$f]) && !empty($array[$f])) {
-                $criteria[$f] = $array[$f];
-            }
-        }
-        
-        return $criteria;
-    }
-
+	
 	/** 
 	 *
 	 * See http://www.php.net/manual/en/function.rmdir.php
@@ -403,6 +403,7 @@ class Repoman {
      *
      */
     public function build($pkg_dir) {
+
         $this->config['is_build'] = true; 
         $this->config['force_static'] = false;
         
@@ -420,7 +421,7 @@ class Repoman {
         $builder->createPackage($this->get('package_name'), $this->get('version'), $this->get('release'));
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
         
-        $Category = $modx->newObject('modCategory');
+        $Category = $this->modx->newObject('modCategory');
         $Category->set('category', $this->get('category'));
 
         // Import Elements
@@ -434,15 +435,56 @@ class Repoman {
         if ($snippets) $Category->addMany($snippets);
         if ($templates) $Category->addMany($templates);
         if ($tvs) $Category->addMany($tvs);
-        
-        $vehicle = $builder->createVehicle($Category, $this->cat_attributes);
+
+        $build_attributes = $this->get_build_attributes($Category);
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '. $Category->_class. "\n".print_r($build_attributes,true));
+        $vehicle = $builder->createVehicle($Category, $build_attributes);
         
         
         // Objects
+        $objects = self::_get_objects($pkg_dir);
+        foreach ($objects as $classname => $Obj) {
+            $build_attributes = $this->get_build_attributes($Category);
+            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '
+                . $Category->_class. "\n".print_r($build_attributes,true));
+            $vehicle = $builder->createVehicle($Obj, $build_attributes);
+            $builder->putVehicle($vehicle);
+        }
         
-        // Files
-
-        // Migrations
+        // Files...
+        // Assets
+        $dir = $pkg_dir.'/assets/components/'.$this->get('namespace');
+        if (file_exists($dir) && is_dir($dir)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing files from '.$dir);
+            $vehicle->resolve('file', array(
+                'source' => $dir,
+                'target' => "return MODX_ASSETS_PATH . 'components/';",
+            ));
+        }        
+        // Core
+        $dir = $pkg_dir.'/core/components/'.$this->get('namespace');
+        if (file_exists($dir) && is_dir($dir)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing files from '.$dir);
+            $vehicle->resolve('file', array(
+                'source' => $dir,
+                'target' => "return MODX_CORE_PATH . 'components/';",
+            ));
+        }
+    
+        // Migrations we attach as a resolver to the copying of base files
+        $dir = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        if (file_exists($dir) && is_dir($dir)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing migrations from '.$dir);
+            $files = glob($dir.'*.php');
+            foreach($files as $f) {
+                if (basename($f) != 'uninstall.php') {
+                    $this->modx->log(modX::LOG_LEVEL_INFO, 'Adding migration '.basename($f));
+                    $vehicle->resolve('php', array('source' => $f));
+                }
+            }
+        }
+    
+        $builder->putVehicle($vehicle);
 
 
         // Documents
@@ -479,12 +521,11 @@ class Repoman {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'No documents found in '.$dir);
         }
         
-        
-        
         // Zip up the package
         $builder->pack();
-        
 
+        $zip = $this->get('namespace').'-'.$this->get('version').'-'.$this->get('release').'.transport.zip';
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Build complete: '. MODX_CORE_PATH.'packages/'.$zip);
     }
     
 	/**
@@ -519,7 +560,7 @@ class Repoman {
      */
     public function import($pkg_dir) {
 
-        $pkg_dir = self::getdir($pkg_dir);        
+        $pkg_dir = self::get_dir($pkg_dir);        
         self::_create_namespace($this->get('namespace'),$pkg_dir);
        
         // Settings
@@ -555,13 +596,29 @@ class Repoman {
         if ($tvs) $Category->addMany($tvs);
         
         if (!$this->get('dry_run') && $Category->save()) {
-            $data = self::get_criteria('modCategory', $Category->toArray());
+            $data = $this->get_criteria('modCategory', $Category->toArray());
     		$this->modx->cacheManager->set('modCategory/'.$this->get('category'), $data, 0, self::$cache_opts);
             $this->modx->log(modX::LOG_LEVEL_INFO, "Category created/updated: ".$this->get('category'));
         }
 
         // Regular Objects        
-        self::_get_objects($pkg_dir);
+        $objects = self::_get_objects($pkg_dir);
+        foreach ($objects as $classname => $Object) {
+            $data = $this->get_criteria($classname, $Object->toArray());
+            Repoman::$queue[] = $classname.': '.implode('-',$data);
+            if(!$this->get('dry_run')) {
+                if ($Object->save()) {
+                    $this->modx->log(modX::LOG_LEVEL_INFO,'Saved '.$classname);
+                    
+                    $this->modx->cacheManager->set($classname.'/'.$i, $data, 0, self::$cache_opts);
+                    $i++;
+                }
+                else {
+                    throw new Exception('Error saving '.$classname);
+                }
+            }
+        }
+        
  
         if ($this->get('dry_run')) {
             $msg = "\n==================================\n";
@@ -580,7 +637,7 @@ class Repoman {
      *
      */
     public function install($pkg_dir) {
-        $pkg_dir = self::getdir($pkg_dir);
+        $pkg_dir = self::get_dir($pkg_dir);
         self::import($pkg_dir);
         self::migrate($pkg_dir);
     }
@@ -605,7 +662,7 @@ class Repoman {
         }
 
         if (file_exists($migrations_path.'/uninstall.php')) {
-            $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
             include $migrations_path.'/uninstall.php';
         }
         if (file_exists($migrations_path.'/install.php')) {
@@ -731,7 +788,7 @@ class Repoman {
             $this->modx->log(modX::LOG_LEVEL_WARN, 'No cached import data at '.$cache_dir);
         }
         
-        // uninstall migrations
+        // uninstall migrations. Global modx so that included files can reference $modx object.
         global $modx;
         
         $migrations_path = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');

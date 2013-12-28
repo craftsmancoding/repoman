@@ -59,7 +59,7 @@ function message($text, $status) {
 //------------------------------------------------------------------------------
 //! MAIN
 //------------------------------------------------------------------------------
-require_once dirname(__FILE__).'/model/repoman/repoman.class.php'; 
+
 
 if (php_sapi_name() !== 'cli') {
     error_log('Repoman CLI script can only be executed from the command line.');
@@ -111,6 +111,7 @@ if (!file_exists(MODX_CORE_PATH.'model/modx/modx.class.php')) {
 // fire up MODX
 require_once MODX_CORE_PATH.'config/'.MODX_CONFIG_KEY.'.inc.php';
 require_once MODX_CORE_PATH.'model/modx/modx.class.php';
+require_once dirname(__FILE__).'/model/repoman/repoman.class.php'; 
 
 $modx = new modx();
 $modx->initialize('mgr');
@@ -142,7 +143,7 @@ switch ($function) {
             exit(2);
         }
         try {
-            $pkg_path = Repoman::getdir($argv[2]);
+            $pkg_path = Repoman::get_dir($argv[2]);
         }  
         catch (Exception $e) {
             print message($e->getMessage(),'ERROR');

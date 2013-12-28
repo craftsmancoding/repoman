@@ -4,7 +4,10 @@
  * Override values by creating a config.php file at the root
  * of your package repository.
  *
- * @param string $pkg_path
+ * modX and xPDOTransport constants are in context when this file is included,
+ * as well as the $pkg_path (absolute path to the repository's base path.
+ * 
+ * @return array
  */
 return array(
     'package_name' => basename($pkg_path),
@@ -51,5 +54,160 @@ return array(
     'dir_perms' => 0777,
     'seed' => null, // default database seed file to include during standard migrations
     
+    /**
+     * Used when building packages and for running install/import because we need to know 
+     * which fields identify an object and how to handle them if they already exist.
+     */
+    'build_attributes' => array(
+        'modCategory' => array(
+                xPDOTransport::PRESERVE_KEYS => true,
+                xPDOTransport::UPDATE_OBJECT => false,
+                xPDOTransport::UNIQUE_KEY => array('category'),
+/*
+            	xPDOTransport::RELATED_OBJECTS => true,
+                xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+                    'Snippets' => array(
+                        xPDOTransport::PRESERVE_KEYS => false,
+                        xPDOTransport::UPDATE_OBJECT => true,
+                        xPDOTransport::UNIQUE_KEY => 'name',
+                    ),
+                    'Chunks' => array (
+                        xPDOTransport::PRESERVE_KEYS => false,
+                        xPDOTransport::UPDATE_OBJECT => true,
+                        xPDOTransport::UNIQUE_KEY => 'name',
+                    ),
+                    'Plugins' => array (
+                        xPDOTransport::PRESERVE_KEYS => false,
+                        xPDOTransport::UPDATE_OBJECT => true,
+                        xPDOTransport::UNIQUE_KEY => 'name',
+            			xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+            		        'PluginEvents' => array(
+            		            xPDOTransport::PRESERVE_KEYS => true,
+            		            xPDOTransport::UPDATE_OBJECT => false,
+            		            xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
+            		        ),
+                		),
+                    ),
+                )
+*/
+            ),
+        'modSystemSetting' => array(
+        	xPDOTransport::UNIQUE_KEY => 'key',
+        	xPDOTransport::PRESERVE_KEYS => true,
+        	xPDOTransport::UPDATE_OBJECT => false, // <-- critical! We don't want to overwrite user's values	
+        ),
+        'modMenu' => array(
+            xPDOTransport::PRESERVE_KEYS => true,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'text',
+/*
+            xPDOTransport::RELATED_OBJECTS => true,
+            xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array(
+               'Action' => array(
+                   xPDOTransport::PRESERVE_KEYS => false,
+                   xPDOTransport::UPDATE_OBJECT => true,
+                   xPDOTransport::UNIQUE_KEY => array(
+                       'namespace',
+                       'controller'
+                   ),
+               ),
+            ),
+*/
+        ),
+        // Elements
+        'modSnippet' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',
+        ),
+        'modChunk' => array (
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',
+        ),
+        'modTemplate' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'templatename',
+        ),
+        'modTemplateVar' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',
+        ),        
+        'modPlugin' => array (
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',
+            xPDOTransport::RELATED_OBJECTS => true,
+			xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+		        'PluginEvents' => array(
+		            xPDOTransport::PRESERVE_KEYS => true,
+		            xPDOTransport::UPDATE_OBJECT => false,
+		            xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
+		        ),
+    		),
+        ),
+       'modAction' => array(
+           xPDOTransport::PRESERVE_KEYS => false,
+           xPDOTransport::UPDATE_OBJECT => true,
+           xPDOTransport::UNIQUE_KEY => array(
+               'namespace',
+               'controller'
+           ),
+       ),
+       'modContentType' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',       
+       ),
+       'modDashboard' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',       
+       ),
+       'modUserGroup' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',       
+       ),
+       'modUserGroupRole' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',       
+       ),
+       'modPropertySet' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',       
+       ),
+       'modUserGroupRole' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',       
+       ),
+       'modNamespace' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'name',       
+       ),
+       'modUser' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'username',       
+       ),
+       'modContext' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => 'key',   
+       ),
+       'modDashboardWidget' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => array('name','namespace'),
+       ),
+
+        
+    ), // end build_attributes
 );
 /*EOF*/

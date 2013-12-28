@@ -9,6 +9,7 @@ abstract class Repoman_parser {
     
     public $modx;
     public $config; // from Repoman
+    public $Repoman; 
     
     public $dir_key; // key in the config which contains the directory.
     public $ext_key; // key in the config which ids the file extension.
@@ -38,9 +39,10 @@ abstract class Repoman_parser {
 	 * @param object $modx
 	 * @param array $config
 	 */
-	public function __construct(modX $modx,$config) {
-        $this->modx = &$modx;
-        $this->config = &$config;
+	public function __construct(Repoman $Repoman) {
+        $this->modx = &$Repoman->modx;
+        $this->config = &$Repoman->config;
+        $this->Repoman = &$Repoman;
 	}
 	
 	
@@ -57,7 +59,7 @@ abstract class Repoman_parser {
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get($this->dir_key).'/';
 
         if (!file_exists($dir) || !is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO,'Directory does not exist: '. $dir);
+            $this->modx->log(modX::LOG_LEVEL_DEBUG,'Directory does not exist: '. $dir);
             return array();
         }
 
@@ -73,7 +75,7 @@ abstract class Repoman_parser {
                 $attributes[$this->objectname] = $name;
             }
                         
-            $Obj = $this->modx->getObject($this->objecttype, Repoman::get_criteria($this->objecttype,$attributes));
+            $Obj = $this->modx->getObject($this->objecttype, $this->Repoman->get_criteria($this->objecttype,$attributes));
             if (!$Obj) {
                 $Obj = $this->modx->newObject($this->objecttype);
             }
@@ -96,7 +98,7 @@ abstract class Repoman_parser {
             Repoman::$queue[] = $this->objecttype.': '. $Obj->get($this->objectname);
             
             if (!$this->get('dry_run') && !$this->get('is_build')) {
-                $data = Repoman::get_criteria($this->objecttype,$attributes);
+                $data = $this->Repoman->get_criteria($this->objecttype,$attributes);
                 $this->modx->cacheManager->set($this->objecttype.'/'.$attributes[$this->objectname], $data, 0, Repoman::$cache_opts);
             }
             $objects[] = $Obj;

@@ -116,7 +116,7 @@ class Repoman {
         require_once dirname(__FILE__).'/objecttypes/'.strtolower($objecttype).'_parser.class.php';
         
         $classname = $objecttype.'_parser';
-        $Parser = new $classname($this->modx,$this->config);
+        $Parser = new $classname($this);
         
         return $Parser->gather($pkg_dir);
 	}
@@ -183,8 +183,8 @@ class Repoman {
 	private function _get_objects($pkg_dir) {
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');
         if (!file_exists($dir) || !is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO,'No object directory detected at '.$dir);
-            return;
+            $this->modx->log(modX::LOG_LEVEL_DEBUG,'No object directory detected at '.$dir);
+            return array();
         }
         $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling object directory '.$dir);
 
@@ -404,8 +404,8 @@ class Repoman {
      */
     public function build($pkg_dir) {
 
-        $this->config['is_build'] = true; 
-        $this->config['force_static'] = false;
+        $this->config['is_build'] = true; // TODO
+        $this->config['force_static'] = false; // TODO
         
         $required = array('package_name','namespace','version','release','category');
         foreach($required as $k) {
@@ -436,26 +436,18 @@ class Repoman {
         if ($templates) $Category->addMany($templates);
         if ($tvs) $Category->addMany($tvs);
 
+        // TODO: skip this if there are no elements
         $build_attributes = $this->get_build_attributes($Category);
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '. $Category->_class. "\n".print_r($build_attributes,true));
         $vehicle = $builder->createVehicle($Category, $build_attributes);
-        
-        
-        // Objects
-        $objects = self::_get_objects($pkg_dir);
-        foreach ($objects as $classname => $Obj) {
-            $build_attributes = $this->get_build_attributes($Category);
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '
-                . $Category->_class. "\n".print_r($build_attributes,true));
-            $vehicle = $builder->createVehicle($Obj, $build_attributes);
-            $builder->putVehicle($vehicle);
-        }
-        
-        // Files...
+        $builder->putVehicle($vehicle);
+
+
+        // Files...: TODO: these need their own builder
         // Assets
         $dir = $pkg_dir.'/assets/components/'.$this->get('namespace');
         if (file_exists($dir) && is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing files from '.$dir);
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing assets from '.$dir);
             $vehicle->resolve('file', array(
                 'source' => $dir,
                 'target' => "return MODX_ASSETS_PATH . 'components/';",
@@ -464,7 +456,7 @@ class Repoman {
         // Core
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace');
         if (file_exists($dir) && is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing files from '.$dir);
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing core files from '.$dir);
             $vehicle->resolve('file', array(
                 'source' => $dir,
                 'target' => "return MODX_CORE_PATH . 'components/';",
@@ -486,6 +478,17 @@ class Repoman {
     
         $builder->putVehicle($vehicle);
 
+        
+        // Objects
+        $objects = self::_get_objects($pkg_dir);
+        foreach ($objects as $classname => $Obj) {
+            $build_attributes = $this->get_build_attributes($Category);
+            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '
+                . $Category->_class. "\n".print_r($build_attributes,true));
+            $vehicle = $builder->createVehicle($Obj, $build_attributes);
+            $builder->putVehicle($vehicle);
+        }
+        
 
         // Documents
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/docs/';

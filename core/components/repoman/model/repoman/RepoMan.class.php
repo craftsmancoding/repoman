@@ -440,7 +440,7 @@ class Repoman {
         $build_attributes = $this->get_build_attributes($Category);
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '. $Category->_class. "\n".print_r($build_attributes,true));
         $vehicle = $builder->createVehicle($Category, $build_attributes);
-        $builder->putVehicle($vehicle);
+        //$builder->putVehicle($vehicle);
 
 
         // Files...: TODO: these need their own builder
@@ -462,9 +462,25 @@ class Repoman {
                 'target' => "return MODX_CORE_PATH . 'components/';",
             ));
         }
-    
-        // Migrations we attach as a resolver to the copying of base files
-        $dir = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        $builder->putVehicle($vehicle);
+        
+        // Migrations: we attach our all-purpose resolver to handle migrations
+        $config = $this->config;
+        $config['source'] = dirname(__FILE__).'/resolver.php';        
+        $vehicle = $builder->createVehicle($config,array('vehicle_class'=>'xPDOScriptVehicle'));
+        $builder->putVehicle($vehicle);
+/*
+        $vehicle = $builder->createVehicle(array('source'=>'path/to/myfile.php','arbitrary'=>'some arbitrary data'), $attributes = array (
+  'vehicle_class' => 'xPDOScriptVehicle',));
+*/
+
+        
+//        $dir = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+//        $f = $dir.'/test.php';
+//        $f = '/Users/everett2/Sites/moxycart/html/assets/mycomponents/repoman/core/components/repoman/elements/chunks/resolver.php';
+//        $this->modx->log(modX::LOG_LEVEL_INFO, 'TEST: Packing migrations from '.$f);
+//        $vehicle->resolve('php', array('source' => $f));
+/*
         if (file_exists($dir) && is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing migrations from '.$dir);
             $files = glob($dir.'*.php');
@@ -475,8 +491,9 @@ class Repoman {
                 }
             }
         }
+*/
     
-        $builder->putVehicle($vehicle);
+
 
         
         // Objects
@@ -490,7 +507,7 @@ class Repoman {
         }
         
 
-        // Documents
+        // Package Attributes (Documents)
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/docs/';
         if (file_exists($dir) && is_dir($dir)) {
             $docs = array(

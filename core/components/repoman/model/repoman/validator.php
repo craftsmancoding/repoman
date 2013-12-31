@@ -16,7 +16,7 @@ $modx =& $transport->xpdo;
 
 //$modx->log(1,'Resolver VALIDATOR... '.print_r($options,true));
 //$modx->log(1,'Failed validation (for testing)');
-
+//exit('Stop installing dammit');
 
 switch ($options[xPDOTransport::PACKAGE_ACTION]) {
 

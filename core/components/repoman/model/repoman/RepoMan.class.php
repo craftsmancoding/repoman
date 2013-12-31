@@ -421,6 +421,17 @@ class Repoman {
         $builder->createPackage($this->get('package_name'), $this->get('version'), $this->get('release'));
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
         
+        // Validators (tests)
+/*
+        $config = $this->config;
+        $config['source'] = dirname(__FILE__).'/validator.php';
+        $attributes = array('vehicle_class' => 'xPDOScriptVehicle');
+        
+        $vehicle = $builder->createVehicle($config,$attributes);
+        $builder->putVehicle($vehicle);
+*/
+        
+        
         $Category = $this->modx->newObject('modCategory');
         $Category->set('category', $this->get('category'));
 
@@ -462,14 +473,23 @@ class Repoman {
                 'target' => "return MODX_CORE_PATH . 'components/';",
             ));
         }
+        //$vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));        
         $builder->putVehicle($vehicle);
         
         // Migrations: we attach our all-purpose resolver to handle migrations
         $config = $this->config;
-        $config['source'] = dirname(__FILE__).'/resolver.php';        
-        $vehicle = $builder->createVehicle($config,array('vehicle_class'=>'xPDOScriptVehicle'));
+        $config['source'] = dirname(__FILE__).'/resolver.php';
+        $attributes = array('vehicle_class' => 'xPDOScriptVehicle');
+        
+        $vehicle = $builder->createVehicle($config,$attributes);
+        $vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));
         $builder->putVehicle($vehicle);
+
 /*
+        //$attributes = $this->config;
+        //print_r($this->config);
+        //$attributes['vehicle_class'] = 'xPDOScriptVehicle';
+
         $vehicle = $builder->createVehicle(array('source'=>'path/to/myfile.php','arbitrary'=>'some arbitrary data'), $attributes = array (
   'vehicle_class' => 'xPDOScriptVehicle',));
 */
@@ -509,12 +529,12 @@ class Repoman {
 
         // Package Attributes (Documents)
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/docs/';
+        $docs = array(
+            'readme'=>'No readme defined.',
+            'changelog'=>'No changelog defined.',
+            'license'=> file_get_contents(dirname(dirname(dirname(__FILE__))).'/docs/license.txt'),
+        );        
         if (file_exists($dir) && is_dir($dir)) {
-            $docs = array(
-                'readme'=>'No readme defined.',
-                'changelog'=>'No changelog defined.',
-                'license'=>'No license defined.'
-            );
             $files = array();
             $build_docs = $this->get('build_docs');
             if (!empty($build_docs) && is_array($build_docs)) {
@@ -531,16 +551,12 @@ class Repoman {
                 $stub = basename($stub,'.html');
                 $docs[$stub] = file_get_contents($f);
                 $this->modx->log(modX::LOG_LEVEL_INFO, "Adding doc $stub for $f");
-            }
-            
-            if (!empty($docs)) {
-                $builder->setPackageAttributes($docs);
-            }
+            }            
         }
         else {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'No documents found in '.$dir);
         }
-        
+        $builder->setPackageAttributes($docs);        
         // Zip up the package
         $builder->pack();
 

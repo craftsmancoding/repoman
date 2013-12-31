@@ -14,6 +14,10 @@
     
 $modx =& $transport->xpdo;
 
+//$modx->log(1,'Resolver VALIDATOR... '.print_r($options,true));
+//$modx->log(1,'Failed validation (for testing)');
+
+
 switch ($options[xPDOTransport::PACKAGE_ACTION]) {
 
     case xPDOTransport::ACTION_INSTALL:
@@ -25,5 +29,4 @@ switch ($options[xPDOTransport::PACKAGE_ACTION]) {
     case xPDOTransport::ACTION_UNINSTALL:
         break;
 }
-
 return true;

@@ -53,6 +53,8 @@ return array(
     'dry_run' => false, // use runtime setting: --dry_run to see which objects will be created.
     'dir_perms' => 0777,
     'seed' => null, // default database seed file to include during standard migrations
+
+    'abort_install_on_fail' => true,
     
     /**
      * Used when building packages and for running install/import because we need to know 
@@ -61,35 +63,8 @@ return array(
     'build_attributes' => array(
         'modCategory' => array(
                 xPDOTransport::PRESERVE_KEYS => true,
-                xPDOTransport::UPDATE_OBJECT => false,
+                xPDOTransport::UPDATE_OBJECT => false, // <-- moot point when we only have a single column
                 xPDOTransport::UNIQUE_KEY => array('category'),
-/*
-            	xPDOTransport::RELATED_OBJECTS => true,
-                xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
-                    'Snippets' => array(
-                        xPDOTransport::PRESERVE_KEYS => false,
-                        xPDOTransport::UPDATE_OBJECT => true,
-                        xPDOTransport::UNIQUE_KEY => 'name',
-                    ),
-                    'Chunks' => array (
-                        xPDOTransport::PRESERVE_KEYS => false,
-                        xPDOTransport::UPDATE_OBJECT => true,
-                        xPDOTransport::UNIQUE_KEY => 'name',
-                    ),
-                    'Plugins' => array (
-                        xPDOTransport::PRESERVE_KEYS => false,
-                        xPDOTransport::UPDATE_OBJECT => true,
-                        xPDOTransport::UNIQUE_KEY => 'name',
-            			xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
-            		        'PluginEvents' => array(
-            		            xPDOTransport::PRESERVE_KEYS => true,
-            		            xPDOTransport::UPDATE_OBJECT => false,
-            		            xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
-            		        ),
-                		),
-                    ),
-                )
-*/
             ),
         'modSystemSetting' => array(
         	xPDOTransport::UNIQUE_KEY => 'key',
@@ -100,19 +75,6 @@ return array(
             xPDOTransport::PRESERVE_KEYS => true,
             xPDOTransport::UPDATE_OBJECT => true,
             xPDOTransport::UNIQUE_KEY => 'text',
-/*
-            xPDOTransport::RELATED_OBJECTS => true,
-            xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array(
-               'Action' => array(
-                   xPDOTransport::PRESERVE_KEYS => false,
-                   xPDOTransport::UPDATE_OBJECT => true,
-                   xPDOTransport::UNIQUE_KEY => array(
-                       'namespace',
-                       'controller'
-                   ),
-               ),
-            ),
-*/
         ),
         // Elements
         'modSnippet' => array(

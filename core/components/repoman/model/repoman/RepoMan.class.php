@@ -104,7 +104,7 @@ class Repoman {
 	}
 			
 	/**
-	 * Get an array of elements for the given $objecttype
+	 * Get an array of element objects for the given $objecttype
 	 *
 	 * @param string $objecttype
 	 * @param string $pkg_dir the repo location, e.g. /home/usr/public_html/assets/repos/mypkg
@@ -144,9 +144,13 @@ class Repoman {
             $Object = $this->modx->newObject($classname);
         }
         
-        // Mass assignment $Object->fromArray() does not work: some fields are blocked
-        foreach ($objectdata as $k => $v) {
-            $Object->set($k, $v);
+        // Make sure we're allowed to update this type of object
+        $attributes = $this->get('build_attributes');
+        if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT]) {
+            // Mass assignment $Object->fromArray() does not work: some fields are blocked
+            foreach ($objectdata as $k => $v) {
+                $Object->set($k, $v);
+            }
         }
 
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
@@ -422,14 +426,13 @@ class Repoman {
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
         
         // Validators (tests)
-/*
-        $config = $this->config;
-        $config['source'] = dirname(__FILE__).'/validator.php';
-        $attributes = array('vehicle_class' => 'xPDOScriptVehicle');
-        
-        $vehicle = $builder->createVehicle($config,$attributes);
+        $attributes = array(
+            xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL => $this->get('abort_install_on_fail')
+        );
+        $vehicle = $builder->createVehicle($object, $attributes);
+        $vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));
         $builder->putVehicle($vehicle);
-*/
+
         
         
         $Category = $this->modx->newObject('modCategory');
@@ -482,38 +485,8 @@ class Repoman {
         $attributes = array('vehicle_class' => 'xPDOScriptVehicle');
         
         $vehicle = $builder->createVehicle($config,$attributes);
-        $vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));
+//        $vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));
         $builder->putVehicle($vehicle);
-
-/*
-        //$attributes = $this->config;
-        //print_r($this->config);
-        //$attributes['vehicle_class'] = 'xPDOScriptVehicle';
-
-        $vehicle = $builder->createVehicle(array('source'=>'path/to/myfile.php','arbitrary'=>'some arbitrary data'), $attributes = array (
-  'vehicle_class' => 'xPDOScriptVehicle',));
-*/
-
-        
-//        $dir = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
-//        $f = $dir.'/test.php';
-//        $f = '/Users/everett2/Sites/moxycart/html/assets/mycomponents/repoman/core/components/repoman/elements/chunks/resolver.php';
-//        $this->modx->log(modX::LOG_LEVEL_INFO, 'TEST: Packing migrations from '.$f);
-//        $vehicle->resolve('php', array('source' => $f));
-/*
-        if (file_exists($dir) && is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing migrations from '.$dir);
-            $files = glob($dir.'*.php');
-            foreach($files as $f) {
-                if (basename($f) != 'uninstall.php') {
-                    $this->modx->log(modX::LOG_LEVEL_INFO, 'Adding migration '.basename($f));
-                    $vehicle->resolve('php', array('source' => $f));
-                }
-            }
-        }
-*/
-    
-
 
         
         // Objects

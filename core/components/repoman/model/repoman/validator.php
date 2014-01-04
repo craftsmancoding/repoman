@@ -2,21 +2,21 @@
 /**
  * Our Swiss-Army Validator.
  *
- * We wrap our migrations in this code so the coding interface is cleaner for devs.
- * We write this file to the cache directory so it can get slurped (not executed)
- * when MODX packages it as a resolver.  We do set a line to specify the $namespace
- * of the package.
+ * All projects can use the same basic validator if they follow Repoman's conventions.
  *
  * $options contains the Repoman config for this package (including all global config)
+ * The xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL package parameter is controlled by the
+ * 'abort_install_on_fail' configuration option.  The default is true so that package installation
+ * can be halted if the validation tests do not pass.
  *
- * 
+ * @return boolean true on success, false on fail
  */
     
 $modx =& $transport->xpdo;
 
-//$modx->log(1,'Resolver VALIDATOR... '.print_r($options,true));
-//$modx->log(1,'Failed validation (for testing)');
-//exit('Stop installing dammit');
+
+//$modx->log(1, 'Fatal error...');
+//return false;
 
 switch ($options[xPDOTransport::PACKAGE_ACTION]) {
 

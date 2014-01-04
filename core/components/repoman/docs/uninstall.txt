@@ -1,9 +1,9 @@
 Uninstall
 
 This attempts to clean out your MODX installation from any elements or database migrations.
-This is not guaranteed to remove everything that Repoman created -- the paper trail might 
+This is not guaranteed to remove everything that Repoman created -- the papertrail might 
 get lost, especially if you have changed the names of your elements.
 
-    php repoman.php uninstall <package_path>
+    php repoman.php uninstall <path_to_repo>
     
 This will execute the migrations/uninstall.php (if present).

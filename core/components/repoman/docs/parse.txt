@@ -2,7 +2,7 @@ Parse
 
 Parse an XML schema file to jumpstart your MODX PHP model classes.
 
-php repoman.php parse <$pkg_dir> --schema=xyz
+php repoman.php parse <path_to_repo> --schema=xyz
 
 You must supply a configuration or runtime option for the "schema".
 

@@ -1,0 +1,16 @@
+Look
+
+This function helps you examine objects and their relations so you can structure your object 
+and seed data correctly.
+
+Usage:
+
+    php repoman.php look --clasname=<classname>
+    
+
+Available options are:
+
+    --classname (required) and viable MODX classname representing an xPDO object.
+    --relations (optional) if set, the output will include both aggregates and composites of the class.
+    --aggregates (optional) if set, the output will show aggregate objects.
+    --composites (optional) if set, the output will show composite objects

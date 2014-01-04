@@ -1,4 +1,14 @@
 Import
 
+Import elements and objects from the filesystem into MODX, including templates, chunks, 
+and snippets, but also any objects defined by the package.  You may use the import 
+function periodically as you add files to your project.
 
-    php repoman.php import <package_path>
+Usage:
+
+    php repoman.php import <path_to_repo>
+    
+This respects the xPDOTransport::UPDATE_OBJECT settings for the objects involved so that 
+some records will not be overwritten (i.e. updated) after they are first installed.  
+This behavior is usually desired primarily for settings: the package defines the setting's 
+name and description, but the user supplies the value.

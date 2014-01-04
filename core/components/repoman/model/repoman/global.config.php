@@ -40,12 +40,6 @@ return array(
     'objects_dir' => 'database/objects',
     'seeds_dir' => 'database/seeds',
 
-    // Extensions for searching the element directories
-    'chunks_ext' => '*.*',
-    'plugins_ext' => '*.php',
-    'snippets_ext' => '*.php',
-    'templates_ext' => '*.*',
-    'tvs_ext' => '*.*',
     
     // For import/install (dev), force elements to reference static file for easier editing
     'force_static' => true,
@@ -54,7 +48,7 @@ return array(
     'dir_perms' => 0777,
     'seed' => null, // default database seed file to include during standard migrations
 
-    'abort_install_on_fail' => true,
+    'abort_install_on_fail' => true, // if true, your validation tests can halt pkg install by returning "false"
     
     /**
      * Used when building packages and for running install/import because we need to know 

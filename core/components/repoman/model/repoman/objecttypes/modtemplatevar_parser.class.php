@@ -6,7 +6,7 @@
 class modTemplateVar_parser extends Repoman_parser {
 
     public $dir_key = 'tvs_dir';
-    public $ext_key = 'tvs_ext';
+	public $ext = '*.*';
     public $objecttype = 'modTemplateVar';
     
 	public $dox_start = '<!--';

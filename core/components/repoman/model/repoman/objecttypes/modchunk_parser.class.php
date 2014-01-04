@@ -6,7 +6,7 @@
 class modChunk_parser extends Repoman_parser {
 
     public $dir_key = 'chunks_dir';
-    public $ext_key = 'chunks_ext';
+	public $ext = '*.*';
     public $objecttype = 'modChunk';
     
 	public $dox_start = '<!--';

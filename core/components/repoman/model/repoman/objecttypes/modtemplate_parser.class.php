@@ -6,7 +6,7 @@
 class modTemplate_parser extends Repoman_parser {
 
     public $dir_key = 'templates_dir';
-    public $ext_key = 'templates_ext';    
+	public $ext = '*.*';    
     public $objecttype = 'modTemplate';
     public $objectname = 'templatename';
     

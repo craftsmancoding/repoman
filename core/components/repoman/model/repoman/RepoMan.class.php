@@ -19,42 +19,6 @@ class Repoman {
 
     public static $cache_opts = array();
     const CACHE_DIR = 'repoman';
-
-    // Used for package building: we can't reference xPDOTransport constants until
-    // we've loaded the modPackageBuilder class
-    // $modx->loadClass('transport.modPackageBuilder', '', false, true);
-/*
-    public $cat_attributes = array(
-        xPDOTransport::PRESERVE_KEYS => true,
-        xPDOTransport::UPDATE_OBJECT => false,
-        xPDOTransport::UNIQUE_KEY => array('category'),
-    	xPDOTransport::RELATED_OBJECTS => true,
-        xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
-            'Snippets' => array(
-                xPDOTransport::PRESERVE_KEYS => false,
-                xPDOTransport::UPDATE_OBJECT => true,
-                xPDOTransport::UNIQUE_KEY => 'name',
-            ),
-            'Chunks' => array (
-                xPDOTransport::PRESERVE_KEYS => false,
-                xPDOTransport::UPDATE_OBJECT => true,
-                xPDOTransport::UNIQUE_KEY => 'name',
-            ),
-            'Plugins' => array (
-                xPDOTransport::PRESERVE_KEYS => false,
-                xPDOTransport::UPDATE_OBJECT => true,
-                xPDOTransport::UNIQUE_KEY => 'name',
-    			xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
-    		        'PluginEvents' => array(
-    		            xPDOTransport::PRESERVE_KEYS => true,
-    		            xPDOTransport::UPDATE_OBJECT => false,
-    		            xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
-    		        ),
-        		),
-            ),
-        )    
-    );
-*/
         
 	/**
 	 *
@@ -95,7 +59,7 @@ class Repoman {
 		$Setting->set('namespace', $namespace);
 		$Setting->set('area', 'default');
 		
-		Repoman::$queue[] = 'modSystemSetting: '.$key;		
+		Repoman::$queue['modSystemSetting'][] = $key;		
 		if (!$this->get('dry_run')) {
             $Setting->save();
     		$data = $this->get_criteria('modSystemSetting', $Setting->toArray());
@@ -236,9 +200,7 @@ class Repoman {
 		$N->set('path', $path.'/core/components/'.$name.'/');
 		$N->set('assets_path',$path.'/assets/components/'.$name.'/');
 		
-		Repoman::$queue[] = 'Namespace: '.$name."\n"
-		  ."       core_path:   ".$N->get('path')."\n"
-		  ."       assets_path: ".$N->get('assets_path');
+		Repoman::$queue['modNamespace'][] = $name;
 
         if (!$this->get('dry_run')) {
     		$N->save();
@@ -369,6 +331,103 @@ class Repoman {
         return array_merge($global, $config, $overrides);
 	}
 	
+	/**
+	 * Assistence function for examining MODX objects and their relations.
+	 * _pkg (string) colon-separated string defining the arguments for addPackage() -- 
+     *      package_name, model_path, and optionally table_prefix  
+     *      e.g. `tiles:[[++core_path]]components/tiles/model/:tiles_` or 
+     *      If only the package name is supplied, the path is assumed to be "[[++core_path]]components/$package_name/model/"
+	 * Required option: --classname
+	 * Optional options:
+     *      relations (same as setting aggregates and composites)
+     *      aggregates
+     *      composites
+     *
+	 * @param array $args
+	 * @return string message
+	 */
+	public static function look($args) {
+        $classname = (isset($args['classname'])) ? $args['classname'] : '';
+        $relations = (isset($args['relations'])) ? $args['relations'] : '';
+        $aggregates = (isset($args['aggregates'])) ? $args['aggregates'] : '';
+        $composites = (isset($args['composites'])) ? $args['composites'] : '';
+        
+        if (empty($classname)) {
+            throw new Exception('classname is required.');
+        }
+
+
+        
+        global $modx;
+
+        /* TODO:
+        if ($pkg) {
+            $parts = explode(':',$pkg);
+            if (isset($parts[2])) {
+                $modx->addPackage($parts[0],$parts[1],$parts[2]);     
+            }
+            elseif(isset($parts[1])) {
+                $modx->addPackage($parts[0],$parts[1]);
+            }
+            else {
+                $modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/model/');
+            }
+        }
+        */
+
+
+        $array = $modx->getFields($classname);
+        
+        $related = array();
+        if ($aggregates && $composites) {
+            $related = array_merge($modx->getAggregates($classname), $modx->getComposites($classname));
+        }
+        elseif ($aggregates) {
+            $related = $modx->getAggregates($classname);
+        }
+        elseif ($composites) {
+            $related = $modx->getComposites($classname);
+        }
+        elseif ($relations) {
+            $related = array_merge($modx->getAggregates($classname), $modx->getComposites($classname));
+        }
+
+        foreach ($related as $alias => $def) {
+            $array[$alias] = $def;
+        }
+        
+        $out = print_r($array,true); 
+        
+        // Make the result pretty. TODO: make it have correct syntax!!!
+        $out = str_replace(array('Array','[',']',')'), array('array',"'","'",'),'), $out);
+        
+        return $out;
+	}
+	
+	/**
+	 * Parse command line arguments
+	 *
+	 * @param array $args
+	 * @return array
+	 */
+	public static function parse_args($args) {
+        $overrides = array();
+        foreach($args as $a) {
+            if (substr($a,0,2) == '--') {
+                if ($equals_sign = strpos($a,'=',2)) {
+                    $key = substr($a, 2, $equals_sign-2);
+                    $val = substr($a, $equals_sign+1);
+                    $overrides[$key] = $val;
+                }
+                else {
+                    $flag = substr($a, 2);
+                    $overrides[$flag] = true;
+                }
+            }
+        }	
+        return $overrides;
+	}
+	
 	/** 
 	 *
 	 * See http://www.php.net/manual/en/function.rmdir.php
@@ -411,7 +470,7 @@ class Repoman {
         $this->config['is_build'] = true; // TODO
         $this->config['force_static'] = false; // TODO
         
-        $required = array('package_name','namespace','version','release','category');
+        $required = array('package_name','namespace','version','release');
         foreach($required as $k) {
             if (!$this->get($k)) {
                 throw new Exception('Missing required configuration parameter: '.$k);
@@ -426,14 +485,24 @@ class Repoman {
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
         
         // Validators (tests)
+/*
         $attributes = array(
             xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL => $this->get('abort_install_on_fail')
         );
-        $vehicle = $builder->createVehicle($object, $attributes);
+        $vehicle = $builder->createVehicle($object, $attributes); // <-- oops... object?
         $vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));
         $builder->putVehicle($vehicle);
+*/
 
-        
+        $config = $this->config;
+        $config['source'] = dirname(__FILE__).'/validator.php';
+        $attributes = array(
+            'vehicle_class' => 'xPDOScriptVehicle',
+            'source' => dirname(__FILE__).'/validator.php',
+            xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL => $this->get('abort_install_on_fail')
+        );
+        $vehicle = $builder->createVehicle($config,$attributes);
+        $builder->putVehicle($vehicle);
         
         $Category = $this->modx->newObject('modCategory');
         $Category->set('category', $this->get('category'));
@@ -451,9 +520,11 @@ class Repoman {
         if ($tvs) $Category->addMany($tvs);
 
         // TODO: skip this if there are no elements
+        //if (empty($chunks) && empty($plugins) && empty($snippets) && empty($templates) && empty($tvs)) {
         $build_attributes = $this->get_build_attributes($Category);
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '. $Category->_class. "\n".print_r($build_attributes,true));
         $vehicle = $builder->createVehicle($Category, $build_attributes);
+        //}
         //$builder->putVehicle($vehicle);
 
 
@@ -482,10 +553,8 @@ class Repoman {
         // Migrations: we attach our all-purpose resolver to handle migrations
         $config = $this->config;
         $config['source'] = dirname(__FILE__).'/resolver.php';
-        $attributes = array('vehicle_class' => 'xPDOScriptVehicle');
-        
+        $attributes = array('vehicle_class' => 'xPDOScriptVehicle');        
         $vehicle = $builder->createVehicle($config,$attributes);
-//        $vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));
         $builder->putVehicle($vehicle);
 
         
@@ -502,9 +571,10 @@ class Repoman {
 
         // Package Attributes (Documents)
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/docs/';
+        // defaults
         $docs = array(
-            'readme'=>'No readme defined.',
-            'changelog'=>'No changelog defined.',
+            'readme'=>'This package was built using Repoman (https://github.com/craftsmancoding/repoman/)',
+            'changelog'=>'No change log defined.',
             'license'=> file_get_contents(dirname(dirname(dirname(__FILE__))).'/docs/license.txt'),
         );        
         if (file_exists($dir) && is_dir($dir)) {
@@ -523,6 +593,10 @@ class Repoman {
                 $stub = basename($f,'.txt');
                 $stub = basename($stub,'.html');
                 $docs[$stub] = file_get_contents($f);
+                if (strtolower($stub) == 'readme') {
+                    $docs['readme'] = $docs['readme'] ."\n\n"
+                        .'This package was built using Repoman (https://github.com/craftsmancoding/repoman/)';
+                }
                 $this->modx->log(modX::LOG_LEVEL_INFO, "Adding doc $stub for $f");
             }            
         }
@@ -535,6 +609,48 @@ class Repoman {
 
         $zip = $this->get('namespace').'-'.$this->get('version').'-'.$this->get('release').'.transport.zip';
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Build complete: '. MODX_CORE_PATH.'packages/'.$zip);
+    }
+    
+    /**
+     * Extract objects (Settings, Snippets, Pages et al) from MODX and store them in the
+     * repository as either object or seed data.
+     *
+     *
+     */
+    public function extract($repo_path) {
+
+        $this->get('classname');
+        
+        // if --seed=xxx is defined, we export the data as seed data, otherwise as object data
+        $this->get('seed');
+        $this->get('graph');
+        $this->get('debug');
+        
+        $this->get('where');
+        $this->get('limit');
+        $this->get('offset');
+        $this->get('sortby');
+        $this->get('sortdir');
+
+        $criteria = $this->modx->newQuery($object);
+        $criteria->where($filters);
+        $total_pages = $this->modx->getCount($object,$criteria);
+        $criteria->limit($limit, $offset); 
+        if ($sortby) {
+            $criteria->sortby($sortby,$sortdir);
+        }
+    
+        if ($graph) {
+            $results = $this->modx->getCollectionGraph($object,$graph,$criteria);
+        }
+        else {
+            $results = $this->modx->getCollection($object,$criteria);
+        }
+        if ($debug) {
+            $criteria->prepare();
+            $criteria->toSQL();
+        }
+        
     }
     
 	/**
@@ -614,7 +730,7 @@ class Repoman {
         $objects = self::_get_objects($pkg_dir);
         foreach ($objects as $classname => $Object) {
             $data = $this->get_criteria($classname, $Object->toArray());
-            Repoman::$queue[] = $classname.': '.implode('-',$data);
+            Repoman::$queue[$classname][] = implode('-',$data);
             if(!$this->get('dry_run')) {
                 if ($Object->save()) {
                     $this->modx->log(modX::LOG_LEVEL_INFO,'Saved '.$classname);
@@ -633,11 +749,14 @@ class Repoman {
             $msg = "\n==================================\n";
             $msg .= "    Dry Run Enqueued objects:\n";
             $msg .= "===================================\n";
-            $this->modx->log(modX::LOG_LEVEL_INFO, $msg.implode("\n",Repoman::$queue));		
+            foreach (Repoman::$queue as $classname => $list) {
+                $msg .= "\n".$classname."\n".str_repeat('-', strlen($classname))."\n"; 
+                foreach ($list as $l) {
+                    $msg .= "    ".$l."\n";
+                }
+            }
+            $this->modx->log(modX::LOG_LEVEL_INFO, $msg);		
         }
-
-        // Migrations
-
     }
 
     /**

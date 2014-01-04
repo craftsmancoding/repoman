@@ -130,6 +130,21 @@ if (!isset($argv[1])) {
 $function = strtolower($argv[1]);
 $pkg_path = '';
 switch ($function) {
+    case 'look':
+        unset($argv[0]);
+        unset($argv[1]);
+        $args = Repoman::parse_args($argv);
+
+        try {
+            print Repoman::look($args);
+            exit;
+        }  
+        catch (Exception $e) {
+            print message($e->getMessage(),'ERROR');
+            exit(1);
+        }
+        
+        break;
     case 'uninstall':
         // But only the namespace is required... prob'ly safer to require a pkg_path param
     case 'build':
@@ -137,6 +152,7 @@ switch ($function) {
     case 'install':
     case 'migrate':
     case 'parse':
+    case 'extract':
         if (!isset($argv[2])) {
             print message('Missing <pkg_path> parameter.','ERROR');
             print Repoman::rtfm($function);
@@ -169,20 +185,7 @@ switch ($function) {
 // eg. php repoman.php build <pkg_path> --pkg_name=Something
 unset($argv[0]);
 unset($argv[2]);
-$overrides = array();
-foreach($argv as $a) {
-    if (substr($a,0,2) == '--') {
-        if ($equals_sign = strpos($a,'=',2)) {
-            $key = substr($a, 2, $equals_sign-2);
-            $val = substr($a, $equals_sign+1);
-            $overrides[$key] = $val;
-        }
-        else {
-            $flag = substr($a, 2);
-            $overrides[$flag] = true;
-        }
-    }
-}
+$overrides = Repoman::parse_args($argv);
 
 if (!file_exists($pkg_path.'/config.php')) {
     print message('No config.php file detected.','WARNING');

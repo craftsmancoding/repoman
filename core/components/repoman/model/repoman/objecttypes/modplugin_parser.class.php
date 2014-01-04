@@ -6,7 +6,7 @@
 class modPlugin_parser extends Repoman_parser {
 	
 	public $dir_key = 'plugins_dir';
-	public $ext_key = 'plugins_ext';
+	public $ext = '*.php';
 	public $objecttype = 'modPlugin';
 	
 	/**

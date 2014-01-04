@@ -1,10 +1,11 @@
 Install
 
-Install into MODX all the package elements and run all package migrations.
+Install into MODX all the AddOn's elements and run all package migrations. The end result
+should appear the same as if you had installed the AddOn via a MODX package.
 
 Usage:
 
-    php repoman.php install /path/to/package
+    php repoman.php install <path_to_repo>
     
 
 Running "install" is equivalent to running both "import" then "migrate"

@@ -12,7 +12,7 @@ abstract class Repoman_parser {
     public $Repoman; 
     
     public $dir_key; // key in the config which contains the directory.
-    public $ext_key; // key in the config which ids the file extension.
+    public $ext; // glob that ids the file extension.
     public $objecttype;
     public $objectname = 'name'; // most objects use the 'name' field to identify themselves
     
@@ -63,14 +63,14 @@ abstract class Repoman_parser {
             return array();
         }
 
-        $files = glob($dir.$this->get($this->ext_key));
+        $files = glob($dir.$this->ext);
         foreach($files as $f) {
 
             $content = file_get_contents($f);
             $attributes = self::repossess($content,$this->dox_start,$this->dox_end);
             
             // Skip importing?
-            if (isset($attributes['no_import']) && $attributes['no_import']) {
+            if (isset($attributes['no_import'])) {
                 continue;
             }
             
@@ -101,7 +101,7 @@ abstract class Repoman_parser {
             $this->relate($attributes,$Obj);
               
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Created/updated '.$this->objecttype.': '. $Obj->get($this->objectname));
-            Repoman::$queue[] = $this->objecttype.': '. $Obj->get($this->objectname);
+            Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
             
             if (!$this->get('dry_run') && !$this->get('is_build')) {
                 $data = $this->Repoman->get_criteria($this->objecttype,$attributes);

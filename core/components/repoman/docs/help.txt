@@ -9,9 +9,9 @@ php repoman.php help <function>
 
 Available Functions:
 
-build
-import
-install
-migrate
-seed
-uninstall
+build       - Build a MODX transport package
+import      - Import elements and objects from the filesystem into MODX 
+install     - Installs a dev version of an AddOn from files in the filesystem
+migrate     - Run database migrations
+parse       - Parse an XML schema file
+uninstall   - Remove all installed elements and migrations. 

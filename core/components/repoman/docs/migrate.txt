@@ -2,7 +2,11 @@ Migrate
 
 Run any database migrations defined in the project's database/migrations/ folder.
 
-Usage
+Usage:
 
-    php repoman.php migrate <package_path>
+    php repoman.php migrate <path_to_repo>
 
+This function will first execute the "uninstall.php" script to clean out the database,
+then it will run the "install.php" script to create custom tables.
+
+If you need to populate your database tables with some custom data, use the --seeds parameter.

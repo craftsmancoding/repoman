@@ -8,6 +8,23 @@ class modPlugin_parser extends Repoman_parser {
 	public $dir_key = 'plugins_dir';
 	public $ext = '*.php';
 	public $objecttype = 'modPlugin';
+
+    /**
+     * Add any extended docblock attributes for this object type
+     *
+     * @param object $Obj
+     * @return string
+     */
+    public function extend_docblock(&$Obj) {
+        $out = '';
+        if (isset($Obj->PluginEvents)) {
+            $out = ' * @PluginEvents ';
+            foreach ($Obj->PluginEvents as $e) {
+                $out .= $e->get('event').',';
+            }
+        }
+        return rtrim($out,',') ."\n";
+    }
 	
 	/**
 	 * Plugins have a caveat: they strip off the opening and closing PHP tags.
@@ -23,8 +40,8 @@ class modPlugin_parser extends Repoman_parser {
 	 */
 	public function relate($attributes,&$Obj) {
         $events = array();
-        if (isset($attributes['events'])) {
-            $event_names = explode(',',$attributes['events']);
+        if (isset($attributes['PluginEvents'])) {
+            $event_names = explode(',',$attributes['PluginEvents']);
             foreach ($event_names as $e) {
                 $pluginid = $Obj->get('id');
                 if ($pluginid) {

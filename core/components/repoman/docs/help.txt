@@ -1,6 +1,6 @@
-help
+Help
 
-Repoman help.
+Repoman help: type the function name you would like more information on.
 
 Usage:
 
@@ -9,9 +9,13 @@ php repoman.php help <function>
 
 Available Functions:
 
-build       - Build a MODX transport package
-import      - Import elements and objects from the filesystem into MODX 
-install     - Installs a dev version of an AddOn from files in the filesystem
-migrate     - Run database migrations
-parse       - Parse an XML schema file
-uninstall   - Remove all installed elements and migrations. 
+    build       
+    import     
+    export
+    install     
+    migrate     
+    parse       
+    uninstall   
+
+
+See also the formal documentation at https://github.com/craftsmancoding/repoman/wiki

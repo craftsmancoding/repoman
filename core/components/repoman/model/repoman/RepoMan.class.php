@@ -142,14 +142,24 @@ class Repoman {
         return $Object;
     }
     
+    
 	/**
-	 * Iterate over the objects directory to load up all non-element objects.
+	 * Iterate over the $dir to load up either PHP or JSON arrays representing objects,
+	 * then return an array of the corresponding objects.
 	 *
-	 * @param string $pkg_dir
+Array
+(
+    [0] => nada.xx.php
+    [1] => nada
+    [2] => .xx
+    [3] => php
+)
+	 
+	 * @param string $dir
 	 * @return array of objects : keys for the classname
 	 */
-	private function _get_objects($pkg_dir) {
-        $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');
+	private function _get_objects($dir) {
+        
         if (!file_exists($dir) || !is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_DEBUG,'No object directory detected at '.$dir);
             return array();
@@ -157,13 +167,26 @@ class Repoman {
         $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling object directory '.$dir);
 
         $objects = array();
-        $files = glob($dir.'/*.php');
+        $files = glob($dir.'/*{.php,.json}',GLOB_BRACE);
 
         foreach($files as $f) {
-            $classname = basename($f,'.php');
+            
+            preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', $f, $matches);
+            if (!isset($matches[3])) throw new Exception('Invalid filename '.$f);
+            
+            $classname = $matches[1];
+            $ext = $matches[3];            
+            
             $fields = $this->modx->getFields($classname);
             if (empty($fields)) throw new Exception('Unrecognized object classname: '.$classname);
-            $data = include $f;
+            
+            if ($ext == 'php') {
+                $data = include $f;
+            }
+            elseif ($ext == 'json') {
+                $data = json_decode(file_get_contents($f),true);
+            }
+            
             if (!is_array($data)) throw new Exception('Data in '.$f.' not an array.');
             if (!isset($data[0])) {
                 $data = array($data);
@@ -347,18 +370,14 @@ class Repoman {
 	 * @return string message
 	 */
 	public static function look($args) {
+
+        global $modx;
+             
         $classname = (isset($args['classname'])) ? $args['classname'] : '';
         $relations = (isset($args['relations'])) ? $args['relations'] : '';
         $aggregates = (isset($args['aggregates'])) ? $args['aggregates'] : '';
         $composites = (isset($args['composites'])) ? $args['composites'] : '';
-        
-        if (empty($classname)) {
-            throw new Exception('classname is required.');
-        }
-
-
-        
-        global $modx;
+        $showall = (isset($args['showall'])) ? $args['showall'] : '';
 
         /* TODO:
         if ($pkg) {
@@ -374,6 +393,28 @@ class Repoman {
             }
         }
         */
+
+        if ($showall) {
+            $out = "\n-------------------------\n";
+            $out .= "All Available Classes\n";
+            $out .= "-------------------------\n";
+            foreach ($modx->classMap as $parentclass => $childclasses) {
+                            
+                $out .= "\n".$parentclass."\n".str_repeat('-', strlen($parentclass))."\n"; 
+                foreach ($childclasses as $c) {
+                    $out .= "    ".$c."\n";
+                }
+            }
+            return $out;
+        }
+        
+        if (empty($classname)) {
+            throw new Exception('classname is required.');
+        }
+
+
+        
+
 
 
         $array = $modx->getFields($classname);
@@ -427,7 +468,7 @@ class Repoman {
         }	
         return $overrides;
 	}
-	
+		
 	/** 
 	 *
 	 * See http://www.php.net/manual/en/function.rmdir.php
@@ -484,16 +525,7 @@ class Repoman {
         $builder->createPackage($this->get('package_name'), $this->get('version'), $this->get('release'));
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
         
-        // Validators (tests)
-/*
-        $attributes = array(
-            xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL => $this->get('abort_install_on_fail')
-        );
-        $vehicle = $builder->createVehicle($object, $attributes); // <-- oops... object?
-        $vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));
-        $builder->putVehicle($vehicle);
-*/
-
+        // Tests (Validators)
         $config = $this->config;
         $config['source'] = dirname(__FILE__).'/validator.php';
         $attributes = array(
@@ -559,7 +591,8 @@ class Repoman {
 
         
         // Objects
-        $objects = self::_get_objects($pkg_dir);
+        $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');
+        $objects = self::_get_objects($objects_dir);
         foreach ($objects as $classname => $Obj) {
             $build_attributes = $this->get_build_attributes($Category);
             $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '
@@ -617,40 +650,82 @@ class Repoman {
      *
      *
      */
-    public function extract($repo_path) {
+    public function export($repo_path) {
 
-        $this->get('classname');
-        
-        // if --seed=xxx is defined, we export the data as seed data, otherwise as object data
-        $this->get('seed');
-        $this->get('graph');
-        $this->get('debug');
-        
-        $this->get('where');
-        $this->get('limit');
-        $this->get('offset');
-        $this->get('sortby');
-        $this->get('sortdir');
+        $classname = $this->get('classname');
+        $where = $this->get('where');
 
-        $criteria = $this->modx->newQuery($object);
-        $criteria->where($filters);
-        $total_pages = $this->modx->getCount($object,$criteria);
-        $criteria->limit($limit, $offset); 
-        if ($sortby) {
-            $criteria->sortby($sortby,$sortdir);
+        if (empty($classname)) {
+            throw new Exception('Parameter "classname" is required.');
         }
+        if (empty($where)) {
+            throw new Exception('Parameter "where" is required.');
+        }
+        
+        $is_element = false;
+        $Parser = null;
+        if (in_array($classname, $this->get('export_elements'))) {
+            require_once dirname(__FILE__).'/repoman_parser.class.php';
+            require_once dirname(__FILE__).'/objecttypes/'.strtolower($classname).'_parser.class.php';
+            $is_element = true;
+            $element_class = strtolower($classname).'_parser';
+            $Parser = new $element_class($this);
+        }
+        
+        $where = json_decode($where, true);
+
+        // if --seed=xxx is defined, we export the data as seed data, otherwise as object data
+        $seed = $this->get('seed');
+        $graph = $this->get('graph');
+        
+        
+        $this->get('overwrite');
+
+        $criteria = $this->modx->newQuery($classname);
+        $criteria->where($where);
+        $total_pages = $this->modx->getCount($classname,$criteria);
     
+        $results = array();
+        $related = array();
         if ($graph) {
-            $results = $this->modx->getCollectionGraph($object,$graph,$criteria);
+            $results = $this->modx->getCollectionGraph($classname,$graph,$criteria);
+            $related = json_decode($graph,true);
+//            print_r($related); exit;
         }
         else {
-            $results = $this->modx->getCollection($object,$criteria);
+            $results = $this->modx->getCollection($classname,$criteria);
         }
-        if ($debug) {
+        if ($this->get('debug')) {
             $criteria->prepare();
-            $criteria->toSQL();
+            $out = "----------------------------------\n";
+            $out .= "Export Debugging Info\n";
+            $out .= "----------------------------------\n\n";
+            $out .= "Raw Where filters:\n".print_r($where,true)."\n";
+            $out .= "Raw SQL Query:\n";
+            $out .= $criteria->toSQL();
+            $out .= "\n\nResults found : {$total_pages}\n\n";
+            return $out;
         }
-        
+
+        if ($results) {
+            foreach ($results as $r) {
+                
+                if ($is_element) {
+                    $Parser->create($repo_path,$r,$graph);
+                }
+                else {
+                    $array = $r->toArray('',false,false,$graph);
+                    $out = json_encode($array, JSON_PRETTY_PRINT);
+                    print $out;                 
+                }
+            }   
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_ERROR, 'No matching results found for '.$classname);
+        }
+        // Write files
+             
+        //json_encode($json, JSON_PRETTY_PRINT);
     }
     
 	/**
@@ -726,8 +801,9 @@ class Repoman {
             $this->modx->log(modX::LOG_LEVEL_INFO, "Category created/updated: ".$this->get('category'));
         }
 
-        // Regular Objects        
-        $objects = self::_get_objects($pkg_dir);
+        // Regular Objects
+        $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');        
+        $objects = self::_get_objects($objects_dir);
         foreach ($objects as $classname => $Object) {
             $data = $this->get_criteria($classname, $Object->toArray());
             Repoman::$queue[$classname][] = implode('-',$data);

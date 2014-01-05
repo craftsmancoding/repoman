@@ -1,0 +1,51 @@
+Export
+
+Export MODX elements and objects from MODX into your repository.  This functionality 
+exists so you can grab existing MODX data and make it a part of your package.  For Elements
+(Snippets, Chunks, Templates, Plugins, and TVs), this will create a static version of the
+Element with the source content in your local repository.  For other objects (e.g. System
+Settings), this will save a copy of the object as an array in your local repository. 
+
+Once the  data is stored inside your local repository, you can version control it or build
+packages from it using Repoman.
+
+Usage:
+
+    php repoman.php export <path_to_repo> --classname=<classname> --where=<json_criteria>
+    
+
+Options:
+
+    --classname (string) 
+        Required: you must specify which type of object you are exporting.
+
+    --where (json)
+        This parameter allows you to specify the search criteria for your export.
+
+    --move (boolean, default false)
+        Affects only elements: if set, the original element will be updated to be a static element
+        with its source in the new location.  If not set, a "snapshot" copy of the element is created
+        and the original is left untouched.
+
+    --debug (boolean, default false)
+        If set, no action is taken, but the raw SQL query will be returned including a list
+        of results found.
+
+
+
+Examples:
+
+Exporting a template:
+        
+    php repoman.php export /path/to/my/repo --classname=modTemplate '--where={"templatename":"Home Page"}'
+
+Exporting Multiple Templates by name:
+
+    php repoman.php export /path/to/my/repo --classname=modTemplate '--where={"templatename:IN":["Home Page","Contact"]}'
+
+Exporting a Plugin with its events:
+
+    php repoman.php export /path/to/my/repo --classname=modPlugin '--graph={"Events":{}}' '--where={"name":"Bloodline"}'
+
+
+See Also: http://rtfm.modx.com/xpdo/2.x/class-reference/xpdoquery/xpdoquery.where

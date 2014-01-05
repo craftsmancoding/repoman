@@ -19,15 +19,17 @@ return array(
     'author_email' => '',
     'author_site' => '',    
     'author_url' => '',
-    'documentation_url' => 'https://github.com/craftsmancoding/repoman/wiki/config.php',
+    'documentation_url' => 'http://xkcd.com/293/', // Please please please add docs for your users!
     'repo_url' => '',   // https://github.com/username/pkg
     'clone_url' => '',  // git@github.com:username/pkg.git or https://github.com/username/pkg.git
     'copyright' => date('Y'),
     
-    'category' => basename($pkg_path), // For elements
+    'category' => basename($pkg_path), // Default category for elements
     'require_docblocks' => false, // if true, your elements *must* define docblocks in order to be imported
     'build_docs' => '*', // you may include an array specifying basenames of specific files in the build
+    'overwrite' => false, // if true, will overwrite repo files during extract operations
     'log_level' => modX::LOG_LEVEL_INFO,
+    
     
     // Dirs relative to core/components/$pkg_name/ 
     'chunks_dir' => 'elements/chunks',
@@ -39,13 +41,17 @@ return array(
     'migrations_dir' => 'database/migrations',
     'objects_dir' => 'database/objects',
     'seeds_dir' => 'database/seeds',
+    'validators_dir' => 'tests',
 
-    
+    // When the 'export' command is used, the following classnames will be saved as Elements using 
+    // DocBlocks and not as objects
+    'export_elements' => array('modSnippet','modChunk','modTemplate','modTemplateVar','modPlugin'),
+        
     // For import/install (dev), force elements to reference static file for easier editing
     'force_static' => true,
-    
+    'move' => false, // used when exporting elements: if true, the original element will be updated to the new location.
     'dry_run' => false, // use runtime setting: --dry_run to see which objects will be created.
-    'dir_perms' => 0777,
+    'dir_mode' => 0777, // used when creating new directories
     'seed' => null, // default database seed file to include during standard migrations
 
     'abort_install_on_fail' => true, // if true, your validation tests can halt pkg install by returning "false"
@@ -57,7 +63,7 @@ return array(
     'build_attributes' => array(
         'modCategory' => array(
                 xPDOTransport::PRESERVE_KEYS => true,
-                xPDOTransport::UPDATE_OBJECT => false, // <-- moot point when we only have a single column
+                xPDOTransport::UPDATE_OBJECT => true, // <-- moot point when we only have a single column
                 xPDOTransport::UNIQUE_KEY => array('category'),
             ),
         'modSystemSetting' => array(
@@ -91,6 +97,12 @@ return array(
             xPDOTransport::UPDATE_OBJECT => true,
             xPDOTransport::UNIQUE_KEY => 'name',
         ),        
+        'modDocument' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => array('context_key','uri'),
+        ),
+
         'modPlugin' => array (
             xPDOTransport::PRESERVE_KEYS => false,
             xPDOTransport::UPDATE_OBJECT => true,
@@ -103,6 +115,11 @@ return array(
 		            xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
 		        ),
     		),
+        ),
+        'modPluginEvent' => array(
+            xPDOTransport::PRESERVE_KEYS => true,
+            xPDOTransport::UPDATE_OBJECT => false,
+            xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
         ),
        'modAction' => array(
            xPDOTransport::PRESERVE_KEYS => false,

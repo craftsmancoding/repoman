@@ -6,13 +6,14 @@
 class modTemplate_parser extends Repoman_parser {
 
     public $dir_key = 'templates_dir';
-	public $ext = '*.*';    
+	public $ext = '*.*';
+    public $write_ext = '.html';	  
     public $objecttype = 'modTemplate';
     public $objectname = 'templatename';
     
 	public $dox_start = '<!--';
 	public $dox_end = '-->';
-	
+    public $dox_pad = ''; // left of line before the @attribute
 	
 	/**
 	 * Special behavior here for HTML doc blocks.

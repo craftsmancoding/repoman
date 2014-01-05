@@ -8,16 +8,17 @@
 abstract class Repoman_parser {
     
     public $modx;
-    public $config; // from Repoman
     public $Repoman; 
-    
+    public $classname; // identifies the object, e.g. modChunk
     public $dir_key; // key in the config which contains the directory.
     public $ext; // glob that ids the file extension.
+    public $write_ext = '.php'; // extention to use when creating an element
     public $objecttype;
     public $objectname = 'name'; // most objects use the 'name' field to identify themselves
     
 	public $dox_start = '/*';
 	public $dox_end = '*/';
+	public $dox_pad = ' * '; // left of line before the @attribute
 	public $comment_start = '<!--REPOMAN_COMMENT_START';
 	public $comment_end = 'REPOMAN_COMMENT_END-->';
 	
@@ -41,11 +42,74 @@ abstract class Repoman_parser {
 	 */
 	public function __construct(Repoman $Repoman) {
         $this->modx = &$Repoman->modx;
-        $this->config = &$Repoman->config;
         $this->Repoman = &$Repoman;
+        $this->classname = str_replace('_parser', '', get_class($this));
 	}
 	
-	
+	/**
+	 * Create an element from attributes, including a DocBlock
+	 *
+	 * @param object $Obj
+	 * 
+	 */
+    public function create($pkg_dir, $Obj, $graph) {
+
+        $array = $Obj->toArray('',false,false,$graph);
+        $content = $Obj->getContent();
+        $dir = $pkg_dir.'/core/components/'.$this->Repoman->get('namespace').'/'.$this->Repoman->get($this->dir_key);
+        $filename = $dir.'/'.$attributes[$this->objectname].$this->write_ext;
+        if (file_exists($filename) && !$this->Repoman->get('overwrite')) {
+            throw new Exception('Element already exists. Overwrite not allowed. '.$filename);
+        }
+        
+        $attributes = self::repossess($content,$this->dox_start,$this->dox_end);        
+        // Create DocBlock if it doesn't already exist
+        if (empty($attributes)) {
+            $docblock = $this->dox_start."\n";
+            $docblock .= $this->dox_pad . '@'.$this->objectname.' '.$array[$this->objectname]."\n";
+            $docblock .= $this->dox_pad . '@description '.$array['description']."\n";
+            $docblock .= $this->extend_docblock($Obj);
+            $docblock .= $this->dox_end."\n";
+            $this->modx->log(modX::LOG_LEVEL_DEBUG,"DocBlock generated:\n".$docblock);
+            $content = $docblock . $content;
+        }
+
+        // Create dir if doesn't exist
+        if (false === mkdir($dir, $this->Repoman->get('dir_mode'), true)) {
+            throw new Exception('Could not create directory '.$dir);
+        }
+        
+        if (false === file_put_contents($filename, $content)) {
+            throw new Exception('Could not write to file '.$filename);
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_INFO,'Created static element at '. $f);        
+        }
+
+        // Do you want to mess with the original object?  Or just grab a snapshot of it?
+        if ($this->Repoman->get('move')) {
+            $Obj->set('static', true);
+            $Obj->set('static_file', path_to_rel($filename,MODX_BASE_PATH));
+            if (!$Obj->save()) {
+                throw new Exception('Problem saving '.$this->classname.' '.$array[$this->objectname]);
+            }
+            $this->modx->log(modX::LOG_LEVEL_INFO,'Original '.$this->classname.' '.$array[$this->objectname]. ' updated to new location.'); 
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_DEBUG,'Original '.$this->classname.' '.$array[$this->objectname]. ' copied only.');             
+        }
+    }
+    
+    /**
+     * Add any extended docblock attributes for this object type
+     *
+     * @param object $Obj
+     * @return string
+     */
+    public function extend_docblock(&$Obj) {
+        return '';
+    }
+    
 	/**
 	 * Gather all elements as objects in the given directory
 	 * @param string $dir name
@@ -56,7 +120,7 @@ abstract class Repoman_parser {
 
         // Calculate the element's directory given the repo dir...
         // TODO: this should be configurable! Dept. of redundancy Dept.
-        $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get($this->dir_key).'/';
+        $dir = $pkg_dir.'/core/components/'.$this->Repoman->get('namespace').'/'.$this->Repoman->get($this->dir_key).'/';
 
         if (!file_exists($dir) || !is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_DEBUG,'Directory does not exist: '. $dir);
@@ -71,6 +135,11 @@ abstract class Repoman_parser {
             
             // Skip importing?
             if (isset($attributes['no_import'])) {
+                $this->modx->log(modX::LOG_LEVEL_DEBUG, '@no_import detected in '.$f);
+                continue;
+            }
+            elseif ($this->Repoman->get('require_docblocks') && empty($attributes)) {
+                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'require_docblocks set to true and no DocBlock detected in '.$f);
                 continue;
             }
             
@@ -90,7 +159,7 @@ abstract class Repoman_parser {
             $attributes['category'] = 0; 
 
             // Force Static
-            if ($this->get('force_static')) {
+            if ($this->Repoman->get('force_static')) {
                 $attributes['static'] = 1;
                 $attributes['static_file'] = self::path_to_rel($f,MODX_BASE_PATH);
             }
@@ -103,7 +172,7 @@ abstract class Repoman_parser {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Created/updated '.$this->objecttype.': '. $Obj->get($this->objectname));
             Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
             
-            if (!$this->get('dry_run') && !$this->get('is_build')) {
+            if (!$this->Repoman->get('dry_run') && !$this->Repoman->get('is_build')) {
                 $data = $this->Repoman->get_criteria($this->objecttype,$attributes);
                 $this->modx->cacheManager->set($this->objecttype.'/'.$attributes[$this->objectname], $data, 0, Repoman::$cache_opts);
             }
@@ -113,28 +182,10 @@ abstract class Repoman_parser {
         return $objects;
 	}
 
-    
-    /** 
-     * Default behavior here requires nothing...
-     *
-     */
-    public function relate($attributes,&$Obj) {
-    
-    }
-    
-	/**
-	 * Our config getter
-	 * @param string $key
-	 * @return mixed
-	 */
-	public function get($key) {
-	   return (isset($this->config[$key])) ? $this->config[$key] : null;
-	}
-
-
     /**
-     * Given an absolute path, e.g. /home/user/public_html/assets/file.php
+     * Given an absolute path (e.g. /home/user/public_html/assets/file.php),
      * return the file path relative to the MODX base path, e.g. assets/file.php
+     *
      * @param string $path
      * @param string $base : the /full/path/to/base/ (MODX_BASE_PATH)
      * @return string
@@ -145,7 +196,7 @@ abstract class Repoman_parser {
 	
 	/**
 	 * Run as files are being put into the package, this allows for 
-	 * extraneous comment blocks (aka dox) to be filtered out.
+	 * extraneous comment blocks to be filtered out.
 	 * 
 	 * @param string $string
 	 * @return string
@@ -154,8 +205,18 @@ abstract class Repoman_parser {
 		return preg_replace('#('.preg_quote($this->comment_start).')(.*)('.preg_quote($this->comment_end).')#Usi', '', $string);
 	}
 
+    /** 
+     * Default behavior here requires nothing... really we only need this for Plugins and TVs...
+     *
+     * @param array $attributes 
+     * @param object $Obj
+     */
+    public function relate($attributes,&$Obj) {
+    
+    }
+    
     /**
-     * Read parameters out of a (PHP) docblock... like a repoman repossessing 
+     * Read parameters out of a DocBlock... like a repoman repossessing of
      * outstanding leased objects.
      *
      * @param string $string the unparsed contents of a file

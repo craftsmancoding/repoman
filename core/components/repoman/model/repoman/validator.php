@@ -21,12 +21,15 @@ $modx =& $transport->xpdo;
 switch ($options[xPDOTransport::PACKAGE_ACTION]) {
 
     case xPDOTransport::ACTION_INSTALL:
+        $install_file = MODX_CORE_PATH.'components/'.$object['namespace'].'/'.$object['validators_dir'].'/install.php';
+        if (file_exists($install_file)) {
+            include $install_file;
+        }
+
         break;
         
     case xPDOTransport::ACTION_UPGRADE:
         break;
         
-    case xPDOTransport::ACTION_UNINSTALL:
-        break;
 }
 return true;

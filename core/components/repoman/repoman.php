@@ -18,7 +18,9 @@
  * USAGE
  * -------
  *
- * php repoman.php /path/to/modx/assets/repos/mypkg
+ * php repoman.php <function> [arguments]
+ *
+ * php repoman.php help
  *
  */
 
@@ -36,7 +38,6 @@
  */
 function message($text, $status) {
     $out = '';
-    // 
     switch($status) {
         case 'SUCCESS':
             $out = '[42m SUCCESS: '.chr(27).'[0;32m '; //Green background
@@ -49,6 +50,9 @@ function message($text, $status) {
             break;
         case 'INFO':
             $out = '[46m NOTE: '. chr(27).'[0;34m '; //Blue
+            break;
+        case 'HELP':
+            $out = '[46m HELP: '. chr(27).'[0;34m '; //Blue
             break;
         default:
             throw new Exception('Invalid status: ' . $status);
@@ -152,9 +156,9 @@ switch ($function) {
     case 'install':
     case 'migrate':
     case 'parse':
-    case 'extract':
+    case 'export':
         if (!isset($argv[2])) {
-            print message('Missing <pkg_path> parameter.','ERROR');
+            print message('Missing <repo_path> parameter.','ERROR');
             print Repoman::rtfm($function);
             exit(2);
         }
@@ -169,6 +173,7 @@ switch ($function) {
         break;
     case 'help':
         if (isset($argv[2])) {
+            print message($argv[2],'HELP');
             print Repoman::rtfm($argv[2]);
         }
         else {
@@ -198,7 +203,7 @@ $modx->setLogLevel($config['log_level']);
 
 try {
     $Repoman = new Repoman($modx,$config);
-    $Repoman->$function($pkg_path);
+    print $Repoman->$function($pkg_path);
 }  
 catch (Exception $e) {
     print message($e->getMessage(),'ERROR');

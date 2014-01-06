@@ -12,7 +12,7 @@ class Repoman {
 	public $modx;
 	
 	public $config = array();
-
+    
     // Used to provide transparency
     public static $queue = array();
 	// public $readme_filenames = array('README.md','readme.md');
@@ -103,14 +103,16 @@ class Repoman {
 	 * @return object
 	 */
     private function _get_object($classname,$objectdata) {
-        $Object = $this->modx->getObject($classname, $this->get_criteria($classname, $objectdata));
-        if (!$Object) {
+        $criteria = $this->get_criteria($classname, $objectdata);
+
+        $Object = $this->modx->getObject($classname, $criteria);
+        if (!$Object || $this->get('is_build')) {
             $Object = $this->modx->newObject($classname);
         }
         
         // Make sure we're allowed to update this type of object
         $attributes = $this->get('build_attributes');
-        if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT]) {
+        if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT] || $this->get('is_build')) {
             // Mass assignment $Object->fromArray() does not work: some fields are blocked
             foreach ($objectdata as $k => $v) {
                 $Object->set($k, $v);
@@ -171,12 +173,12 @@ Array
 
         foreach($files as $f) {
             
-            preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', $f, $matches);
+            preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($f), $matches);
             if (!isset($matches[3])) throw new Exception('Invalid filename '.$f);
             
             $classname = $matches[1];
             $ext = $matches[3];            
-            
+            $this->modx->log(modX::LOG_LEVEL_INFO,'Processing object(s) in '.basename($f));
             $fields = $this->modx->getFields($classname);
             if (empty($fields)) throw new Exception('Unrecognized object classname: '.$classname);
             
@@ -186,7 +188,7 @@ Array
             elseif ($ext == 'json') {
                 $data = json_decode(file_get_contents($f),true);
             }
-            
+            $this->modx->log(modX::LOG_LEVEL_DEBUG, $classname." Object data: \n". print_r($data,true));            
             if (!is_array($data)) throw new Exception('Data in '.$f.' not an array.');
             if (!isset($data[0])) {
                 $data = array($data);
@@ -194,8 +196,21 @@ Array
             
             $i = 0;
             foreach ($data as $objectdata) {
+                $i++;
                 $Object = $this->_get_object($classname,$objectdata);
-                $objects[$classname][] = $Object;
+
+                $pk = $Object->getPK();
+                if (is_scalar($pk)) {
+
+                    $pk_val = $Object->get($pk);
+                    if (!$pk_val) {
+                        $pk_val = $i;
+                    }
+                    $this->modx->log(modX::LOG_LEVEL_INFO,'Setting primary key to '.$pk_val);
+                    $Object->set($pk, $pk_val);
+                }
+                
+                $objects[$classname][$pk] = $Object;
             }
 	   }
 	   return $objects;
@@ -264,26 +279,35 @@ Array
      * So this function traces out all of an object's relations and grows the build
      * attributes accordingly.
      *
+     * @param object $Obj
      * @param string $classname
      *
      * @return array 
      */
-    public function get_build_attributes($Obj) {
+    public function get_build_attributes($Obj,$classname) {
 
-        if (!isset($Obj->_class)) {
-            throw new Exception('Class not defined for object.');
-        }
-        $classname = $Obj->_class;
         $attributes = $this->get('build_attributes');
         if (!isset($attributes[$classname])) {
             throw new Exception('Build attributes not defined for class '.$classname);
         }
+
         // The attributes for the base
         $out = $attributes[$classname];
+        return $out; 
+        // BUG: dynamic detection is not working...
         // Any related objects?
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
+
         foreach ($related as $alias => $def) {            
             if (!empty($Obj->$alias)) {
+                // WTF?  Not sure why the Resources alias comes overloaded with info
+                // if unchecked, this will bomb out the memory usage
+                if ($classname == 'modTemplate' && $alias == 'Resources') {
+                    continue;
+                }
+                if (in_array($alias, array('LexiconEntries'))) {
+                    continue;
+                }
                 $out[xPDOTransport::RELATED_OBJECTS] = true;
                 $rel_class = $def['class'];
                 if ($def['cardinality'] == 'one') {
@@ -293,7 +317,7 @@ Array
                     $relObjs = $Obj->getMany($alias);
                     $relObj = array_shift($relObjs);
                 }
-                $out[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$rel_class] = $this->get_build_attributes($relObj);
+                $out[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$rel_class] = $this->get_build_attributes($relObj,$def['class']);
             }
         }
         return $out;
@@ -313,18 +337,17 @@ Array
      * @return array
      */
     public function get_criteria($classname, $attributes) {
-        $attributes = $this->get('build_attributes');
-        if (!isset($attributes[$classname])) {
-            throw new Exception('xPDOTransport::UNIQUE_KEY not defined for class '.$classname);
+        $build_attributes = $this->get('build_attributes');
+        if (!isset($build_attributes[$classname][xPDOTransport::UNIQUE_KEY])) {
+            throw new Exception('Build attributes xPDOTransport::UNIQUE_KEY not defined for class '.$classname);
         }
-        $fields = (array) $attributes[$classname][xPDOTransport::UNIQUE_KEY];
+        $fields = (array) $build_attributes[$classname][xPDOTransport::UNIQUE_KEY];
         $criteria = array();
         foreach ($fields as $f) {
             if (isset($attributes[$f]) && !empty($attributes[$f])) {
                 $criteria[$f] = $attributes[$f];
             }
         }
-                
         return $criteria;
     }
 
@@ -369,15 +392,15 @@ Array
 	 * @param array $args
 	 * @return string message
 	 */
-	public static function look($args) {
+	public static function look($classname, $args) {
 
         global $modx;
              
-        $classname = (isset($args['classname'])) ? $args['classname'] : '';
         $relations = (isset($args['relations'])) ? $args['relations'] : '';
         $aggregates = (isset($args['aggregates'])) ? $args['aggregates'] : '';
         $composites = (isset($args['composites'])) ? $args['composites'] : '';
-        $showall = (isset($args['showall'])) ? $args['showall'] : '';
+        $classmap = (isset($args['classmap'])) ? $args['classmap'] : '';
+//        $showall = (isset($args['showall'])) ? $args['showall'] : '';
 
         /* TODO:
         if ($pkg) {
@@ -394,7 +417,7 @@ Array
         }
         */
 
-        if ($showall) {
+        if (empty($classname)) {
             $out = "\n-------------------------\n";
             $out .= "All Available Classes\n";
             $out .= "-------------------------\n";
@@ -411,11 +434,6 @@ Array
         if (empty($classname)) {
             throw new Exception('classname is required.');
         }
-
-
-        
-
-
 
         $array = $modx->getFields($classname);
         
@@ -434,7 +452,19 @@ Array
         }
 
         foreach ($related as $alias => $def) {
-            $array[$alias] = $def;
+            if ($classmap) {
+                $array[$alias] = $def;            
+            }
+            else {
+                $rel_class = $def['class'];
+                $rel_fields = $modx->getFields($rel_class);
+                if ($def['cardinality'] == 'one') {
+                    $array[$alias] = $rel_fields;    
+                }
+                else {
+                    $array[$alias] = array($rel_fields);
+                }
+            }
         }
         
         $out = print_r($array,true); 
@@ -518,23 +548,31 @@ Array
             }
         }
         
-        $this->modx->log(modX::LOG_LEVEL_INFO, 'Beginning build of package '.$this->get('package_name'));
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Beginning build of package "'.$this->get('package_name').'"');
         
         $this->modx->loadClass('transport.modPackageBuilder', '', false, true);
         $builder = new modPackageBuilder($this->modx);
         $builder->createPackage($this->get('package_name'), $this->get('version'), $this->get('release'));
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
         
-        // Tests (Validators)
-        $config = $this->config;
-        $config['source'] = dirname(__FILE__).'/validator.php';
-        $attributes = array(
-            'vehicle_class' => 'xPDOScriptVehicle',
-            'source' => dirname(__FILE__).'/validator.php',
-            xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL => $this->get('abort_install_on_fail')
-        );
-        $vehicle = $builder->createVehicle($config,$attributes);
-        $builder->putVehicle($vehicle);
+        // Tests (Validators): this is run BEFORE your package code is in place
+        // so you cannot include package files from your validator! They won't exist when the code is run.
+        $validator_file = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('validators_dir').'/install.php';
+        if (file_exists($validator_file)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaging validator '.$validator_file);
+            $config = $this->config;
+            $config['source'] = $validator_file;
+            $validator_attributes = array(
+                'vehicle_class' => 'xPDOScriptVehicle',
+                'source' => $validator_file,
+                xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL => $this->get('abort_install_on_fail')
+            );
+            $vehicle = $builder->createVehicle($config,$validator_attributes);
+            $builder->putVehicle($vehicle);
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'No validator detected at '.$validator_file);
+        }
         
         $Category = $this->modx->newObject('modCategory');
         $Category->set('category', $this->get('category'));
@@ -545,6 +583,7 @@ Array
         $snippets = self::_get_elements('modSnippet',$pkg_dir);
         $templates = self::_get_elements('modTemplate',$pkg_dir);
         $tvs = self::_get_elements('modTemplateVar',$pkg_dir);
+
         if ($chunks) $Category->addMany($chunks);
         if ($plugins) $Category->addMany($plugins);
         if ($snippets) $Category->addMany($snippets);
@@ -553,7 +592,8 @@ Array
 
         // TODO: skip this if there are no elements
         //if (empty($chunks) && empty($plugins) && empty($snippets) && empty($templates) && empty($tvs)) {
-        $build_attributes = $this->get_build_attributes($Category);
+        $build_attributes = array();
+        $build_attributes = $this->get_build_attributes($Category,'modCategory');
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '. $Category->_class. "\n".print_r($build_attributes,true));
         $vehicle = $builder->createVehicle($Category, $build_attributes);
         //}
@@ -579,6 +619,15 @@ Array
                 'target' => "return MODX_CORE_PATH . 'components/';",
             ));
         }
+
+/*
+        $validator_attributes = array(
+            'vehicle_class' => 'xPDOScriptVehicle',
+            'source' => dirname(__FILE__).'/validator.php',
+            xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL => $this->get('abort_install_on_fail')
+        );
+        $vehicle->validate('php', $validator_attributes);
+*/        
         //$vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));        
         $builder->putVehicle($vehicle);
         
@@ -593,12 +642,13 @@ Array
         // Objects
         $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');
         $objects = self::_get_objects($objects_dir);
-        foreach ($objects as $classname => $Obj) {
-            $build_attributes = $this->get_build_attributes($Category);
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '
-                . $Category->_class. "\n".print_r($build_attributes,true));
-            $vehicle = $builder->createVehicle($Obj, $build_attributes);
-            $builder->putVehicle($vehicle);
+        foreach ($objects as $classname => $info) {
+            foreach ($info as $k => $Obj) {
+                $build_attributes = $this->get_build_attributes($Obj,$classname);
+                $this->modx->log(modX::LOG_LEVEL_INFO, $classname. ' created');
+                $vehicle = $builder->createVehicle($Obj, $build_attributes);
+                $builder->putVehicle($vehicle);
+            }
         }
         
 
@@ -654,14 +704,19 @@ Array
 
         $classname = $this->get('classname');
         $where = $this->get('where');
-
+        // if --seed=xxx is defined, we export the data as seed data, otherwise as object data
+        $seed = $this->get('seed');
+        $graph = $this->get('graph');
+        
         if (empty($classname)) {
             throw new Exception('Parameter "classname" is required.');
         }
         if (empty($where)) {
             throw new Exception('Parameter "where" is required.');
         }
-        
+        if (preg_match('/[^a-zA-Z0-0_\-]/', $seed)) {
+            throw new Exception('Parameter "seed" can contain only letters and numbers.');
+        }
         $is_element = false;
         $Parser = null;
         if (in_array($classname, $this->get('export_elements'))) {
@@ -674,9 +729,6 @@ Array
         
         $where = json_decode($where, true);
 
-        // if --seed=xxx is defined, we export the data as seed data, otherwise as object data
-        $seed = $this->get('seed');
-        $graph = $this->get('graph');
         
         
         $this->get('overwrite');
@@ -707,25 +759,56 @@ Array
             return $out;
         }
 
+        if (!$is_element) {
+            $dir = $repo_path. '/core/components/'.$this->get('namespace').'/';
+            if ($seed) {
+                $dir .= $this->get('seeds_dir').'/'.$this->get('seed');
+            }
+            else {
+                $dir .= $this->get('objects_dir');
+            }
+            
+            if (!file_exists($dir)) {
+                if (false === mkdir($dir, $this->get('dir_mode'), true)) {
+                    throw new Exception('Could not create directory '.$dir);
+                }
+                else {
+                    $this->modx->log(modX::LOG_LEVEL_DEBUG,'Created directory '.$dir);
+                }
+            }
+            elseif (!is_dir($dir)) {
+                throw new Exception('Path is not a directory '.$dir);
+            }
+        }
+
         if ($results) {
+            $i = 0;
             foreach ($results as $r) {
-                
                 if ($is_element) {
                     $Parser->create($repo_path,$r,$graph);
                 }
                 else {
+                    $i++;
                     $array = $r->toArray('',false,false,$graph);
-                    $out = json_encode($array, JSON_PRETTY_PRINT);
-                    print $out;                 
+                    $content = json_encode($array, JSON_PRETTY_PRINT);
+                    $filename = $dir .'/'.$classname.'.'.$i.'.json';            
+                    //print "\n".$filename."\n"; exit;
+                    if (file_exists($filename) && !$this->get('overwrite')) {
+                        throw new Exception('Overwrite not permitted '.$filename);
+                    }
+
+                    if (false === file_put_contents($filename, $content)) {
+                        throw new Exception('Could not write to file '.$filename);
+                    }
+                    else {
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Created object file at '. $filename);        
+                    }
                 }
             }   
         }
         else {
             $this->modx->log(modX::LOG_LEVEL_ERROR, 'No matching results found for '.$classname);
         }
-        // Write files
-             
-        //json_encode($json, JSON_PRETTY_PRINT);
     }
     
 	/**
@@ -804,18 +887,20 @@ Array
         // Regular Objects
         $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');        
         $objects = self::_get_objects($objects_dir);
-        foreach ($objects as $classname => $Object) {
-            $data = $this->get_criteria($classname, $Object->toArray());
-            Repoman::$queue[$classname][] = implode('-',$data);
-            if(!$this->get('dry_run')) {
-                if ($Object->save()) {
-                    $this->modx->log(modX::LOG_LEVEL_INFO,'Saved '.$classname);
-                    
-                    $this->modx->cacheManager->set($classname.'/'.$i, $data, 0, self::$cache_opts);
-                    $i++;
-                }
-                else {
-                    throw new Exception('Error saving '.$classname);
+        foreach ($objects as $classname => $info) {
+            foreach ($info as $k => $Object) {
+                $data = $this->get_criteria($classname, $Object->toArray());
+                Repoman::$queue[$classname][] = implode('-',$data);
+                if(!$this->get('dry_run')) {
+                    if ($Object->save()) {
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Saved '.$classname);
+                        
+                        $this->modx->cacheManager->set($classname.'/'.$i, $data, 0, self::$cache_opts);
+                        $i++;
+                    }
+                    else {
+                        throw new Exception('Error saving '.$classname);
+                    }
                 }
             }
         }

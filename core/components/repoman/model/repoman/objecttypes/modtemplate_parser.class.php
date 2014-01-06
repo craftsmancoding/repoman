@@ -15,15 +15,67 @@ class modTemplate_parser extends Repoman_parser {
 	public $dox_end = '-->';
     public $dox_pad = ''; // left of line before the @attribute
 	
+    /**
+     * Add any extended docblock attributes for this object type
+     *
+     * @param object $Obj
+     * @return string
+     */
+    public function extend_docblock(&$Obj) {
+        $out = '';
+        // 2 tiers here to get to the TVs TODO
+        if (isset($Obj->TemplateVarTemplates)) {
+            $TVs = $Obj->TemplateVarTemplates->getMany();
+            $out = ' * @TVs ';
+            foreach ($Obj->PluginEvents as $e) {
+                $out .= $e->get('event').',';
+            }
+        }
+        return rtrim($out,',') ."\n";
+    }
+    
 	/**
-	 * Special behavior here for HTML doc blocks.
-	 */
+	 * Run when files are being put into the package, this allows for 
+	 * extraneous comment blocks to be filtered out and placeholders to be adjusted.
+	 * 
+	 * @param string $string
+	 * @return string
+	 */    	
 	public function prepare_for_pkg($string) {
 		// Strip out docblock entirely (i.e. the first comment)
 		$string = preg_replace('#('.preg_quote($this->dox_start).')(.*)('.preg_quote($this->dox_end).')#Uis', '', $string,1);
-		 
-		// Strip out any additional areas
-		return parent::prepare_for_pkg($string);	
+        $string = str_replace('[[++'.$this->Repoman->get('namespace').'.assets_url', '[[++assets_url', $string);
+        $string = str_replace('[[++'.$this->Repoman->get('namespace').'.assets_path', '[[++assets_path', $string);
+        $string = str_replace('[[++'.$this->Repoman->get('namespace').'.assets_url', '[[++core_path', $string);
+        return $string;
 	}
+	
+	/** 
+	 * Attach TVs to the template
+	 *
+	 */
+	public function relate($attributes,&$Obj) {
+        $tvs = array();
+        if (isset($attributes['TVs'])) {
+            $tv_names = explode(',',$attributes['TVs']);
+            foreach ($tv_names as $t) {
+/*
+                $templateid = $Obj->get('id');
+                if ($templateid) {
+                    $TV = $this->modx->getObject('modTemplateVar', array('name'=>trim($t)));
+                }
+                else {
+//                    $TV = $this->modx->newObject('modPluginEvent');
+//                    $TV->set('event',trim($e));                
+                }
+                
+//                Repoman::$queue[] = 'modPluginEvent: '. $Event->get('event');
+//                $events[] = $Event;
+*/
+            }
+        }
+    	//$Obj->addMany($events);
+	}
+	
 }
 /*EOF*/

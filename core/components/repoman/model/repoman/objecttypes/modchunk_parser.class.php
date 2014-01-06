@@ -15,14 +15,19 @@ class modChunk_parser extends Repoman_parser {
     public $dox_pad = ''; // left of line before the @attribute	
 		
 	/**
-	 * Special behavior here for HTML doc blocks.
+	 * Run when files are being put into the package, this allows for 
+	 * extraneous comment blocks to be filtered out and placeholders to be adjusted.
+	 * 
+	 * @param string $string
+	 * @return string
 	 */
 	public function prepare_for_pkg($string) {
 		// Strip out docblock entirely (i.e. the first comment)
 		$string = preg_replace('#('.preg_quote($this->dox_start).')(.*)('.preg_quote($this->dox_end).')#Uis', '', $string,1);
-		 
-		// Strip out any additional areas
-		return parent::prepare_for_pkg($string);	
+        $string = str_replace('[[++'.$this->Repoman->get('namespace').'.assets_url', '[[++assets_url', $string);
+        $string = str_replace('[[++'.$this->Repoman->get('namespace').'.assets_path', '[[++assets_path', $string);
+        $string = str_replace('[[++'.$this->Repoman->get('namespace').'.assets_url', '[[++core_path', $string);
+        return $string;
 	}
 }
 /*EOF*/

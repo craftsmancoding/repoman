@@ -61,11 +61,36 @@ return array(
      * which fields identify an object and how to handle them if they already exist.
      */
     'build_attributes' => array(
-        'modCategory' => array(
+         'modCategory' => array(
                 xPDOTransport::PRESERVE_KEYS => true,
-                xPDOTransport::UPDATE_OBJECT => true, // <-- moot point when we only have a single column
+                xPDOTransport::UPDATE_OBJECT => false, // <-- moot point when we only have a single column
                 xPDOTransport::UNIQUE_KEY => array('category'),
-            ),
+                xPDOTransport::RELATED_OBJECTS => true,
+                xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+                    'Snippets' => array(
+                        xPDOTransport::PRESERVE_KEYS => false,
+                        xPDOTransport::UPDATE_OBJECT => true,
+                        xPDOTransport::UNIQUE_KEY => 'name',
+                    ),
+                    'Chunks' => array (
+                        xPDOTransport::PRESERVE_KEYS => false,
+                        xPDOTransport::UPDATE_OBJECT => true,
+                        xPDOTransport::UNIQUE_KEY => 'name',
+                    ),
+                    'Plugins' => array (
+                        xPDOTransport::PRESERVE_KEYS => false,
+                        xPDOTransport::UPDATE_OBJECT => true,
+                        xPDOTransport::UNIQUE_KEY => 'name',
+                        xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+                            'PluginEvents' => array(
+                                 xPDOTransport::PRESERVE_KEYS => true,
+                                 xPDOTransport::UPDATE_OBJECT => false,
+                                 xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
+                             ),
+                         ),
+                    ),
+            )
+        ),        
         'modSystemSetting' => array(
         	xPDOTransport::UNIQUE_KEY => 'key',
         	xPDOTransport::PRESERVE_KEYS => true,

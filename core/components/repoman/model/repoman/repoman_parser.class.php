@@ -128,11 +128,14 @@ abstract class Repoman_parser {
         }
 
         $files = glob($dir.$this->ext);
+        $i = 0;
         foreach($files as $f) {
 
             $content = file_get_contents($f);
             $attributes = self::repossess($content,$this->dox_start,$this->dox_end);
-            
+            if ($this->Repoman->get('is_build')) {
+                $content = $this->prepare_for_pkg($content);
+            }
             // Skip importing?
             if (isset($attributes['no_import'])) {
                 $this->modx->log(modX::LOG_LEVEL_DEBUG, '@no_import detected in '.$f);
@@ -176,7 +179,13 @@ abstract class Repoman_parser {
                 $data = $this->Repoman->get_criteria($this->objecttype,$attributes);
                 $this->modx->cacheManager->set($this->objecttype.'/'.$attributes[$this->objectname], $data, 0, Repoman::$cache_opts);
             }
-            $objects[] = $Obj;
+            $i++;
+            
+            // For reasons I don't understand, packaging objects into a build req's that they have "fake" pk ids set
+            if ($this->Repoman->get('is_build')) {
+                $Obj->set('id',$i);
+            }
+            $objects[$i] = $Obj;
         }
         
         return $objects;
@@ -193,17 +202,16 @@ abstract class Repoman_parser {
     public function path_to_rel($path,$base) {
         return str_replace($base,'',$path); // convert path to url
     }
-	
+
+
 	/**
-	 * Run as files are being put into the package, this allows for 
-	 * extraneous comment blocks to be filtered out.
+	 * Run when files are being put into the package, this allows for 
+	 * extraneous comment blocks to be filtered out and placeholders to be adjusted.
 	 * 
 	 * @param string $string
 	 * @return string
 	 */
-	public function prepare_for_pkg($string) {
-		return preg_replace('#('.preg_quote($this->comment_start).')(.*)('.preg_quote($this->comment_end).')#Usi', '', $string);
-	}
+    abstract function prepare_for_pkg($string);
 
     /** 
      * Default behavior here requires nothing... really we only need this for Plugins and TVs...

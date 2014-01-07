@@ -948,6 +948,7 @@ Array
         }
 
         // Regular Objects
+        $i = 0;
         $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');        
         $objects = self::_get_objects($objects_dir);
         foreach ($objects as $classname => $info) {
@@ -1028,6 +1029,8 @@ Array
      *
      */
     public function migrate($pkg_dir) {
+        
+        global $modx;
         
         // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
         // if this has been installed via a package, then skip??

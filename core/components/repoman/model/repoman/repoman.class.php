@@ -1002,17 +1002,17 @@ Array
      * @return array
      */
     public function load_data($fullpath, $json=false) {
-        $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$f);                                
+        $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$fullpath);                                
             
         if ($json) {
-            $data = json_decode(file_get_contents($f),true);
+            $data = json_decode(file_get_contents($fullpath),true);
         }
         else {
-            $data = include $f;
+            $data = include $fullpath;
         }        
         
         if (!is_array($data)) {
-            $this->modx->log(modX::LOG_LEVEL_ERROR,'Data in '.$f.' not an array.');
+            $this->modx->log(modX::LOG_LEVEL_ERROR,'Data in '.$fullpath.' not an array.');
             return array();
         }
         if (!isset($data[0])) {

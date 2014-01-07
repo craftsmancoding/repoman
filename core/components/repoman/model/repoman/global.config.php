@@ -89,6 +89,16 @@ return array(
                              ),
                          ),
                     ),
+                    'modTemplate' => array(
+                        xPDOTransport::PRESERVE_KEYS => false,
+                        xPDOTransport::UPDATE_OBJECT => true,
+                        xPDOTransport::UNIQUE_KEY => 'templatename',
+                    ),
+                    'modTemplateVar' => array(
+                        xPDOTransport::PRESERVE_KEYS => false,
+                        xPDOTransport::UPDATE_OBJECT => true,
+                        xPDOTransport::UNIQUE_KEY => 'name',
+                    ),
             )
         ),        
         'modSystemSetting' => array(

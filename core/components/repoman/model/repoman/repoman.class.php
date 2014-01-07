@@ -1074,9 +1074,9 @@ Array
                     $this->modx->log(modX::LOG_LEVEL_INFO,'Walking seed directory '.$seeds_path.'/'.$s);
                     $files = glob($seeds_path.'/'.$s.'/*{.php,.json}',GLOB_BRACE);
                     foreach ($files as $f) {
-                        preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($fullpath), $matches);
+                        preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($f), $matches);
                         if (!isset($matches[3])) {
-                            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Invalid filename '.$fullpath);
+                            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Invalid filename '.$f);
                             continue;
                         }
                         $classname = $matches[1];

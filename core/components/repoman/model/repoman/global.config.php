@@ -44,8 +44,8 @@ return array(
     'validators_dir' => 'tests',
 
     // When the 'export' command is used, the following classnames will be saved as Elements using 
-    // DocBlocks and not as objects
-    'export_elements' => array('modSnippet','modChunk','modTemplate','modTemplateVar','modPlugin'),
+    // DocBlocks and not as objects. Omitting modTemplateVar b/c it's a pain.
+    'export_elements' => array('modSnippet','modChunk','modTemplate','modPlugin'),
         
     // For import/install (dev), force elements to reference static file for easier editing
     'force_static' => true,

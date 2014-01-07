@@ -376,6 +376,7 @@ Array
         
         return array_merge($global, $config, $overrides);
 	}
+
 	
 	/**
 	 * Assistence function for examining MODX objects and their relations.
@@ -698,7 +699,12 @@ Array
      * Extract objects (Settings, Snippets, Pages et al) from MODX and store them in the
      * repository as either object or seed data.
      *
-     *
+     * --classname 
+     * --where
+     * --overwrite
+     * --package : package_name, model_path, and optionally table_prefix  
+     *      e.g. `tiles:[[++core_path]]components/tiles/model/:tiles_` or 
+     *      If only the package name is supplied, the path is assumed to be "[[++core_path]]components/$package_name/model/"
      */
     public function export($repo_path) {
 
@@ -710,9 +716,6 @@ Array
         
         if (empty($classname)) {
             throw new Exception('Parameter "classname" is required.');
-        }
-        if (empty($where)) {
-            throw new Exception('Parameter "where" is required.');
         }
         if (preg_match('/[^a-zA-Z0-0_\-]/', $seed)) {
             throw new Exception('Parameter "seed" can contain only letters and numbers.');
@@ -729,12 +732,28 @@ Array
         
         $where = json_decode($where, true);
 
-        
-        
-        $this->get('overwrite');
+        $package = $this->get('package');
+        if ($package) {
+            $parts = explode(':',$package);
+            if (isset($parts[2])) {
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Adding package '.$parts[0].' at '.$parts[1].' with prefix '.$parts[2]);
+                $this->modx->addPackage($parts[0],$parts[1],$parts[2]);     
+            }
+            elseif(isset($parts[1])) {
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Adding package '.$parts[0].' at '.$parts[1]);
+                $this->modx->addPackage($parts[0],$parts[1]);
+            }
+            else {
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Adding package '.$parts[0]); 
+                $this->modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/model/');
+            }
+        }
+    
 
         $criteria = $this->modx->newQuery($classname);
-        $criteria->where($where);
+        if (!empty($where)) {
+            $criteria->where($where);
+        }
         $total_pages = $this->modx->getCount($classname,$criteria);
     
         $results = array();
@@ -811,6 +830,50 @@ Array
         }
     }
     
+    /**
+     * Our take-off from xPDO's fromArray() function, but one that can import whatever toArray() 
+     * spits out.
+     *
+     * @param string $classname
+     * @param array $objectdata
+     * @param boolean $rawvalues e.g. for modUser, you'd enter the password plaintext and it gets hashed. 
+     *      Set to true if you want to store the literal hash.
+     * @return object
+     */
+    function fromDeepArray($classname, $objectdata, $rawvalues=false) {
+        
+        $Object = $this->modx->newObject($classname);
+        $Object->fromArray($objectdata,'',false,$rawvalues);
+        $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
+        foreach ($objectdata as $k => $v) {
+            if (isset($related[$k])) {
+                $alias = $k;
+                $rel_data = $v;
+                $def = $related[$alias];
+                
+                if (!is_array($def)) {
+                    $this->modx->log(modX::LOG_LEVEL_WARN, 'Data in '.$classname.'['.$alias.'] not an array.');
+                    continue;
+                }
+                if ($def['cardinality'] == 'one') {
+                    $one = $this->fromDeepArray($def['class'],$rel_data,$rawvalues);
+                    $Object->addOne($one);
+                }
+                else {
+                    if (!isset($rel_data[0])) {
+                        $rel_data = array($rel_data);
+                    }
+                    $many = array();
+                    foreach ($rel_data as $r) {
+                        $many[] = $this->fromDeepArray($def['class'],$r,$rawvalues);   
+                    }
+                    $Object->addMany($many);
+                }
+                
+            }
+        }
+        return $Object;
+    }    
 	/**
 	 * Our config getter
 	 * @param string $key
@@ -931,13 +994,40 @@ Array
         self::migrate($pkg_dir);
     }
 
+    /** 
+     * Given a filename, return the array of records stored in the file.
+     *
+     * @param string $fullpath
+     * @param boolean $json if true, the file contains json data so it will be decoded
+     * @return array
+     */
+    public function load_data($fullpath, $json=false) {
+        $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$f);                                
+            
+        if ($json) {
+            $data = json_decode(file_get_contents($f),true);
+        }
+        else {
+            $data = include $f;
+        }        
+        
+        if (!is_array($data)) {
+            $this->modx->log(modX::LOG_LEVEL_ERROR,'Data in '.$f.' not an array.');
+            return array();
+        }
+        if (!isset($data[0])) {
+            $data = array($data);
+        }
+        
+        return $data;
+    }
+
+
     /**
      * Run database migrations: create/remove custom database tables.
      *
      */
     public function migrate($pkg_dir) {
-        
-        global $modx;
         
         // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
         // if this has been installed via a package, then skip??
@@ -971,16 +1061,45 @@ Array
             include $f;
         }
             
-        // Optional Seed data
-        $seed = $this->get('seed');
-        if ($seed) {
-            $seed = basename($seed,'.php');
-            $seed_file = $seeds_path.'/'.$seed.'.php';
-            if (!file_exists($seed_file)) {
-                throw new Exception('Seed file does not exist: '.$seed_file);
+        // Optionally Load Seed data
+        if ($seed = $this->get('seed')) {
+            if (!is_array($seed)) {
+                $seed = explode(',',$seed);
             }
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Importing seed data from '.$seed_file);
-            include $seed_file;
+            foreach ($seed as $s) {
+                if (file_exists($seeds_path.'/'.$s) && is_dir($seeds_path.'/'.$s)) {
+                    $this->modx->log(modX::LOG_LEVEL_INFO,'Walking seed directory '.$seeds_path.'/'.$s);
+                    $files = glob($seeds_path.'/'.$s.'/*{.php,.json}',GLOB_BRACE);
+                    foreach ($files as $f) {
+                        preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($fullpath), $matches);
+                        if (!isset($matches[3])) {
+                            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Invalid filename '.$fullpath);
+                            continue;
+                        }
+                        $classname = $matches[1];
+                        $ext = $matches[3];            
+                        $is_json = (strtolower($ext) == 'php')? false : true;
+                        if (!$fields = $this->modx->getFields($classname)) {
+                            $this->modx->log(modX::LOG_LEVEL_ERROR,'Unrecognized object classname: '.$classname);
+                            continue;
+                        } 
+
+                        if (!$data = $this->load_data($f, $is_json)) {
+                            continue;
+                        }
+                        foreach ($data as $objectdata) {
+                            if($Obj = $this->fromDeepArray($classname, $objectdata)) {
+                                if (!$Obj->save()) {
+                                    $this->modx->log(modX::LOG_LEVEL_ERROR,'Error saving object in '.$f);
+                                }
+                            }
+                            else {
+                                $this->modx->log(modX::LOG_LEVEL_ERROR,'Error extracting object from '.$f);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -1088,7 +1207,7 @@ Array
         }
 
         if (file_exists($migrations_path.'/uninstall.php')) {
-            $modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
             include $migrations_path.'/uninstall.php';
         }        
     }

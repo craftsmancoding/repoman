@@ -51,15 +51,12 @@ class modPlugin_parser extends Repoman_parser {
             $event_names = explode(',',$attributes['PluginEvents']);
             foreach ($event_names as $e) {
                 $pluginid = $Obj->get('id');
-                if ($pluginid) {
-                    $Event = $this->modx->getObject('modPluginEvent', array('pluginid'=>$pluginid,'event'=>$e));
-                }
-                else {
+                if (!$Event = $this->modx->getObject('modPluginEvent', array('pluginid'=>$pluginid,'event'=>$e))) {
                     $Event = $this->modx->newObject('modPluginEvent');
                     $Event->set('event',trim($e));                
                 }
-                
-                Repoman::$queue[] = 'modPluginEvent: '. $Event->get('event');
+
+                Repoman::$queue[$this->objecttype][] = 'modPluginEvent: '. $Event->get('event');
                 $events[] = $Event;
             }
         }

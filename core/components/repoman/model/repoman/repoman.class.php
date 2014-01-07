@@ -1031,7 +1031,8 @@ Array
     public function migrate($pkg_dir) {
         
         global $modx;
-        
+        // For compatibility
+        $object = $this->config;
         // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
         // if this has been installed via a package, then skip??
         // TODO: make this configurable... Dept. of Redundency Dept.

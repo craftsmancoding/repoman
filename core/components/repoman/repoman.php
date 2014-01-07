@@ -211,6 +211,6 @@ catch (Exception $e) {
     exit(4);
 }
 
-print message($function .' complete '.date('Y-m-d H:i:s'),'SUCCESS');
+print message(ucfirst(strtolower($function)) .' complete '.date('Y-m-d H:i:s'),'SUCCESS');
 
 /*EOF*/

@@ -1114,6 +1114,7 @@ Array
     public function parse($pkg_dir) {
         $schema = $this->get('schema'); // name of the schema
         $regenerate_classes = $this->get('regenerate_classes');
+        $regenerate_mysql = $this->get('regenerate_mysql');
         $dir_perms = $this->get('dir_perms');
         
         if (empty($schema)) throw new Exception('"schema" parameter is required.');
@@ -1146,6 +1147,8 @@ Array
         if ($regenerate_classes) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Attempting to remove class files at '.$class_dir);
             self::rrmdir($class_dir);
+        }
+        if ($regenerate_mysql) {    
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Attempting to remove class files at '.$mysql_dir);
             self::rrmdir($mysql_dir);
         }

@@ -70,17 +70,18 @@ function fromDeepArray($classname, $objectdata, $rawvalues=false) {
 function load_data($fullpath, $json=false) {
     global $modx;
     
-    $modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$f);                                
+    $modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$fullpath);                                
         
     if ($json) {
-        $data = json_decode(file_get_contents($f),true);
+        $data = json_decode(file_get_contents($fullpath),true);
     }
     else {
-        $data = include $f;
+        $data = include $fullpath;
     }        
     
     if (!is_array($data)) {
-        $modx->log(modX::LOG_LEVEL_ERROR,'Data in '.$f.' not an array.');
+        $modx->log(modX::LOG_LEVEL_ERROR,'Data in '.$fullpath.' not an array.');
+        error_log('[MODX Package Install '.$object['namespace'].'] Data in '.$fullpath.' not an array.');
         return array();
     }
     if (!isset($data[0])) {
@@ -105,21 +106,22 @@ switch ($options[xPDOTransport::PACKAGE_ACTION]) {
                 $seed = explode(',',$seed);
             }
             $seeds_path = MODX_CORE_PATH.'components/'.$object['namespace'].'/'.$object['seeds_dir'];
-            
             foreach ($seed as $s) {
                 if (file_exists($seeds_path.'/'.$s) && is_dir($seeds_path.'/'.$s)) {
                     $modx->log(modX::LOG_LEVEL_INFO,'Walking seed directory '.$seeds_path.'/'.$s);
                     $files = glob($seeds_path.'/'.$s.'/*{.php,.json}',GLOB_BRACE);
                     foreach ($files as $f) {
-                        preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($fullpath), $matches);
+                        preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($f), $matches);
                         if (!isset($matches[3])) {
-                            $modx->log(modX::LOG_LEVEL_ERROR, 'Invalid filename '.$fullpath);
+                            $modx->log(modX::LOG_LEVEL_ERROR, 'Invalid filename '.$f);
+                            error_log('[MODX Package Install '.$object['namespace'].'] Invalid filename '.$f);
                             continue;
                         }
                         $classname = $matches[1];
                         $ext = $matches[3];            
                         $is_json = (strtolower($ext) == 'php')? false : true;
                         if (!$fields = $modx->getFields($classname)) {
+                            error_log('[MODX Package Install '.$object['namespace'].'] Unrecognized object classname: '.$classname);
                             $modx->log(modX::LOG_LEVEL_ERROR,'Unrecognized object classname: '.$classname);
                             continue;
                         } 
@@ -130,14 +132,19 @@ switch ($options[xPDOTransport::PACKAGE_ACTION]) {
                         foreach ($data as $objectdata) {
                             if($Obj = fromDeepArray($classname, $objectdata)) {
                                 if (!$Obj->save()) {
-                                    $modx->log(modX::LOG_LEVEL_ERROR,'Error saving object in '.$f);
+                                    error_log('[MODX Package Install '.$object['namespace'].'] Error saving object defined in '.$f);
+                                    $modx->log(modX::LOG_LEVEL_ERROR,'Error saving object defined in '.$f);
                                 }
                             }
                             else {
+                                error_log('[MODX Package Install '.$object['namespace'].'] Error extracting object from '.$f);
                                 $modx->log(modX::LOG_LEVEL_ERROR,'Error extracting object from '.$f);
                             }
                         }
                     }
+                }
+                else {
+                    error_log('[MODX Package Install '.$object['namespace'].'] Seed directory does not exist: '.$seeds_path.'/'.$s);
                 }
             }
         }

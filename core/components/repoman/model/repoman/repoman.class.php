@@ -224,7 +224,7 @@ Array
             foreach ($data as $objectdata) {
                 if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT] || $this->get('is_build')) {
                     $this->breadcrumb = array();
-                    $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,$this->get('is_build'),true); // ,$this->get('is_build'));
+                    $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true); // ,$this->get('is_build'));
                     $this->_check_build_attributes($attributes[$classname], $classname);
                 }
 /*

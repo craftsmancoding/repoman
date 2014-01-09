@@ -102,152 +102,7 @@ class Repoman {
         
         return $Parser->gather($pkg_dir);
 	}
-	
-	/**
-	 * Slurp up an object and track down its relations
-	 *
-	 * 
-	 * [ContextSetting] => Array
-        (
-            [class] => modContextSetting
-            [local] => key
-            [foreign] => key
-            [cardinality] => one
-            [owner] => local
-        )
-        
-	 * @param string $classname
-	 * @param array $objectdata
-	 * @return object
-	 */
-    private function _get_object($classname,$objectdata) {
-        $criteria = $this->get_criteria($classname, $objectdata);
-
-        $Object = $this->modx->getObject($classname, $criteria);
-        if (!$Object || $this->get('is_build')) {
-            $Object = $this->modx->newObject($classname);
-        }
-        
-        // Make sure we're allowed to update this type of object
-        $attributes = $this->get('build_attributes');
-        if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT] || $this->get('is_build')) {
-            // Mass assignment $Object->fromArray() does not work: some fields are blocked
-            foreach ($objectdata as $k => $v) {
-                $Object->set($k, $v);
-            }
-        }
-
-        $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
-        foreach ($related as $rclass => $def) {
-            if (isset($objectdata[$rclass])) {
-                $rel_data = $objectdata[$rclass];
-                if (!is_array($rel_data)) throw new Exception('Data in '.$classname.'['.$rclass.'] not an array.');
-                if ($def['cardinality'] == 'one') {
-                    $one = $this->_get_object($def['class'],$rel_data); // Avoid E_STRICT notices
-                    $Object->addOne($one);
-                }
-                else {
-                    if (!isset($rel_data[0])) {
-                        $rel_data = array($rel_data);
-                    }
-                    $many = array();
-                    foreach ($rel_data as $r) {
-                        $many[] = $this->_get_object($def['class'],$r);   
-                    }
-                    $Object->addMany($many);
-                }
-            }
-        }
-        
-        return $Object;
-    }
-    
-    
-	/**
-	 * Iterate over the $dir to load up either PHP or JSON arrays representing objects,
-	 * then return an array of the corresponding objects.
-	 *
-Array
-(
-    [0] => nada.xx.php
-    [1] => nada
-    [2] => .xx
-    [3] => php
-)
-	 
-	 * @param string $dir
-	 * @return array of objects : keys for the classname
-	 */
-	private function _get_objects($dir) {
-        
-        if (!file_exists($dir) || !is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_DEBUG,'No object directory detected at '.$dir);
-            return array();
-        }
-        $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling object directory '.$dir);
-
-        $objects = array();
-        $files = glob($dir.'/*{.php,.json}',GLOB_BRACE);
-
-        foreach($files as $f) {
-            
-            preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($f), $matches);
-            if (!isset($matches[3])) throw new Exception('Invalid filename '.$f);
-            
-            $classname = $matches[1];
-            $ext = $matches[3];            
-            $this->modx->log(modX::LOG_LEVEL_INFO,'Processing object(s) in '.basename($f));
-            $fields = $this->modx->getFields($classname);
-            if (empty($fields)) throw new Exception('Unrecognized object classname: '.$classname);
-            
-            if ($ext == 'php') {
-                $data = include $f;
-            }
-            elseif ($ext == 'json') {
-                $data = json_decode(file_get_contents($f),true);
-            }
-            
-            if (!is_array($data)) {
-                $this->modx->log(modX::LOG_LEVEL_WARN, 'Data in '.$f.' not an array.');
-                continue;            
-            }
-            //$this->modx->log(modX::LOG_LEVEL_DEBUG, $classname." Object data: \n". print_r($data,true));            
-            if (!isset($data[0])) {
-                $data = array($data);
-            }
-            
-            $i = 0;
-            $attributes = $this->get('build_attributes');
-            if (!isset($attributes[$classname])) {
-                throw new Exception('Build attributes not defined for '.$classname);
-            }
-            foreach ($data as $objectdata) {
-                if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT] || $this->get('is_build')) {
-                    $this->breadcrumb = array();
-                    $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true); // ,$this->get('is_build'));
-                    $this->_check_build_attributes($attributes[$classname], $classname);
-                }
-/*
-                $Object = $this->_get_object($classname,$objectdata);
-                $i++;
-                $pk = $Object->getPK();
-                if (is_scalar($pk)) {
-
-                    $pk_val = $Object->get($pk);
-                    if (!$pk_val) {
-                        $pk_val = $i;
-                    }
-                    $this->modx->log(modX::LOG_LEVEL_INFO,'Setting primary key to '.$pk_val);
-                    $Object->set($pk, $pk_val);
-                }
-                
-                $objects[$classname][$pk] = $Object;
-*/
-            }
-	   }
-	   return $objects;
-	}
-	
+		
 	/**
 	 * Create/Update the namespace
 	 * @param string $package_name (lowercase)
@@ -677,7 +532,7 @@ Array
         
         // Objects
         $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');
-        $objects = self::_get_objects($objects_dir);
+        $objects = self::crawl_dir($objects_dir);
         foreach ($objects as $classname => $info) {
             foreach ($info as $k => $Obj) {
                 $build_attributes = $this->get_build_attributes($Obj,$classname);
@@ -729,6 +584,73 @@ Array
         $zip = $this->get('namespace').'-'.$this->get('version').'-'.$this->get('release').'.transport.zip';
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Build complete: '. MODX_CORE_PATH.'packages/'.$zip);
     }
+    
+	/**
+	 * Iterate over the specified $dir to load up either PHP or JSON arrays representing objects,
+	 * then return an array of the corresponding objects.  The classname of the objects must be 
+	 * inherent in the filename.  Filenames may have the following format:
+	 *
+	 *     classname[.identifier].(php|json)
+	 *
+	 * For example, modSystemSetting.php contains a MODX System Setting, or modUser.1.json contains
+	 * a user. 
+	 *	 
+	 * @param string $dir
+	 * @return array of objects : keys for the classname
+	 */
+	public function crawl_dir($dir) {
+        
+        if (!file_exists($dir) || !is_dir($dir)) {
+            $this->modx->log(modX::LOG_LEVEL_DEBUG,'No object directory detected at '.$dir);
+            return array();
+        }
+        $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling directory for objects '.$dir);
+
+        $objects = array();
+        $files = glob($dir.'/*{.php,.json}',GLOB_BRACE);
+
+        foreach($files as $f) {
+            
+            preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($f), $matches);
+            if (!isset($matches[3])) throw new Exception('Invalid filename '.$f);
+            
+            $classname = $matches[1];
+            $ext = $matches[3];            
+            $this->modx->log(modX::LOG_LEVEL_INFO,'Processing object(s) in '.basename($f));
+            $fields = $this->modx->getFields($classname);
+            if (empty($fields)) throw new Exception('Unrecognized object classname: '.$classname);
+            
+            if ($ext == 'php') {
+                $data = include $f;
+            }
+            elseif ($ext == 'json') {
+                $data = json_decode(file_get_contents($f),true);
+            }
+            
+            if (!is_array($data)) {
+                $this->modx->log(modX::LOG_LEVEL_WARN, 'Data in '.$f.' not an array.');
+                continue;            
+            }
+            //$this->modx->log(modX::LOG_LEVEL_DEBUG, $classname." Object data: \n". print_r($data,true));            
+            if (!isset($data[0])) {
+                $data = array($data);
+            }
+            
+            $i = 0;
+            $attributes = $this->get('build_attributes');
+            if (!isset($attributes[$classname])) {
+                throw new Exception('Build attributes not defined for '.$classname);
+            }
+            foreach ($data as $objectdata) {
+                if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT] || $this->get('is_build')) {
+                    $this->breadcrumb = array();
+                    $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true); // ,$this->get('is_build'));
+                    $this->_check_build_attributes($attributes[$classname], $classname);
+                }
+            }
+	   }
+	   return $objects;
+	}
     
     /**
      * Extract objects (Settings, Snippets, Pages et al) from MODX and store them in the
@@ -988,7 +910,7 @@ Array
         // Regular Objects
         $i = 0;
         $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');        
-        $objects = self::_get_objects($objects_dir);
+        $objects = self::crawl_dir($objects_dir);
         foreach ($objects as $classname => $info) {
             foreach ($info as $k => $Object) {
                 $data = $this->get_criteria($classname, $Object->toArray());

@@ -149,7 +149,7 @@ abstract class Repoman_parser {
             if (!isset($attributes[$this->objectname])) {
                 $name = str_replace(array('snippet.','.snippet','chunk.','.chunk'
                     ,'plugin.','.plugin','tv.','.tv','template.','.template'
-                    ,'.html','.txt','.tpl'),'',$name);
+                    ,'.html','.txt','.tpl'),'',basename($f));
                 $attributes[$this->objectname] = $name;
             }
                         

@@ -12,7 +12,8 @@ class Repoman {
 	public $modx;
 	
 	public $config = array();
-    
+	// Used when tracking build attributes and fromDeepArray
+    public $breadcrumb = array();
     // Used to provide transparency
     public static $queue = array();
 	// public $readme_filenames = array('README.md','readme.md');
@@ -30,7 +31,24 @@ class Repoman {
 		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR);
 	}
 
-
+    /**
+     * Make sure build attributes have been defined for the current breadcrumb.
+     * 
+     * @param array $atts
+     * @param string $classname (for messaging)
+     * @return void or throws error
+     */
+    private function _check_build_attributes($atts,$classname) {
+        foreach ($this->breadcrumb as $alias) {
+            if (isset($atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias])) {
+                $atts = $atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias]; 
+            }
+            else {
+                throw new Exception('Build attributes not set deeply for '.$classname.'-->'.implode('-->',$this->breadcrumb));
+            }
+        }
+    }
+    
 	/**
 	 * For creating Repoman's system settings (not for user created settings)
 	 *
@@ -188,17 +206,30 @@ Array
             elseif ($ext == 'json') {
                 $data = json_decode(file_get_contents($f),true);
             }
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, $classname." Object data: \n". print_r($data,true));            
-            if (!is_array($data)) throw new Exception('Data in '.$f.' not an array.');
+            
+            if (!is_array($data)) {
+                $this->modx->log(modX::LOG_LEVEL_WARN, 'Data in '.$f.' not an array.');
+                continue;            
+            }
+            //$this->modx->log(modX::LOG_LEVEL_DEBUG, $classname." Object data: \n". print_r($data,true));            
             if (!isset($data[0])) {
                 $data = array($data);
             }
             
             $i = 0;
+            $attributes = $this->get('build_attributes');
+            if (!isset($attributes[$classname])) {
+                throw new Exception('Build attributes not defined for '.$classname);
+            }
             foreach ($data as $objectdata) {
-                $i++;
+                if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT] || $this->get('is_build')) {
+                    $this->breadcrumb = array();
+                    $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,$this->get('is_build'),true); // ,$this->get('is_build'));
+                    $this->_check_build_attributes($attributes[$classname], $classname);
+                }
+/*
                 $Object = $this->_get_object($classname,$objectdata);
-
+                $i++;
                 $pk = $Object->getPK();
                 if (is_scalar($pk)) {
 
@@ -211,6 +242,7 @@ Array
                 }
                 
                 $objects[$classname][$pk] = $Object;
+*/
             }
 	   }
 	   return $objects;
@@ -294,8 +326,10 @@ Array
         // The attributes for the base
         $out = $attributes[$classname];
         return $out; 
-        // BUG: dynamic detection is not working...
+        // BUG: dynamic detection is not working... TODO: fix the wormhole. Let the user specify this manually too.
+        // see _check_build_attributes.
         // Any related objects?
+/*
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
 
         foreach ($related as $alias => $def) {            
@@ -321,6 +355,7 @@ Array
             }
         }
         return $out;
+*/
     }
 
     /**
@@ -836,14 +871,15 @@ Array
      *
      * @param string $classname
      * @param array $objectdata
+     * @param boolen $set_pk sets primary keys
      * @param boolean $rawvalues e.g. for modUser, you'd enter the password plaintext and it gets hashed. 
      *      Set to true if you want to store the literal hash.
      * @return object
      */
-    function fromDeepArray($classname, $objectdata, $rawvalues=false) {
-        
+    function fromDeepArray($classname, $objectdata, $set_pks=false,$rawvalues=false) {
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'fromDeepArray begin create '.$classname. ' (set_pks: '.$set_pks.' rawvalues: '.$rawvalues."):\n".print_r($objectdata,true));
         $Object = $this->modx->newObject($classname);
-        $Object->fromArray($objectdata,'',false,$rawvalues);
+        $Object->fromArray($objectdata,'',$set_pks,$rawvalues);
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
         foreach ($objectdata as $k => $v) {
             if (isset($related[$k])) {
@@ -855,8 +891,9 @@ Array
                     $this->modx->log(modX::LOG_LEVEL_WARN, 'Data in '.$classname.'['.$alias.'] not an array.');
                     continue;
                 }
+                $this->breadcrumb[] = $alias;
                 if ($def['cardinality'] == 'one') {
-                    $one = $this->fromDeepArray($def['class'],$rel_data,$rawvalues);
+                    $one = $this->fromDeepArray($def['class'],$rel_data,$set_pks,$rawvalues);
                     $Object->addOne($one);
                 }
                 else {
@@ -865,13 +902,14 @@ Array
                     }
                     $many = array();
                     foreach ($rel_data as $r) {
-                        $many[] = $this->fromDeepArray($def['class'],$r,$rawvalues);   
+                        $many[] = $this->fromDeepArray($def['class'],$r,$set_pks,$rawvalues);   
                     }
                     $Object->addMany($many);
                 }
                 
             }
         }
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'fromDeepArray completed create '.$classname. "\n".print_r($Object->toArray(),true));
         return $Object;
     }    
 	/**
@@ -1092,6 +1130,7 @@ Array
                             continue;
                         }
                         foreach ($data as $objectdata) {
+                            $this->breadcrumb = array();
                             if($Obj = $this->fromDeepArray($classname, $objectdata)) {
                                 if (!$Obj->save()) {
                                     $this->modx->log(modX::LOG_LEVEL_ERROR,'Error saving object in '.$f);

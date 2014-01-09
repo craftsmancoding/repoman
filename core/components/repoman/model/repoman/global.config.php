@@ -115,6 +115,17 @@ return array(
             xPDOTransport::PRESERVE_KEYS => true,
             xPDOTransport::UPDATE_OBJECT => true,
             xPDOTransport::UNIQUE_KEY => 'text',
+            xPDOTransport::RELATED_OBJECTS => true,
+            xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+               'Action' => array(
+                    xPDOTransport::PRESERVE_KEYS => false,
+                    xPDOTransport::UPDATE_OBJECT => true,
+                    xPDOTransport::UNIQUE_KEY => array(
+                       'namespace',
+                       'controller'
+                    ),
+                ),
+            ),
         ),
         // Elements
         'modSnippet' => array(
@@ -162,12 +173,20 @@ return array(
             xPDOTransport::UNIQUE_KEY => array('pluginid','event'),
         ),
        'modAction' => array(
-           xPDOTransport::PRESERVE_KEYS => false,
-           xPDOTransport::UPDATE_OBJECT => true,
-           xPDOTransport::UNIQUE_KEY => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => array(
                'namespace',
                'controller'
-           ),
+            ),
+            xPDOTransport::RELATED_OBJECTS => true,
+            xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+               'Menus' => array(
+                    xPDOTransport::PRESERVE_KEYS => true,
+                    xPDOTransport::UPDATE_OBJECT => true,
+                    xPDOTransport::UNIQUE_KEY => 'text',           
+               ),
+            ),
        ),
        'modContentType' => array(
             xPDOTransport::PRESERVE_KEYS => false,

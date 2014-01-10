@@ -20,6 +20,7 @@ class Repoman {
 
     public static $cache_opts = array();
     const CACHE_DIR = 'repoman';
+    const CONFIG_FILE = 'config.php';
         
 	/**
 	 *
@@ -254,8 +255,8 @@ class Repoman {
 	
         $global = include dirname(__FILE__).'/global.config.php';
         $config = array();
-        if (file_exists($pkg_path.'/config.php')) {
-            $config = include $pkg_path.'/config.php';
+        if (file_exists($pkg_path.'/'.self::CONFIG_FILE)) {
+            $config = include $pkg_path.'/'.self::CONFIG_FILE;
             if (!is_array($config)) {    
                 $config = array();
             }
@@ -530,19 +531,28 @@ class Repoman {
         $builder->putVehicle($vehicle);
 
         
-        // Objects
-        $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');
-        $objects = self::crawl_dir($objects_dir);
-        foreach ($objects as $classname => $info) {
-            foreach ($info as $k => $Obj) {
-                $build_attributes = $this->get_build_attributes($Obj,$classname);
-                $this->modx->log(modX::LOG_LEVEL_INFO, $classname. ' created');
-                $vehicle = $builder->createVehicle($Obj, $build_attributes);
-                $builder->putVehicle($vehicle);
+        // Optionally Load Seed data
+        $seeds_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
+        if ($seed = $this->get('seed')) {
+            if (!is_array($seed)) {
+                $seed = explode(',',$seed);
+            }
+            foreach ($seed as $s) {
+                $dirs[] = $s;
+            }                
+        }
+        foreach ($dirs as $d) {
+        $objects = self::crawl_dir($d);
+            foreach ($objects as $classname => $info) {
+                foreach ($info as $k => $Obj) {
+                    $build_attributes = $this->get_build_attributes($Obj,$classname);
+                    $this->modx->log(modX::LOG_LEVEL_INFO, $classname. ' created');
+                    $vehicle = $builder->createVehicle($Obj, $build_attributes);
+                    $builder->putVehicle($vehicle);
+                }
             }
         }
         
-
         // Package Attributes (Documents)
         $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/docs/';
         // defaults
@@ -620,21 +630,9 @@ class Repoman {
             $fields = $this->modx->getFields($classname);
             if (empty($fields)) throw new Exception('Unrecognized object classname: '.$classname);
             
-            if ($ext == 'php') {
-                $data = include $f;
-            }
-            elseif ($ext == 'json') {
-                $data = json_decode(file_get_contents($f),true);
-            }
+            $is_json = (strtolower($ext) == 'php')? true : false;
             
-            if (!is_array($data)) {
-                $this->modx->log(modX::LOG_LEVEL_WARN, 'Data in '.$f.' not an array.');
-                continue;            
-            }
-            //$this->modx->log(modX::LOG_LEVEL_DEBUG, $classname." Object data: \n". print_r($data,true));            
-            if (!isset($data[0])) {
-                $data = array($data);
-            }
+            $data = $this->load_data($f, $is_json);
             
             $i = 0;
             $attributes = $this->get('build_attributes');
@@ -669,6 +667,7 @@ class Repoman {
         $where = $this->get('where');
         // if --seed=xxx is defined, we export the data as seed data, otherwise as object data
         $seed = $this->get('seed');
+        $target = $this->get('target');
         $graph = $this->get('graph');
         
         if (empty($classname)) {
@@ -737,12 +736,13 @@ class Repoman {
 
         if (!$is_element) {
             $dir = $repo_path. '/core/components/'.$this->get('namespace').'/';
-            if ($seed) {
-                $dir .= $this->get('seeds_dir').'/'.$this->get('seed');
+            if (!$target) {
+                throw new Exception('Target directory must be specified.');
             }
-            else {
-                $dir .= $this->get('objects_dir');
+            elseif(!is_scalar($target)) {
+                throw new Exception('Target directory cannot be an array.');
             }
+            $dir .= $this->get('seeds_dir').'/'.$this->get('target');
             
             if (!file_exists($dir)) {
                 if (false === mkdir($dir, $this->get('dir_mode'), true)) {
@@ -861,7 +861,7 @@ class Repoman {
 
     
     /** 
-     * Import pkg elements into MODX
+     * Import pkg elements into MODX from the filesystem
      *
      */
     public function import($pkg_dir) {
@@ -906,33 +906,10 @@ class Repoman {
     		$this->modx->cacheManager->set('modCategory/'.$this->get('category'), $data, 0, self::$cache_opts);
             $this->modx->log(modX::LOG_LEVEL_INFO, "Category created/updated: ".$this->get('category'));
         }
-
-        // Regular Objects
-        $i = 0;
-        $objects_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('objects_dir');        
-        $objects = self::crawl_dir($objects_dir);
-        foreach ($objects as $classname => $info) {
-            foreach ($info as $k => $Object) {
-                $data = $this->get_criteria($classname, $Object->toArray());
-                Repoman::$queue[$classname][] = implode('-',$data);
-                if(!$this->get('dry_run')) {
-                    if ($Object->save()) {
-                        $this->modx->log(modX::LOG_LEVEL_INFO,'Saved '.$classname);
-                        
-                        $this->modx->cacheManager->set($classname.'/'.$i, $data, 0, self::$cache_opts);
-                        $i++;
-                    }
-                    else {
-                        throw new Exception('Error saving '.$classname);
-                    }
-                }
-            }
-        }
-        
- 
+         
         if ($this->get('dry_run')) {
             $msg = "\n==================================\n";
-            $msg .= "    Dry Run Enqueued objects:\n";
+            $msg .= "    Dry Run Enqueued Elements:\n";
             $msg .= "===================================\n";
             foreach (Repoman::$queue as $classname => $list) {
                 $msg .= "\n".$classname."\n".str_repeat('-', strlen($classname))."\n"; 
@@ -1025,7 +1002,7 @@ class Repoman {
             include $f;
         }
             
-        // Optionally Load Seed data
+        // Load Seed data
         if ($seed = $this->get('seed')) {
             if (!is_array($seed)) {
                 $seed = explode(',',$seed);

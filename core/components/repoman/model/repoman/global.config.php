@@ -43,9 +43,9 @@ return array(
     'templates_dir' => 'elements/templates',
     'tvs_dir' => 'elements/tvs',
     
-    'migrations_dir' => 'database/migrations',
-    'objects_dir' => 'database/objects',
-    'seeds_dir' => 'database/seeds',
+    // Relative to core/components/<namespace/  (do not start these with a slash!)
+    'migrations_dir' => 'model/migrations',
+    'seeds_dir' => 'model/seeds',
     'validators_dir' => 'tests',
 
     // When the 'export' command is used, the following classnames will be saved as Elements using 
@@ -56,8 +56,10 @@ return array(
     'force_static' => true,
     'move' => false, // used when exporting elements: if true, the original element will be updated to the new location.
     'dry_run' => false, // use runtime setting: --dry_run to see which objects will be created.
-    'dir_mode' => 0777, // used when creating new directories
-    'seed' => null, // default database seed file to include during standard migrations
+    'dir_mode' => 0777, // mask used when creating new directories
+    
+    'seed' => null, // mixed: sub-dir(s) inside seeds_dir to crawl during install|migrate|build ops.     
+    'target' => null, // string: sub-dir inside seeds_dir where export op should save data
 
     'abort_install_on_fail' => true, // if true, your validation tests can halt pkg install by returning "false"
     

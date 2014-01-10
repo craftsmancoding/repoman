@@ -1,12 +1,50 @@
 Migrate
 
-Run any database migrations defined in the project's database/migrations/ folder.
+Run database migrations defined in the project's migrations director (see "migrations_dir"). 
+This may include seed data (i.e. any objects that are not elements).
 
 Usage:
 
-    php repoman.php migrate <path_to_repo>
+    php repoman.php migrate <pkg_root_dir> [options]
 
-This function will first execute the "uninstall.php" script to clean out the database,
-then it will run the "install.php" script to create custom tables.
+Migrate will first execute the "uninstall.php" script to clean out the database,
+then it will run the "install.php" script to add necessary packages using addPackage() and 
+create custom tables.
 
-If you need to populate your database tables with some custom data, use the --seeds parameter.
+Parameters:
+
+    --seed : a sub-dir(s) inside your defined "seeds_dir" (default is model/seeds"). This may
+        be a comma-separated string or an array, e.g. 
+        
+            php repoman.php migrate <pkg_root_dir> --seed=base,dev
+
+    --log_level: integer. Default is 3 (info), but you may wish to set this to 4 while troubleshooting.
+        This option is available to all Repoman functions.
+
+Build Attributes:
+
+Migrating objects respects the xPDOTransport::UPDATE_OBJECT build attribute for the classnames
+involved.  This is important so that some records do not get updated (i.e. overwritten) after 
+they are first installed.  This behavior is usually desired primarily for settings: the package 
+defines the setting's name and description, but the user supplies the value. This subtlety
+crops up more often when building and updating packages.
+
+When migrating custom data for custom tables you must define a node in the "build_attributes" array
+in your package's config.php file, e.g. 
+
+    <?php 
+    
+    return array(
+        'package_name' => 'MyPackage',
+        // ... etc ...
+        'build_attributes' => array(
+            'Currency' => array(
+                xPDOTransport::PRESERVE_KEYS => true,
+                xPDOTransport::UPDATE_OBJECT => true, 
+                xPDOTransport::UNIQUE_KEY => array('code'),
+            ),
+        ),
+    );
+ 
+Your install.php file should include the necessary addPackage() calls so that custom data classes can
+be used.

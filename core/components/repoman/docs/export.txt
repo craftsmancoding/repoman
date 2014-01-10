@@ -11,7 +11,7 @@ packages from it using Repoman.
 
 Usage:
 
-    php repoman.php export <path_to_repo> --classname=<classname> --where=<json_criteria>
+    php repoman.php export <pkg_root_dir> --classname=<classname> --where=<json_criteria>
     
 
 Options:

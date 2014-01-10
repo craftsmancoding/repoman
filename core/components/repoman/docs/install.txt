@@ -5,7 +5,7 @@ should appear the same as if you had installed the AddOn via a MODX package.
 
 Usage:
 
-    php repoman.php install <path_to_repo>
+    php repoman.php install <pkg_root_dir>
     
 
 Running "install" is equivalent to running both "import" then "migrate"

@@ -10,14 +10,14 @@
  *
  *
  * modX and xPDOTransport constants are in context when this file is included,
- * as well as the $pkg_path (abs. path to the repository's base path with no trailing slash).
+ * as well as the $pkg_root_dir (abs. path to the repository's base path with no trailing slash).
  *
  * @package repoman 
  * @return array
  */
 return array(
-    'package_name' => basename($pkg_path),
-    'namespace' => strtolower(basename($pkg_path)),
+    'package_name' => basename($pkg_root_dir),
+    'namespace' => strtolower(basename($pkg_root_dir)),
     'description' => 'This package was built with Repoman (https://github.com/craftsmancoding/repoman)',
     'version' => '1.0.0',
     'release' => '',
@@ -29,7 +29,7 @@ return array(
     'repo_url' => '',   // https://github.com/username/pkg
     'clone_url' => '',  // git@github.com:username/pkg.git or https://github.com/username/pkg.git
     'copyright' => date('Y'),
-    'category' => basename($pkg_path), // Default category for elements
+    'category' => basename($pkg_root_dir), // Default category for elements
     
     'require_docblocks' => false, // if true, your elements *must* define docblocks in order to be imported
     'build_docs' => '*', // you may include an array specifying basenames of specific files in the build

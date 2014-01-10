@@ -156,7 +156,7 @@ switch ($function) {
     case 'import':
     case 'install':
     case 'migrate':
-    case 'parse':
+    case 'schema':
     case 'export':
         if (!isset($argv[2])) {
             print message('Missing <repo_path> parameter.','ERROR');

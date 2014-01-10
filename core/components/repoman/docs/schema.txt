@@ -1,0 +1,20 @@
+Schema
+
+This function handles two tasks related to reading and writing XML schema files
+and generating the corresponding PHP classes:
+
+- Generate XML schema file from existing database tables.
+- Generate PHP classes from existing XML schema file.
+
+
+--from_db
+--table_prefix=prefix_
+
+--xml=
+
+--overwrite (boolean)
+
+
+    php repoman.php schema <pkg_root_dir> ????
+
+    

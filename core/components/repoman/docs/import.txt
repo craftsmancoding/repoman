@@ -1,14 +1,22 @@
 Import
 
-Import elements and objects from the filesystem into MODX, including templates, chunks, 
-and snippets, but also any objects defined by the package.  You may use the import 
-function periodically as you add files to your project.
+Import elements from the filesystem into MODX, including templates, chunks, 
+and snippets.  You may use the import function periodically as you add files 
+to your project's repository.
 
 Usage:
 
-    php repoman.php import <path_to_repo>
+    php repoman.php import <pkg_root_dir>
     
-This respects the xPDOTransport::UPDATE_OBJECT settings for the objects involved so that 
-some records will not be overwritten (i.e. updated) after they are first installed.  
-This behavior is usually desired primarily for settings: the package defines the setting's 
-name and description, but the user supplies the value.
+Parameters:
+
+    --dry_run : set this to see what elements would be imported. Default: false
+    
+    --require_docblocks : set to true if you want to skip any elements that 
+        don't have a DocBlock defined. You may also set the "@no_import" 
+        attribute in the DocBlock of any element that you do not wish to import.
+        Default: false.
+        
+    --force_static : Normally during development you want to store your elements 
+        as static elements that live on the filesystem, but you may override this
+        behavior if you wish by setting this to false.  Default: true. 

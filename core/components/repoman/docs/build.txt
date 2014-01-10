@@ -6,7 +6,7 @@ or you can copy the package to other MODX sites and install it there.
 
 Usage:
 
-    php repoman.php build <path_to_repo>
+    php repoman.php build <pkg_root_dir>
 
 Make sure you have updated your package's config.php with the latest information.  The following
 configuration details are required for a successful build:
@@ -19,8 +19,8 @@ configuration details are required for a successful build:
 These attributes should be set in your project's config.php file, however if you are feeling lazy
 you can set the options at run-time using command-line options:
 
-    php repoman.php build <path_to_repo> --version=1.0.0 --log_level=4
+    php repoman.php build <pkg_root_dir> --version=1.0.0 --log_level=4
     
 If you need to quote values, you should quote the key and the value, e.g.
 
-    php repoman.php build <path_to_repo> '--package_name=My Package'
+    php repoman.php build <pkg_root_dir> '--package_name=My Package'

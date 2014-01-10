@@ -45,7 +45,7 @@ class Repoman {
                 $atts = $atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias]; 
             }
             else {
-                throw new Exception('Build attributes not set deeply for '.$classname.'-->'.implode('-->',$this->breadcrumb));
+                throw new Exception('Build attributes not set for '.$classname.'-->'.implode('-->',$this->breadcrumb));
             }
         }
     }
@@ -311,7 +311,16 @@ class Repoman {
             }
         }
         
-        return array_merge($global, $config, $overrides);
+        // This nukes any deeply nested structure, e.g. build_attributes
+        $out = array_merge($global, $config, $overrides);
+        
+        $out['build_attributes'] = $global['build_attributes'];
+        if (isset($config['build_attributes']) && is_array($config['build_attributes'])) {
+            foreach ($config['build_attributes'] as $classname => $def) {
+                $out['build_attributes'][$classname] = $def;
+            }
+        }
+        return $out;
 	}
 	
 	/**
@@ -483,21 +492,13 @@ class Repoman {
 
         
         // Optionally Load Seed data
-        $seeds_dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
-        if ($seed = $this->get('seed')) {
-            if (!is_array($seed)) {
-                $seed = explode(',',$seed);
-            }
-            foreach ($seed as $s) {
-                $dirs[] = $s;
-            }                
-        }
+        $dirs = $this->get_seed_dirs($pkg_root_dir);
         foreach ($dirs as $d) {
         $objects = self::crawl_dir($d);
             foreach ($objects as $classname => $info) {
                 foreach ($info as $k => $Obj) {
                     $build_attributes = $this->get_build_attributes($Obj,$classname);
-                    $this->modx->log(modX::LOG_LEVEL_INFO, $classname. ' created');
+                    $this->modx->log(modX::LOG_LEVEL_DEBUG, $classname. ' created');
                     $vehicle = $builder->createVehicle($Obj, $build_attributes);
                     $builder->putVehicle($vehicle);
                 }
@@ -532,7 +533,7 @@ class Repoman {
                     $docs['readme'] = $docs['readme'] ."\n\n"
                         .'This package was built using Repoman (https://github.com/craftsmancoding/repoman/)';
                 }
-                $this->modx->log(modX::LOG_LEVEL_INFO, "Adding doc $stub for $f");
+                $this->modx->log(modX::LOG_LEVEL_INFO, "Adding doc $stub from $f");
             }            
         }
         else {
@@ -562,7 +563,7 @@ class Repoman {
 	public function crawl_dir($dir) {
         
         if (!file_exists($dir) || !is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_DEBUG,'No object directory detected at '.$dir);
+            $this->modx->log(modX::LOG_LEVEL_ERROR,'Could not crawl directory. Directory does not exist: '.$dir);
             return array();
         }
         $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling directory for objects '.$dir);
@@ -580,8 +581,8 @@ class Repoman {
             $this->modx->log(modX::LOG_LEVEL_INFO,'Processing object(s) in '.basename($f));
             $fields = $this->modx->getFields($classname);
             if (empty($fields)) throw new Exception('Unrecognized object classname: '.$classname);
-            
-            $is_json = (strtolower($ext) == 'php')? true : false;
+
+            $is_json = (strtolower($ext) == 'php')? false : true;
             
             $data = $this->load_data($f, $is_json);
             
@@ -632,9 +633,7 @@ class Repoman {
         if (empty($classname)) {
             throw new Exception('Parameter "classname" is required.');
         }
-        if (preg_match('/[^a-zA-Z0-0_\-]/', $seed)) {
-            throw new Exception('Parameter "seed" can contain only letters and numbers.');
-        }
+
         $is_element = false;
         $Parser = null;
         if (in_array($classname, $this->get('export_elements'))) {
@@ -693,25 +692,29 @@ class Repoman {
         }
         // Seed data or element?
         if (!$is_element) {
-            $dir = $pkg_root_dir. '/core/components/'.$this->get('namespace').'/';
+
             if (!$target) {
                 throw new Exception('Target directory must be specified.');
             }
             elseif(!is_scalar($target)) {
                 throw new Exception('Target directory cannot be an array.');
             }
-            $dir .= $this->get('seeds_dir').'/'.$this->get('target');
+            elseif (preg_match('/[^a-zA-Z0-0_\-]/', $target)) {
+                throw new Exception('Name of target directory can contain only letters and numbers.');
+            }            
+            $dir = $pkg_root_dir. '/core/components/'.$this->get('namespace').'/'
+                .$this->get('seeds_dir').'/'.$this->get('target');
             
             if (!file_exists($dir)) {
                 if (false === mkdir($dir, $this->get('dir_mode'), true)) {
                     throw new Exception('Could not create directory '.$dir);
                 }
                 else {
-                    $this->modx->log(modX::LOG_LEVEL_DEBUG,'Created directory '.$dir);
+                    $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$dir);
                 }
             }
             elseif (!is_dir($dir)) {
-                throw new Exception('Path is not a directory '.$dir);
+                throw new Exception('Target directory is not a directory: '.$dir);
             }
         }
 
@@ -770,6 +773,10 @@ class Repoman {
             $Object = $this->modx->getObject($classname, $this->get_criteria($classname,$objectdata));
             if (!$Object) {
                 $Object = $this->modx->newObject($classname);                
+                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Creating new object for '.$classname);
+            }
+            else {
+                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Using existing object for '.$classname);
             }
         }
         
@@ -859,7 +866,31 @@ class Repoman {
 		return false;
 	}
 
-    
+    /**
+     * Get a list of all seed directories
+     *
+     * @param string $pkg_root_dir path to local package root (no trailing slash)          
+     * @return array
+     */
+    public function get_seed_dirs($pkg_root_dir) {
+        $dirs = array();
+        $seeds_dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
+        if ($seed = $this->get('seed')) {
+            if (!is_array($seed)) {
+                $seed = explode(',',$seed);
+            }
+            foreach ($seed as $s) {
+                $dirs[] = $seeds_dir.'/'.$s;
+            }                
+        }
+        if (empty($dirs)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'No seed directories defined.');
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Seed directories set: '.print_r($dirs,true));
+        }
+        return $dirs;
+    }
     /** 
      * Import pkg elements (Snippets,Chunks,Plugins,Templates) into MODX from the filesystem. 
      * They will be marked as static elements.
@@ -945,7 +976,7 @@ class Repoman {
         if (!file_exists($file)) {
             throw new Exception('Loading data failed. File does not exist: '. $file);
         }
-        $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$file);                                
+        $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$file . ' (json: '.$json);                                
             
         if ($json) {
             $data = json_decode(file_get_contents($file),true);
@@ -982,8 +1013,7 @@ class Repoman {
         // if this has been installed via a package, then skip??
         // TODO: make this configurable... Dept. of Redundency Dept.
         $migrations_path = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
-        $seeds_path = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
-
+        
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
             return;
@@ -1013,24 +1043,18 @@ class Repoman {
         $attributes = $this->get('build_attributes');
         //$attributes[$classname][xPDOTransport::UPDATE_OBJECT]            
         
-        // Get seed dirs
-        $seeds_dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
-        if ($seed = $this->get('seed')) {
-            if (!is_array($seed)) {
-                $seed = explode(',',$seed);
-            }
-            foreach ($seed as $s) {
-                $dirs[] = $s;
-            }                
-        }
         // Load Seed data
+        $dirs = $this->get_seed_dirs($pkg_root_dir);
         foreach ($dirs as $d) {
         $objects = self::crawl_dir($d);
             foreach ($objects as $classname => $info) {
                 foreach ($info as $k => $Obj) {
-
-                    //$build_attributes = $this->get_build_attributes($Obj,$classname);
-                    //$this->modx->log(modX::LOG_LEVEL_INFO, $classname. ' created');
+                    if (!$Obj->save()) {
+                        $modx->log(modX::LOG_LEVEL_ERROR, 'Error saving object '. $classname);
+                    }
+                    else {
+                        $modx->log(modX::LOG_LEVEL_DEBUG, 'Saved object '.$classname);
+                    }
                 }
             }
         }
@@ -1044,7 +1068,7 @@ class Repoman {
      *  --schema (required)
      *  --regenerate_classes
      */
-    public function parse($pkg_root_dir) {
+    public function schema($pkg_root_dir) {
         $schema = $this->get('schema'); // name of the schema
         $regenerate_classes = $this->get('regenerate_classes');
         $regenerate_mysql = $this->get('regenerate_mysql');

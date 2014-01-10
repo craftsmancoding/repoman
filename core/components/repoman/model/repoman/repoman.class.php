@@ -16,7 +16,7 @@ class Repoman {
     public $breadcrumb = array();
     // Used to provide transparency
     public static $queue = array();
-	// public $readme_filenames = array('README.md','readme.md');
+	public $readme_filenames = array('README.md','readme.md');
 
     public static $cache_opts = array();
     const CACHE_DIR = 'repoman';
@@ -90,18 +90,15 @@ class Repoman {
 	 * Get an array of element objects for the given $objecttype
 	 *
 	 * @param string $objecttype
-	 * @param string $pkg_dir the repo location, e.g. /home/usr/public_html/assets/repos/mypkg
+     * @param string $pkg_root_dir path to local package root (no trailing slash)
 	 * @return array of objects of type $objecttype
 	 */
-	private function _get_elements($objecttype,$pkg_dir) {
-        
+	private function _get_elements($objecttype,$pkg_root_dir) {
         require_once dirname(__FILE__).'/repoman_parser.class.php';
-        require_once dirname(__FILE__).'/objecttypes/'.strtolower($objecttype).'_parser.class.php';
-        
+        require_once dirname(__FILE__).'/objecttypes/'.strtolower($objecttype).'_parser.class.php';        
         $classname = $objecttype.'_parser';
         $Parser = new $classname($this);
-        
-        return $Parser->gather($pkg_dir);
+        return $Parser->gather($pkg_root_dir);
 	}
 		
 	/**
@@ -213,61 +210,6 @@ class Repoman {
         return $out;
 */
     }
-
-    /**
-     * Goal here is to generate an array that can be passed as filter criteria to
-     * getObject so that we can identify and load existing objects (instead of 
-     * haphazardly creating new objects all the time). In practice, we don't 
-     * always use the primary key to load an object (e.g. we don't specify the pk in 
-     * the package's repository) so for each classname, we need a field (or fields)
-     * to consider when searching for existing records.  E.g. for modSnippet or modChunk, 
-     * we want to look only at the name, but for modResource we might look at context and uri.
-     *
-     * @param string $classname
-     * @param array $attributes data for a single object representing $classname
-     * @return array
-     */
-    public function get_criteria($classname, $attributes) {
-        $build_attributes = $this->get('build_attributes');
-        if (!isset($build_attributes[$classname][xPDOTransport::UNIQUE_KEY])) {
-            throw new Exception('Build attributes xPDOTransport::UNIQUE_KEY not defined for class '.$classname);
-        }
-        $fields = (array) $build_attributes[$classname][xPDOTransport::UNIQUE_KEY];
-        $criteria = array();
-        foreach ($fields as $f) {
-            if (isset($attributes[$f]) && !empty($attributes[$f])) {
-                $criteria[$f] = $attributes[$f];
-            }
-        }
-        return $criteria;
-    }
-
-	/** 
-	 * Get configuration for a given package path.
-	 * This reads the config.php (if present), and merges it with global config
-	 * settings.
-	 *
-     * @param string $pkg_path
-     * @param array $overrides any run-time overrides
-	 * @return array
-	 */
-	public static function load_config($pkg_path, $overrides=array()) {
-	
-        $global = include dirname(__FILE__).'/global.config.php';
-        $config = array();
-        if (file_exists($pkg_path.'/'.self::CONFIG_FILE)) {
-            $config = include $pkg_path.'/'.self::CONFIG_FILE;
-            if (!is_array($config)) {    
-                $config = array();
-            }
-            if (isset($config['package_name']) && !isset($config['category'])) {
-                $config['category'] = $config['package_name'];
-            }
-        }
-        
-        return array_merge($global, $config, $overrides);
-	}
-
 	
 	/**
 	 * Assistence function for examining MODX objects and their relations.
@@ -275,26 +217,22 @@ class Repoman {
      *      package_name, model_path, and optionally table_prefix  
      *      e.g. `tiles:[[++core_path]]components/tiles/model/:tiles_` or 
      *      If only the package name is supplied, the path is assumed to be "[[++core_path]]components/$package_name/model/"
-	 * Required option: --classname
+     *
 	 * Optional options:
-     *      relations (same as setting aggregates and composites)
-     *      aggregates
-     *      composites
+     *      aggregates : if set, only aggregate relationships will be shown.
+     *      composites : if set, only composite relationships will be shown.
+     *      pkg : colon-separated input for loading a package via addPackage.
      *
 	 * @param array $args
 	 * @return string message
 	 */
-	public static function look($classname, $args) {
+	public static function graph($classname, $args) {
 
         global $modx;
              
-        $relations = (isset($args['relations'])) ? $args['relations'] : '';
-        $aggregates = (isset($args['aggregates'])) ? $args['aggregates'] : '';
-        $composites = (isset($args['composites'])) ? $args['composites'] : '';
-        $classmap = (isset($args['classmap'])) ? $args['classmap'] : '';
-//        $showall = (isset($args['showall'])) ? $args['showall'] : '';
-
-        /* TODO:
+        $aggregates = (isset($args['aggregates'])) ? $args['aggregates'] : false;
+        $composites = (isset($args['composites'])) ? $args['composites'] : false;
+        $pkg = (isset($args['pkg'])) ? $args['pkg'] : false;
         if ($pkg) {
             $parts = explode(':',$pkg);
             if (isset($parts[2])) {
@@ -307,8 +245,7 @@ class Repoman {
                 $modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/model/');
             }
         }
-        */
-
+       
         if (empty($classname)) {
             $out = "\n-------------------------\n";
             $out .= "All Available Classes\n";
@@ -329,42 +266,52 @@ class Repoman {
 
         $array = $modx->getFields($classname);
         
-        $related = array();
-        if ($aggregates && $composites) {
-            $related = array_merge($modx->getAggregates($classname), $modx->getComposites($classname));
-        }
-        elseif ($aggregates) {
+        // Default
+        $related = array_merge($modx->getAggregates($classname), $modx->getComposites($classname));
+
+        if ($aggregates) {
             $related = $modx->getAggregates($classname);
         }
         elseif ($composites) {
             $related = $modx->getComposites($classname);
         }
-        elseif ($relations) {
-            $related = array_merge($modx->getAggregates($classname), $modx->getComposites($classname));
-        }
 
         foreach ($related as $alias => $def) {
-            if ($classmap) {
-                $array[$alias] = $def;            
-            }
-            else {
-                $rel_class = $def['class'];
-                $rel_fields = $modx->getFields($rel_class);
-                if ($def['cardinality'] == 'one') {
-                    $array[$alias] = $rel_fields;    
-                }
-                else {
-                    $array[$alias] = array($rel_fields);
-                }
-            }
+            $array[$alias] = $def;    
         }
         
         $out = print_r($array,true); 
         
-        // Make the result pretty. TODO: make it have correct syntax!!!
+        // Try to make the result pretty. TODO: make it have correct syntax!!!
         $out = str_replace(array('Array','[',']',')'), array('array',"'","'",'),'), $out);
         
         return $out;
+	}
+
+	/** 
+	 * Get configuration for a given package path.
+	 * This reads the config.php (if present), and merges it with global config
+	 * settings.
+	 *
+     * @param string $pkg_root_dir path to local package root (no trailing slash)
+     * @param array $overrides any run-time overrides
+	 * @return array
+	 */
+	public static function load_config($pkg_root_dir, $overrides=array()) {
+	
+        $global = include dirname(__FILE__).'/global.config.php';
+        $config = array();
+        if (file_exists($pkg_root_dir.'/'.self::CONFIG_FILE)) {
+            $config = include $pkg_root_dir.'/'.self::CONFIG_FILE;
+            if (!is_array($config)) {    
+                $config = array();
+            }
+            if (isset($config['package_name']) && !isset($config['category'])) {
+                $config['category'] = $config['package_name'];
+            }
+        }
+        
+        return array_merge($global, $config, $overrides);
 	}
 	
 	/**
@@ -392,16 +339,18 @@ class Repoman {
 	}
 		
 	/** 
-	 *
+	 * Recursively remove a directory and all its subdirectories and files.
 	 * See http://www.php.net/manual/en/function.rmdir.php
-	 *
+	 * @param string $dir full path name (with or without trailing slash)
 	 */
     public static function rrmdir($dir) {
         foreach(glob($dir . '/*') as $file) {
-            if(is_dir($file))
+            if(is_dir($file)) {
                 Repoman::rrmdir($file);
-            else
+            }
+            else {
                 unlink($file);
+            }
         }
         rmdir($dir);
     }
@@ -425,10 +374,12 @@ class Repoman {
 	//------------------------------------------------------------------------------
 	
     /** 
-     * Unified build script.
+     * Unified build script: build a MODX transport package from files contained
+     * inside $pkg_root_dir
      *
+     * @param string $pkg_root_dir path to local package root (no trailing slash)
      */
-    public function build($pkg_dir) {
+    public function build($pkg_root_dir) {
 
         $this->config['is_build'] = true; // TODO
         $this->config['force_static'] = false; // TODO
@@ -449,7 +400,7 @@ class Repoman {
         
         // Tests (Validators): this is run BEFORE your package code is in place
         // so you cannot include package files from your validator! They won't exist when the code is run.
-        $validator_file = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('validators_dir').'/install.php';
+        $validator_file = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('validators_dir').'/install.php';
         if (file_exists($validator_file)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaging validator '.$validator_file);
             $config = $this->config;
@@ -470,11 +421,11 @@ class Repoman {
         $Category->set('category', $this->get('category'));
 
         // Import Elements
-        $chunks = self::_get_elements('modChunk',$pkg_dir);
-        $plugins = self::_get_elements('modPlugin',$pkg_dir);
-        $snippets = self::_get_elements('modSnippet',$pkg_dir);
-        $templates = self::_get_elements('modTemplate',$pkg_dir);
-        $tvs = self::_get_elements('modTemplateVar',$pkg_dir);
+        $chunks = self::_get_elements('modChunk',$pkg_root_dir);
+        $plugins = self::_get_elements('modPlugin',$pkg_root_dir);
+        $snippets = self::_get_elements('modSnippet',$pkg_root_dir);
+        $templates = self::_get_elements('modTemplate',$pkg_root_dir);
+        $tvs = self::_get_elements('modTemplateVar',$pkg_root_dir);
 
         if ($chunks) $Category->addMany($chunks);
         if ($plugins) $Category->addMany($plugins);
@@ -494,7 +445,7 @@ class Repoman {
 
         // Files...: TODO: these need their own builder
         // Assets
-        $dir = $pkg_dir.'/assets/components/'.$this->get('namespace');
+        $dir = $pkg_root_dir.'/assets/components/'.$this->get('namespace');
         if (file_exists($dir) && is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing assets from '.$dir);
             $vehicle->resolve('file', array(
@@ -503,7 +454,7 @@ class Repoman {
             ));
         }        
         // Core
-        $dir = $pkg_dir.'/core/components/'.$this->get('namespace');
+        $dir = $pkg_root_dir.'/core/components/'.$this->get('namespace');
         if (file_exists($dir) && is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing core files from '.$dir);
             $vehicle->resolve('file', array(
@@ -532,7 +483,7 @@ class Repoman {
 
         
         // Optionally Load Seed data
-        $seeds_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
+        $seeds_dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
         if ($seed = $this->get('seed')) {
             if (!is_array($seed)) {
                 $seed = explode(',',$seed);
@@ -554,7 +505,7 @@ class Repoman {
         }
         
         // Package Attributes (Documents)
-        $dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/docs/';
+        $dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/docs/';
         // defaults
         $docs = array(
             'readme'=>'This package was built using Repoman (https://github.com/craftsmancoding/repoman/)',
@@ -640,11 +591,19 @@ class Repoman {
                 throw new Exception('Build attributes not defined for '.$classname);
             }
             foreach ($data as $objectdata) {
-                if ($attributes[$classname][xPDOTransport::UPDATE_OBJECT] || $this->get('is_build')) {
-                    $this->breadcrumb = array();
-                    $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true); // ,$this->get('is_build'));
-                    $this->_check_build_attributes($attributes[$classname], $classname);
+                // Does the object already exist?
+                if (!$this->get('is_build')) {
+                    $Object = $this->modx->getObject($classname, $this->get_criteria($classname,$objectdata));
+                    if ($Object && !$attributes[$classname][xPDOTransport::UPDATE_OBJECT]) {
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Skipping... Update Object not allowed: '.$classname);
+                        continue;
+                    }
                 }
+
+                $this->breadcrumb = array();
+                $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true);
+                $this->_check_build_attributes($attributes[$classname], $classname);
+
             }
 	   }
 	   return $objects;
@@ -660,13 +619,13 @@ class Repoman {
      * --package : package_name, model_path, and optionally table_prefix  
      *      e.g. `tiles:[[++core_path]]components/tiles/model/:tiles_` or 
      *      If only the package name is supplied, the path is assumed to be "[[++core_path]]components/$package_name/model/"
+     *
+     * @param string $pkg_root_dir path to local package root (no trailing slash)     
      */
-    public function export($repo_path) {
+    public function export($pkg_root_dir) {
 
         $classname = $this->get('classname');
         $where = $this->get('where');
-        // if --seed=xxx is defined, we export the data as seed data, otherwise as object data
-        $seed = $this->get('seed');
         $target = $this->get('target');
         $graph = $this->get('graph');
         
@@ -717,7 +676,6 @@ class Repoman {
         if ($graph) {
             $results = $this->modx->getCollectionGraph($classname,$graph,$criteria);
             $related = json_decode($graph,true);
-//            print_r($related); exit;
         }
         else {
             $results = $this->modx->getCollection($classname,$criteria);
@@ -733,9 +691,9 @@ class Repoman {
             $out .= "\n\nResults found : {$total_pages}\n\n";
             return $out;
         }
-
+        // Seed data or element?
         if (!$is_element) {
-            $dir = $repo_path. '/core/components/'.$this->get('namespace').'/';
+            $dir = $pkg_root_dir. '/core/components/'.$this->get('namespace').'/';
             if (!$target) {
                 throw new Exception('Target directory must be specified.');
             }
@@ -761,7 +719,7 @@ class Repoman {
             $i = 0;
             foreach ($results as $r) {
                 if ($is_element) {
-                    $Parser->create($repo_path,$r,$graph);
+                    $Parser->create($pkg_root_dir,$r,$graph);
                 }
                 else {
                     $i++;
@@ -788,8 +746,11 @@ class Repoman {
     }
     
     /**
+     * Return an object based on the $objectdata array.
+     *
      * Our take-off from xPDO's fromArray() function, but one that can import whatever toArray() 
-     * spits out.
+     * spits out.  It's not a method on the object, however, so we have to do some dancing here
+     * to determine whether we are creating a new objects or using existing ones.
      *
      * @param string $classname
      * @param array $objectdata
@@ -799,8 +760,19 @@ class Repoman {
      * @return object
      */
     function fromDeepArray($classname, $objectdata, $set_pks=false,$rawvalues=false) {
-        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'fromDeepArray begin create '.$classname. ' (set_pks: '.$set_pks.' rawvalues: '.$rawvalues."):\n".print_r($objectdata,true));
-        $Object = $this->modx->newObject($classname);
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'fromDeepArray begin setting '.$classname. ' (set_pks: '.$set_pks.' rawvalues: '.$rawvalues."):\n".print_r($objectdata,true));
+        
+        // Find existing object or make a new one
+        if ($this->get('is_build')) {
+            $Object = $this->modx->newObject($classname);
+        }
+        else {
+            $Object = $this->modx->getObject($classname, $this->get_criteria($classname,$objectdata));
+            if (!$Object) {
+                $Object = $this->modx->newObject($classname);                
+            }
+        }
+        
         $Object->fromArray($objectdata,'',$set_pks,$rawvalues);
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
         foreach ($objectdata as $k => $v) {
@@ -831,7 +803,7 @@ class Repoman {
                 
             }
         }
-        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'fromDeepArray completed create '.$classname. "\n".print_r($Object->toArray(),true));
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'fromDeepArray completed setting '.$classname. "\n".print_r($Object->toArray(),true));
         return $Object;
     }    
 	/**
@@ -842,16 +814,44 @@ class Repoman {
 	public function get($key) {
 	   return (isset($this->config[$key])) ? $this->config[$key] : null;
 	}
-		
+
+    /**
+     * Generate an array that can be passed as filter criteria to getObject so that we 
+     * can identify and load existing objects. In practice, we don't always use the primary 
+     * key to load an object (because we are defining objects abstractly and the primary key
+     * is a feature of the database where it gets installed) so for each classname, we need 
+     * a field (or fields) to consider when searching for existing records.  E.g. for 
+     * modSnippet or modChunk, we look only at the name, but for modResource we might look 
+     * at both context & uri.
+     *
+     * @param string $classname
+     * @param array $attributes data for a single object representing $classname
+     * @return array
+     */
+    public function get_criteria($classname, $attributes) {
+        $build_attributes = $this->get('build_attributes');
+        if (!isset($build_attributes[$classname][xPDOTransport::UNIQUE_KEY])) {
+            throw new Exception('Build attributes xPDOTransport::UNIQUE_KEY not defined for class '.$classname);
+        }
+        $fields = (array) $build_attributes[$classname][xPDOTransport::UNIQUE_KEY];
+        $criteria = array();
+        foreach ($fields as $f) {
+            if (isset($attributes[$f]) && !empty($attributes[$f])) {
+                $criteria[$f] = $attributes[$f];
+            }
+        }
+        return $criteria;
+    }
+    		
 	/**
 	 * Get the readme file from a repo
 	 *
-	 * @param string $repo_path full path to file, without trailing slash
+	 * @param string $pkg_root_dir full path to file, without trailing slash
 	 * @return string (contents of README.md file) or false if not found
 	 */
-	public function get_readme($repo_path) {
+	public function get_readme($pkg_root_dir) {
 		foreach ($this->readme_filenames as $f) {
-			$readme = $repo_path.'/'.$f;
+			$readme = $pkg_root_dir.'/'.$f;
 			if (file_exists($readme)) {
 				return file_get_contents($readme);
 			}
@@ -861,21 +861,23 @@ class Repoman {
 
     
     /** 
-     * Import pkg elements into MODX from the filesystem
+     * Import pkg elements (Snippets,Chunks,Plugins,Templates) into MODX from the filesystem. 
+     * They will be marked as static elements.
      *
+     * @param string $pkg_root_dir path to local package root (no trailing slash)     
      */
-    public function import($pkg_dir) {
+    public function import($pkg_root_dir) {
 
-        $pkg_dir = self::get_dir($pkg_dir);        
-        self::_create_namespace($this->get('namespace'),$pkg_dir);
+        $pkg_root_dir = self::get_dir($pkg_root_dir);        
+        self::_create_namespace($this->get('namespace'),$pkg_root_dir);
        
         // Settings
         $key = $this->get('namespace') .'.assets_url';
-        $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_dir); // convert path to url
+        $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_root_dir); // convert path to url
         $assets_url = MODX_BASE_URL.$rel_path .'/assets/';
         self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
-        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_dir.'/assets/');
-        self::_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_dir .'/core/');        
+        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_root_dir.'/assets/');
+        self::_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_root_dir .'/core/');        
      
         // The gratis Category
         $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));
@@ -889,11 +891,11 @@ class Repoman {
         }
         
         // Import Elements
-        $chunks = self::_get_elements('modChunk',$pkg_dir);
-        $plugins = self::_get_elements('modPlugin',$pkg_dir);
-        $snippets = self::_get_elements('modSnippet',$pkg_dir);
-        $templates = self::_get_elements('modTemplate',$pkg_dir);
-        $tvs = self::_get_elements('modTemplateVar',$pkg_dir);
+        $chunks = self::_get_elements('modChunk',$pkg_root_dir);
+        $plugins = self::_get_elements('modPlugin',$pkg_root_dir);
+        $snippets = self::_get_elements('modSnippet',$pkg_root_dir);
+        $templates = self::_get_elements('modTemplate',$pkg_root_dir);
+        $tvs = self::_get_elements('modTemplateVar',$pkg_root_dir);
         
         if ($chunks) $Category->addMany($chunks);
         if ($plugins) $Category->addMany($plugins);
@@ -922,35 +924,38 @@ class Repoman {
     }
 
     /**
-     * Install all elements and 
+     * Install all elements and run migrations
      *
-     *
+     * @param string $pkg_root_dir path to local package root (no trailing slash)
      */
-    public function install($pkg_dir) {
-        $pkg_dir = self::get_dir($pkg_dir);
-        self::import($pkg_dir);
-        self::migrate($pkg_dir);
+    public function install($pkg_root_dir) {
+        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        self::import($pkg_root_dir);
+        self::migrate($pkg_root_dir);
     }
 
     /** 
      * Given a filename, return the array of records stored in the file.
      *
-     * @param string $fullpath
+     * @param string $file (full path)
      * @param boolean $json if true, the file contains json data so it will be decoded
      * @return array
      */
-    public function load_data($fullpath, $json=false) {
-        $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$fullpath);                                
+    public function load_data($file, $json=false) {
+        if (!file_exists($file)) {
+            throw new Exception('Loading data failed. File does not exist: '. $file);
+        }
+        $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$file);                                
             
         if ($json) {
-            $data = json_decode(file_get_contents($fullpath),true);
+            $data = json_decode(file_get_contents($file),true);
         }
         else {
-            $data = include $fullpath;
+            $data = include $file;
         }        
         
         if (!is_array($data)) {
-            $this->modx->log(modX::LOG_LEVEL_ERROR,'Data in '.$fullpath.' not an array.');
+            $this->modx->log(modX::LOG_LEVEL_ERROR,'Data in '.$file.' not an array.');
             return array();
         }
         if (!isset($data[0])) {
@@ -962,10 +967,13 @@ class Repoman {
 
 
     /**
-     * Run database migrations: create/remove custom database tables.
+     * Run database migrations: 
+     *      - create/remove custom database tables.
+     *      - create objects from any seed data
      *
+     * @param string $pkg_root_dir path to local package root (no trailing slash)    
      */
-    public function migrate($pkg_dir) {
+    public function migrate($pkg_root_dir) {
         
         global $modx;
         // For compatibility
@@ -973,8 +981,8 @@ class Repoman {
         // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
         // if this has been installed via a package, then skip??
         // TODO: make this configurable... Dept. of Redundency Dept.
-        $migrations_path = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
-        $seeds_path = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
+        $migrations_path = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        $seeds_path = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
 
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
@@ -1001,45 +1009,28 @@ class Repoman {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Running migration '.basename($f));
             include $f;
         }
-            
-        // Load Seed data
+        
+        $attributes = $this->get('build_attributes');
+        //$attributes[$classname][xPDOTransport::UPDATE_OBJECT]            
+        
+        // Get seed dirs
+        $seeds_dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
         if ($seed = $this->get('seed')) {
             if (!is_array($seed)) {
                 $seed = explode(',',$seed);
             }
             foreach ($seed as $s) {
-                if (file_exists($seeds_path.'/'.$s) && is_dir($seeds_path.'/'.$s)) {
-                    $this->modx->log(modX::LOG_LEVEL_INFO,'Walking seed directory '.$seeds_path.'/'.$s);
-                    $files = glob($seeds_path.'/'.$s.'/*{.php,.json}',GLOB_BRACE);
-                    foreach ($files as $f) {
-                        preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($f), $matches);
-                        if (!isset($matches[3])) {
-                            $this->modx->log(modX::LOG_LEVEL_ERROR, 'Invalid filename '.$f);
-                            continue;
-                        }
-                        $classname = $matches[1];
-                        $ext = $matches[3];            
-                        $is_json = (strtolower($ext) == 'php')? false : true;
-                        if (!$fields = $this->modx->getFields($classname)) {
-                            $this->modx->log(modX::LOG_LEVEL_ERROR,'Unrecognized object classname: '.$classname);
-                            continue;
-                        } 
+                $dirs[] = $s;
+            }                
+        }
+        // Load Seed data
+        foreach ($dirs as $d) {
+        $objects = self::crawl_dir($d);
+            foreach ($objects as $classname => $info) {
+                foreach ($info as $k => $Obj) {
 
-                        if (!$data = $this->load_data($f, $is_json)) {
-                            continue;
-                        }
-                        foreach ($data as $objectdata) {
-                            $this->breadcrumb = array();
-                            if($Obj = $this->fromDeepArray($classname, $objectdata)) {
-                                if (!$Obj->save()) {
-                                    $this->modx->log(modX::LOG_LEVEL_ERROR,'Error saving object in '.$f);
-                                }
-                            }
-                            else {
-                                $this->modx->log(modX::LOG_LEVEL_ERROR,'Error extracting object from '.$f);
-                            }
-                        }
-                    }
+                    //$build_attributes = $this->get_build_attributes($Obj,$classname);
+                    //$this->modx->log(modX::LOG_LEVEL_INFO, $classname. ' created');
                 }
             }
         }
@@ -1053,7 +1044,7 @@ class Repoman {
      *  --schema (required)
      *  --regenerate_classes
      */
-    public function parse($pkg_dir) {
+    public function parse($pkg_root_dir) {
         $schema = $this->get('schema'); // name of the schema
         $regenerate_classes = $this->get('regenerate_classes');
         $regenerate_mysql = $this->get('regenerate_mysql');
@@ -1062,9 +1053,9 @@ class Repoman {
         if (empty($schema)) throw new Exception('"schema" parameter is required.');
         
         // TODO: make this configurable
-        $schema_file = $pkg_dir .'/core/components/'.$this->get('namespace').'/model/schema/'.$schema.'.mysql.schema.xml';
+        $schema_file = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/model/schema/'.$schema.'.mysql.schema.xml';
         if (!file_exists($schema_file)) throw new Exception('Schema file does not exist: '.$schema_file);
-        $model_dir = $pkg_dir.'/core/components/'.$this->get('namespace').'/model/';
+        $model_dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/model/';
         $class_dir = $model_dir.$this->get('schema').'/';
         $mysql_dir = $class_dir.'mysql';
                 
@@ -1109,7 +1100,7 @@ class Repoman {
      *
      * php repoman.php uninstall --namespace=something
      */
-    public function uninstall($pkg_dir) {
+    public function uninstall($pkg_root_dir) {
 
         $cache_dir = MODX_CORE_PATH.'cache/repoman/'.$this->get('namespace');
         if (file_exists($cache_dir) && is_dir($cache_dir)) {
@@ -1144,7 +1135,7 @@ class Repoman {
         // uninstall migrations. Global modx so that included files can reference $modx object.
         global $modx;
         
-        $migrations_path = $pkg_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        $migrations_path = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
 
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);

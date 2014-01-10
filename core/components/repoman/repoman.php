@@ -134,14 +134,14 @@ if (!isset($argv[1])) {
 $function = strtolower($argv[1]);
 $pkg_path = '';
 switch ($function) {
-    case 'look':
+    case 'graph':
         $classname = (isset($argv[2]))? $argv[2] : '';
         unset($argv[0]);
         unset($argv[1]);
         unset($argv[2]);
         $args = Repoman::parse_args($argv);
         try {
-            print Repoman::look($classname, $args);
+            print Repoman::graph($classname, $args);
             exit;
         }  
         catch (Exception $e) {

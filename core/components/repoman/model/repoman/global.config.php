@@ -58,7 +58,7 @@ return array(
     'dry_run' => false, // use runtime setting: --dry_run to see which objects will be created.
     'dir_mode' => 0777, // mask used when creating new directories
     
-    'seed' => null, // mixed: sub-dir(s) inside seeds_dir to crawl during install|migrate|build ops.     
+    'seed' => null, // mixed: sub-dir(s) inside seeds_dir to crawl during migrate|build ops.     
     'target' => null, // string: sub-dir inside seeds_dir where export op should save data
 
     'abort_install_on_fail' => true, // if true, your validation tests can halt pkg install by returning "false"

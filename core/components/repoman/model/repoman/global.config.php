@@ -51,7 +51,9 @@ return array(
     // When the 'export' command is used, the following classnames will be saved as Elements using 
     // DocBlocks and not as objects. Omitting modTemplateVar b/c it's a pain.
     'export_elements' => array('modSnippet','modChunk','modTemplate','modPlugin'),
-        
+    // When exporting, this determines how many records are packed into each seed file
+    'limit' => 50,
+    
     // For import/install (dev), force elements to reference static file for easier editing
     'force_static' => true,
     'move' => false, // used when exporting elements: if true, the original element will be updated to the new location.
@@ -62,7 +64,21 @@ return array(
     'target' => null, // string: sub-dir inside seeds_dir where export op should save data
 
     'abort_install_on_fail' => true, // if true, your validation tests can halt pkg install by returning "false"
+
+    // for schema operations
+    'overwrite' => false,
+    'restrict_prefix' => true,
     
+    /**
+     * Define any packages to be loaded during various operations (graph, export)
+     * This lets you easily see the format your objects need to be in.
+     * Syntax is:
+     *
+     * 'packages = array(
+     *      array( <model_name>, $pkg_root_dir.'/core/components/<namespace>/model/', <table_prefix>)
+     *  ),
+     */
+    'packages' => array(),
     /**
      * Used when building packages and for running install/import because we need to know 
      * which fields identify an object and how to handle them if they already exist.

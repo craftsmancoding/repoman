@@ -20,16 +20,37 @@ Options:
         Required: you must specify which type of object you are exporting.
 
     --where (json)
-        This parameter allows you to specify the search criteria for your export.
+        This parameter allows you to specify the search criteria for your export. If omitted, getCollection
+        is run without any filter parameters.
 
     --move (boolean, default false)
         Affects only elements: if set, the original element will be updated to be a static element
         with its source in the new location.  If not set, a "snapshot" copy of the element is created
         and the original is left untouched.
-
+        
+    --target (string, required)
+        Specify which seed directory where your exported files will be written, relative to your seeds_dir.
+        
+    --package (string)
+        Syntax:
+        <model>:/path/to/core/components/<namespace>/model/:<tableprefix>
+        
     --debug (boolean, default false)
         If set, no action is taken, but the raw SQL query will be returned including a list
         of results found.
+
+
+Because its laborious to pass the package parameter via the command-line, it's recommended that you set the 
+"packages" array in your package config.php, e.g.
+
+    return array(
+        // ... etc ...
+        'packages' => array(
+            array('model1', $pkg_root_dir.'/core/components/mynamespace/model/','pre1_'),
+            array('model2', $pkg_root_dir.'/core/components/mynamespace/model/','pre2_'),
+        ),
+
+    );
 
 
 
@@ -37,15 +58,15 @@ Examples:
 
 Exporting a template:
         
-    php repoman.php export /path/to/my/repo --classname=modTemplate '--where={"templatename":"Home Page"}'
+    php repoman.php export /path/to/my/repo --classname=modTemplate '--where={"templatename":"Home Page"}' --target=dev
 
 Exporting Multiple Templates by name:
 
-    php repoman.php export /path/to/my/repo --classname=modTemplate '--where={"templatename:IN":["Home Page","Contact"]}'
+    php repoman.php export /path/to/my/repo --classname=modTemplate '--where={"templatename:IN":["Home Page","Contact"]}' --target=dev
 
 Exporting a Plugin with its events:
 
-    php repoman.php export /path/to/my/repo --classname=modPlugin '--graph={"Events":{}}' '--where={"name":"Bloodline"}'
+    php repoman.php export /path/to/my/repo --classname=modPlugin '--graph={"Events":{}}' '--where={"name":"Bloodline"}' --target=prod
 
 
 See Also: http://rtfm.modx.com/xpdo/2.x/class-reference/xpdoquery/xpdoquery.where

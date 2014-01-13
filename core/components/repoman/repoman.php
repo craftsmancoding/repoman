@@ -158,9 +158,9 @@ switch ($function) {
     case 'migrate':
     case 'schema':
     case 'export':
-        if (!isset($argv[2])) {
+        if (!isset($argv[2]) || substr ($argv[2],0,2) == '--') {
             print message('Missing <repo_path> parameter.','ERROR');
-            print Repoman::rtfm($function);
+            //print Repoman::rtfm($function);
             exit(2);
         }
         try {

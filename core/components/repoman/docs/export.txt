@@ -32,8 +32,15 @@ Options:
         Specify which seed directory where your exported files will be written, relative to your seeds_dir.
         
     --package (string)
-        Syntax:
-        <model>:/path/to/core/components/<namespace>/model/:<tableprefix>
+        Syntax is a colon-sparated string:
+            <model>:/path/to/core/components/<namespace>/model/:<tableprefix>
+        It's recommended that you instead set the "packages" array in your config.php. See example below.
+
+    --limit (integer)
+        Because recordsets may be large, seed files are limited to a given number of records.  If you find
+        that too many seed files are being created, then increase this number.  If your records are so large
+        that PHP is having a hard time writing or slurping the files, decrease this number.
+        Default: 50
         
     --debug (boolean, default false)
         If set, no action is taken, but the raw SQL query will be returned including a list

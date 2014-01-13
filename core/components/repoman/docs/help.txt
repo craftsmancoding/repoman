@@ -12,9 +12,10 @@ Available Functions:
     build       
     import     
     export
+    graph
     install     
     migrate     
-    parse       
+    schema       
     uninstall   
 
 

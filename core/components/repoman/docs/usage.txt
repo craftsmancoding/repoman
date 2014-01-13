@@ -9,9 +9,9 @@ import      - Import elements and objects from the filesystem into MODX
 export      - Export elements and objects from MODX into your repository filesystem
 install     - Installs a dev version of your AddOn from its files in the filesystem
 migrate     - Run database migrations
-parse       - Parse an XML schema file
+schema      - Write or parse an XML schema file to get the ORM PHP classes generated.
 uninstall   - Remove all installed elements and migrations.
-    
+graph       - View an object's data structure.
 
 To get help on a function, you can run:
 

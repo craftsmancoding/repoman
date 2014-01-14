@@ -709,7 +709,7 @@ class Repoman {
             elseif(!is_scalar($target)) {
                 throw new Exception('Target directory cannot be an array.');
             }
-            elseif (preg_match('/[^a-zA-Z0-0_\-]/', $target)) {
+            elseif (preg_match('/[^a-zA-Z0-9_\-]/', $target)) {
                 throw new Exception('Name of target directory can contain only letters and numbers.');
             }            
             $dir = $pkg_root_dir. '/core/components/'.$this->get('namespace').'/'
@@ -745,8 +745,9 @@ class Repoman {
                         if (file_exists($filename) && !$this->get('overwrite')) {
                             throw new Exception('Overwrite not permitted '.$filename);
                         }
-    
-                        if (false === file_put_contents($filename, json_encode($pack, JSON_PRETTY_PRINT))) {
+                        
+                        // if (false === file_put_contents($filename, json_encode($pack, JSON_PRETTY_PRINT))) {
+                        if (false === file_put_contents($filename, json_encode($pack))) {
                             throw new Exception('Could not write to file '.$filename);
                         }
                         else {
@@ -786,7 +787,7 @@ class Repoman {
             return true;
         }
 
-        $this->modx->log(modX::LOG_LEVEL_ERROR, 'Files are not equal.');
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Files are not equal: '.$path1. ' '.$path2);
 
         return false;
     }
@@ -949,7 +950,7 @@ class Repoman {
         // Settings
         $key = $this->get('namespace') .'.assets_url';
         $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_root_dir); // convert path to url
-        $assets_url = MODX_BASE_URL.$rel_path .'/assets/';
+        $assets_url = MODX_BASE_URL.$rel_path .'assets/';
         self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
         self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_root_dir.'/assets/');
         self::_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_root_dir .'/core/');        

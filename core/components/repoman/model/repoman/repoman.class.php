@@ -153,7 +153,7 @@ class Repoman {
         elseif(!is_dir($realpath)) {
             throw new Exception('Path is not a directory: '.$realpath);
         }
-        return $path;
+        return $realpath;
 	}
     	
     /**
@@ -950,7 +950,7 @@ class Repoman {
         // Settings
         $key = $this->get('namespace') .'.assets_url';
         $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_root_dir); // convert path to url
-        $assets_url = MODX_BASE_URL.$rel_path .'assets/';
+        $assets_url = MODX_BASE_URL.$rel_path .'/assets/';
         self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
         self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_root_dir.'/assets/');
         self::_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_root_dir .'/core/');        

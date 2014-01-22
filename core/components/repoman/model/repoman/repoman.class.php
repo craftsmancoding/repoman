@@ -19,6 +19,9 @@ class Repoman {
 	public $readme_filenames = array('README.md','readme.md');
 
     public static $cache_opts = array();
+    
+    public $prepped = false;
+    
     const CACHE_DIR = 'repoman';
     const CONFIG_FILE = 'config.php';
         
@@ -49,6 +52,41 @@ class Repoman {
             }
         }
     }
+
+	/**
+	 * Create/Update the namespace
+	 * @param string $package_name (lowercase)
+	 * @param string $path to the repo
+	 */
+	private function _create_namespace($name, $path) {
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Creating namespace: $name");
+        
+        if (empty($name)) {
+            throw new Exception('namespace parameter cannot be empty.');
+        }
+        if (preg_match('/[^a-z0-9_\-]/', $name)) {
+            throw new Exception('Invalid namespace :'.$name);
+        }
+
+		$N = $this->modx->getObject('modNamespace',$name);
+		if (!$N) {
+			$N = $this->modx->newObject('modNamespace');
+			$N->set('name', $name);
+		}
+		$N->set('path', $path.'core/components/'.$name.'/');
+		$N->set('assets_path',$path.'assets/components/'.$name.'/');
+		
+		Repoman::$queue['modNamespace'][] = $name;
+
+        if (!$this->get('dry_run')) {
+    		$N->save();
+    		// Prepare Cache folder for tracking object creation
+    		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR.'/'.$name);
+    		$data = $this->get_criteria('modNamespace',$N->toArray());
+            $this->modx->cacheManager->set('modNamespace/'.$N->get('name'), $data, 0, Repoman::$cache_opts);
+    		$this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $name");
+        }
+	}
     
 	/**
 	 * For creating Repoman's system settings (not for user created settings)
@@ -85,12 +123,36 @@ class Repoman {
     		$this->modx->log(modX::LOG_LEVEL_INFO, "System Setting created/updated: $key");
         }
 	}
-			
+
+    /**
+     * Set up the local MODX instance for normal repoman action: 
+     * create namespace and expected System Settings for the package.
+     *
+     */
+    private function _prep($pkg_root_dir) {
+        if ($this->prepped) {
+            return;
+        }
+        
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Prep: creating namespace and system settings.");
+        
+        $this->_create_namespace($this->get('namespace'),$pkg_root_dir);
+       
+        // Settings
+        $rel_path = preg_replace('/^'.preg_quote(MODX_BASE_PATH,'/').'/','', $pkg_root_dir); // convert path to url
+        $assets_url = MODX_BASE_URL.$rel_path .'assets/';
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_root_dir.'assets/');
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_root_dir .'core/');      
+        
+        $this->prepped = true;
+    }
+    
 	/**
 	 * Get an array of element objects for the given $objecttype
 	 *
 	 * @param string $objecttype
-     * @param string $pkg_root_dir path to local package root (no trailing slash)
+     * @param string $pkg_root_dir path to local package root (w trailing slash)
 	 * @return array of objects of type $objecttype
 	 */
 	private function _get_elements($objecttype,$pkg_root_dir) {
@@ -101,40 +163,6 @@ class Repoman {
         return $Parser->gather($pkg_root_dir);
 	}
 		
-	/**
-	 * Create/Update the namespace
-	 * @param string $package_name (lowercase)
-	 * @param string $path to the repo
-	 */
-	private function _create_namespace($name, $path) {
-
-        if (empty($name)) {
-            throw new Exception('namespace parameter cannot be empty.');
-        }
-        if (preg_match('/[^a-z0-9_\-]/', $name)) {
-            throw new Exception('Invalid namespace :'.$name);
-        }
-
-		$N = $this->modx->getObject('modNamespace',$name);
-		if (!$N) {
-			$N = $this->modx->newObject('modNamespace');
-			$N->set('name', $name);
-		}
-		$N->set('path', $path.'/core/components/'.$name.'/');
-		$N->set('assets_path',$path.'/assets/components/'.$name.'/');
-		
-		Repoman::$queue['modNamespace'][] = $name;
-
-        if (!$this->get('dry_run')) {
-    		$N->save();
-    		// Prepare Cache folder for tracking object creation
-    		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR.'/'.$name);
-    		$data = $this->get_criteria('modNamespace',$N->toArray());
-            $this->modx->cacheManager->set('modNamespace/'.$N->get('name'), $data, 0, Repoman::$cache_opts);
-    		$this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $name");
-        }
-	}
-
     //------------------------------------------------------------------------------
     //! Static
     //------------------------------------------------------------------------------
@@ -143,7 +171,7 @@ class Repoman {
 	 * any relative paths to absolute . 
 	 *
 	 * @param string $path path (or relative path) to package
-	 * @return string full path without trailing slash
+	 * @return string full path with trailing slash
 	 */
 	public static function get_dir($path) {
         $realpath = strtr(realpath($path), '\\', '/');
@@ -153,7 +181,8 @@ class Repoman {
         elseif(!is_dir($realpath)) {
             throw new Exception('Path is not a directory: '.$realpath);
         }
-        return $path;
+        
+        return rtrim($realpath,'/') .'/';
 	}
     	
     /**
@@ -293,7 +322,7 @@ class Repoman {
 	 * This reads the config.php (if present), and merges it with global config
 	 * settings.
 	 *
-     * @param string $pkg_root_dir path to local package root (no trailing slash)
+     * @param string $pkg_root_dir path to local package root (w trailing slash)
      * @param array $overrides any run-time overrides
 	 * @return array
 	 */
@@ -361,7 +390,7 @@ class Repoman {
                 unlink($file);
             }
         }
-        rmdir($dir);
+        return rmdir($dir);
     }
     
 	/**
@@ -386,7 +415,7 @@ class Repoman {
      * Unified build script: build a MODX transport package from files contained
      * inside $pkg_root_dir
      *
-     * @param string $pkg_root_dir path to local package root (no trailing slash)
+     * @param string $pkg_root_dir path to local package root (w trailing slash)
      */
     public function build($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
@@ -410,7 +439,7 @@ class Repoman {
         
         // Tests (Validators): this is run BEFORE your package code is in place
         // so you cannot include package files from your validator! They won't exist when the code is run.
-        $validator_file = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('validators_dir').'/install.php';
+        $validator_file = $pkg_root_dir.'core/components/'.$this->get('namespace').'/'.$this->get('validators_dir').'/install.php';
         if (file_exists($validator_file)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaging validator '.$validator_file);
             $config = $this->config;
@@ -464,7 +493,7 @@ class Repoman {
             ));
         }        
         // Core
-        $dir = $pkg_root_dir.'/core/components/'.$this->get('namespace');
+        $dir = $pkg_root_dir.'core/components/'.$this->get('namespace');
         if (file_exists($dir) && is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing core files from '.$dir);
             $vehicle->resolve('file', array(
@@ -495,7 +524,7 @@ class Repoman {
         // Optionally Load Seed data
         $dirs = $this->get_seed_dirs($pkg_root_dir);
         foreach ($dirs as $d) {
-        $objects = self::crawl_dir($d);
+        $objects = $this->crawl_dir($d);
             foreach ($objects as $classname => $info) {
                 foreach ($info as $k => $Obj) {
                     $build_attributes = $this->get_build_attributes($Obj,$classname);
@@ -507,7 +536,7 @@ class Repoman {
         }
         
         // Package Attributes (Documents)
-        $dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/docs/';
+        $dir = $pkg_root_dir.'core/components/'.$this->get('namespace').'/docs/';
         // defaults
         $docs = array(
             'readme'=>'This package was built using Repoman (https://github.com/craftsmancoding/repoman/)',
@@ -596,8 +625,8 @@ class Repoman {
                 // Does the object already exist?
                 if (!$this->get('is_build')) {
                     $Object = $this->modx->getObject($classname, $this->get_criteria($classname,$objectdata));
-                    if ($Object && !$attributes[$classname][xPDOTransport::UPDATE_OBJECT]) {
-                        $this->modx->log(modX::LOG_LEVEL_INFO,'Skipping... Update Object not allowed: '.$classname);
+                    if ($Object && !$attributes[$classname][xPDOTransport::UPDATE_OBJECT] && !$this->get('override')) {
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Skipping... Update Object not allowed without override: '.$classname);
                         continue;
                     }
                 }
@@ -622,7 +651,7 @@ class Repoman {
      *      e.g. `tiles:[[++core_path]]components/tiles/model/:tiles_` or 
      *      If only the package name is supplied, the path is assumed to be "[[++core_path]]components/$package_name/model/"
      *
-     * @param string $pkg_root_dir path to local package root (no trailing slash)     
+     * @param string $pkg_root_dir path to local package root (w trailing slash)     
      */
     public function export($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
@@ -712,7 +741,7 @@ class Repoman {
             elseif (preg_match('/[^a-zA-Z0-9_\-]/', $target)) {
                 throw new Exception('Name of target directory can contain only letters and numbers.');
             }            
-            $dir = $pkg_root_dir. '/core/components/'.$this->get('namespace').'/'
+            $dir = $pkg_root_dir. 'core/components/'.$this->get('namespace').'/'
                 .$this->get('seeds_dir').'/'.$this->get('target');
             
             if (!file_exists($dir)) {
@@ -914,13 +943,13 @@ class Repoman {
     /**
      * Get a list of all seed directories
      *
-     * @param string $pkg_root_dir path to local package root (no trailing slash)          
+     * @param string $pkg_root_dir path to local package root (w trailing slash)          
      * @return array
      */
     public function get_seed_dirs($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         $dirs = array();
-        $seeds_dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
+        $seeds_dir = $pkg_root_dir.'core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
         if ($seed = $this->get('seed')) {
             if (!is_array($seed)) {
                 $seed = explode(',',$seed);
@@ -941,19 +970,12 @@ class Repoman {
      * Import pkg elements (Snippets,Chunks,Plugins,Templates) into MODX from the filesystem. 
      * They will be marked as static elements.
      *
-     * @param string $pkg_root_dir path to local package root (no trailing slash)     
+     * @param string $pkg_root_dir path to local package root (w trailing slash)     
      */
     public function import($pkg_root_dir) {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);  
-        self::_create_namespace($this->get('namespace'),$pkg_root_dir);
-       
-        // Settings
-        $key = $this->get('namespace') .'.assets_url';
-        $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_root_dir); // convert path to url
-        $assets_url = MODX_BASE_URL.$rel_path .'assets/';
-        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
-        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_root_dir.'/assets/');
-        self::_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_root_dir .'/core/');        
+        $pkg_root_dir = self::get_dir($pkg_root_dir);
+
+        $this->_prep($pkg_root_dir);
      
         // The gratis Category
         $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));
@@ -1002,7 +1024,7 @@ class Repoman {
     /**
      * Install all elements and run migrations
      *
-     * @param string $pkg_root_dir path to local package root (no trailing slash)
+     * @param string $pkg_root_dir path to local package root (w trailing slash)
      */
     public function install($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
@@ -1047,10 +1069,11 @@ class Repoman {
      *      - create/remove custom database tables.
      *      - create objects from any seed data
      *
-     * @param string $pkg_root_dir path to local package root (no trailing slash)    
+     * @param string $pkg_root_dir path to local package root (w trailing slash)    
      */
     public function migrate($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $this->_prep($pkg_root_dir);
         
         global $modx;
         // For compatibility
@@ -1058,7 +1081,7 @@ class Repoman {
         // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
         // if this has been installed via a package, then skip??
         // TODO: make this configurable... Dept. of Redundency Dept.
-        $migrations_path = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        $migrations_path = $pkg_root_dir .'core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
         
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
@@ -1075,7 +1098,6 @@ class Repoman {
         }
         // Loop over remaining migrations
         $files = glob($migrations_path.'/*.php');
-
         foreach($files as $f) {
             $base = basename($f);
             if (in_array($base, array('install.php','uninstall.php'))) {
@@ -1086,13 +1108,20 @@ class Repoman {
             include $f;
         }
         
-        $attributes = $this->get('build_attributes');
-        //$attributes[$classname][xPDOTransport::UPDATE_OBJECT]            
-        
         // Load Seed data
+        $this->seed($pkg_root_dir);
+    }
+
+    /**
+     * Load up seed data into the local modx install. Not used by the build method.
+     *
+     * @param string $pkg_root_dir path to local package root (w trailing slash)    
+     */
+    public function seed($pkg_root_dir) {
+        $pkg_root_dir = self::get_dir($pkg_root_dir);
         $dirs = $this->get_seed_dirs($pkg_root_dir);
         foreach ($dirs as $d) {
-        $objects = self::crawl_dir($d);
+        $objects = $this->crawl_dir($d);
             foreach ($objects as $classname => $info) {
                 foreach ($info as $k => $Obj) {
                     if (!$Obj->save()) {
@@ -1105,7 +1134,7 @@ class Repoman {
             }
         }
     }
-
+    
     /**
      * Dev tool for parsing XML schema.  xyz.mysql.schema.xml maps to the model/xyz/ directory.
      *
@@ -1117,7 +1146,10 @@ class Repoman {
      *  --overwrite
      */
     public function schema($pkg_root_dir) {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = self::get_dir($pkg_root_dir);   
+
+        $this->_prep($pkg_root_dir); // populate the system settings.
+        
         $action = strtolower($this->get('action')); // write|parse|both
         $model = trim(strtolower($this->get('model')),'/'); // name of the schema and the subdir
         $table_prefix = $this->get('table_prefix');
@@ -1139,8 +1171,8 @@ class Repoman {
         }
         
         $now = time();
-        $schema_file = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/model/schema/'.$model.'.mysql.schema.xml';
-        $model_dir = $pkg_root_dir.'/core/components/'.$this->get('namespace').'/model/';
+        $schema_file = $pkg_root_dir .'core/components/'.$this->get('namespace').'/model/schema/'.$model.'.mysql.schema.xml';
+        $model_dir = $pkg_root_dir.'core/components/'.$this->get('namespace').'/model/';
         
         $manager = $this->modx->getManager();
         $generator = $manager->getGenerator();
@@ -1150,7 +1182,7 @@ class Repoman {
         if ($action == 'write') {
             if (file_exists($schema_file)) {
                 if ($overwrite == 'polite') {
-                    $schema_file_new = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/model/schema/'.$model.'.'.$now.'.mysql.schema.xml';
+                    $schema_file_new = $pkg_root_dir .'core/components/'.$this->get('namespace').'/model/schema/'.$model.'.'.$now.'.mysql.schema.xml';
                     if (!rename($schema_file, $schema_file_new)) {
                         throw new Exception('Could not rename schema file '.$schema_file);
                     }
@@ -1185,19 +1217,17 @@ class Repoman {
             $this->modx->setPackage($this->get('namespace'), $pkg_root_dir, $table_prefix);
             if (!file_exists($schema_file)) throw new Exception('Schema file does not exist: '.$schema_file);
             $class_dir = $model_dir.$model.'/';
-            $mysql_dir = $class_dir.'mysql';
-            $dirs = array($mysql_dir, $class_dir);  
-            foreach ($dirs as $d) {
-                if ( !file_exists($d) ) {
-                    if (!mkdir($d, $dir_mode, true) ) {
-                        throw new Exception('Could not create directory '.$d);
-                    }
-                    $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$d);
+            
+            if ( !file_exists($class_dir) ) {
+                if (!mkdir($class_dir, $dir_mode, true) ) {
+                    throw new Exception('Could not create directory '.$class_dir);
                 }
-                if (!is_writable($d) ) {
-                    throw new Exception('Directory is not writeable '.$d);
-                }
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$class_dir);
             }
+            if (!is_writable($class_dir) ) {
+                throw new Exception('Directory is not writeable '.$class_dir);
+            }
+
             $xml = file_get_contents($schema_file);
             if ($xml === false) {
                 throw new Exception('Could not read XML schema file: '.$schema_file);
@@ -1252,6 +1282,7 @@ class Repoman {
                 }
             }
             // Check mysql files
+            $mysql_dir = $class_dir.'mysql';            
             if (file_exists($mysql_dir)) {
                 if ($overwrite == 'polite') {
                     if (!rename($mysql_dir, $mysql_dir.'.'.$now)) {
@@ -1263,7 +1294,7 @@ class Repoman {
                     $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$mysql_dir);
                 }
                 elseif ($overwrite =='force') {
-                    if (!unlink($mysql_dir)) {
+                    if (!$this->rrmdir($mysql_dir)) {
                         throw new Exception('Could not delete mysqld dir '.$mysql_dir);
                     }
                     $this->modx->log(modX::LOG_LEVEL_INFO,'Deleted directory '.$mysql_dir);
@@ -1275,6 +1306,12 @@ class Repoman {
                 else {
                     throw new Exception('mysql directory exists: '.$mysql_dir.' Refusing to overwrite unless forced.');
                 }
+            }
+            else {
+                if (!mkdir($mysql_dir, $dir_mode, true) ) {
+                    throw new Exception('Could not create directory '.$mysql_dir);
+                }
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$mysql_dir);            
             }
             $generator->parseSchema($schema_file, $model_dir);
         }
@@ -1339,7 +1376,7 @@ class Repoman {
         // uninstall migrations. Global modx so that included files can reference $modx object.
         global $modx;
         
-        $migrations_path = $pkg_root_dir .'/core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        $migrations_path = $pkg_root_dir .'core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
 
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);

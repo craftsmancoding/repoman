@@ -1,15 +1,16 @@
 Graph
 
-This function helps you examine objects and their relations so you can structure your seed data correctly.
-It prints all of an object's attributes and meta data is shown for each related object.  This is useful
-for creating seed data or for using the getObjectGraph() and getCollectionGraph methods(). 
+The graph command prints all of an object's attributes and it includes meta data for each defined 
+relation.  This is useful for creating seed data or for using the getObjectGraph() and 
+getCollectionGraph methods(). 
 
 Usage:
 
     php repoman.php map [<classname>] [options]
     
 If <classname> is omitted, all available MODX classes will be shown.
-<classname> must be a recognized MODX object type classname. 
+<classname> must be a recognized MODX object type classname.  By default both
+aggregate and composite relations are shown.
 
 Available options are:
 

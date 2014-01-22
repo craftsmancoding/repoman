@@ -1,7 +1,7 @@
 Migrate
 
 Run database migrations defined in the project's migrations director (see "migrations_dir"). 
-This may include seed data (i.e. any objects that are not elements).
+Migrations are structural changes to your database, e.g. used to create or modify custom tables.
 
 Usage:
 
@@ -18,8 +18,14 @@ Parameters:
         
             php repoman.php migrate <pkg_root_dir> --seed=base,dev
 
+    --from : a valid version number.  Normal behavior is to uninstall all migrations, then 
+        install them: this guarantees that the local environment is in the most current state.
+        If you wish to preserve data or test your update scripts, you can skip the uninstall and
+        install process and instead run only the updates starting with the referenced version number.
+
     --log_level: integer. Default is 3 (info), but you may wish to set this to 4 while troubleshooting.
         This option is available to all Repoman functions.
+        
 
 Build Attributes:
 

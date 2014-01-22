@@ -1,0 +1,68 @@
+Seed
+
+Use the seed function to add objects to your database. This is how you can add 
+resources, actions, menus, or any supported MODX object into your database. This
+is also useful for loading test data. 
+
+Usage:
+
+    php repoman.php seed <pkg_root_dir> [options]
+
+
+The objects can be stored as PHP or JSON arrays.  The filename must reference the object 
+classname via the following syntax:
+
+    classname[.identifier].php|json
+
+An optional identifier suffix can come after the classname and before the .php or .json 
+suffix, e.g. Product.red-sweater.php.  Set the "packages" array with any custom packages
+to make them available to the seed command.
+
+A seed file may contain a single object or an array of objects (i.e. a recordset).  Use 
+the export command to export existing database records to the filesystem for use via a
+seed command.
+
+Although you may add Elements (Snippets, Chunks, Templates, and Plugins) to your database 
+via a seeding operation, those objects are better managed via the import command and 
+referenced as files.
+
+
+Parameters:
+
+    --seed : a sub-dir(s) inside your defined "seeds_dir" (default is model/seeds"). This may
+        be a comma-separated string or an array, e.g. "base,dev".
+        
+            php repoman.php migrate <pkg_root_dir> --seed=base,dev
+
+    --overwrite : if set, existing objects will be rewritten regardless of their build attribute
+        settings.
+    
+
+    --log_level: integer. Default is 3 (info), but you may wish to set this to 4 while troubleshooting.
+        This option is available to all Repoman functions.
+
+Build Attributes:
+
+Database seeding respects the xPDOTransport::UPDATE_OBJECT build attribute for the classnames
+involved.  This is important so that some records do not get overwritten after they are first 
+created: use the overwrite option to force updates during repeated seed operations.
+
+When migrating custom data for custom tables you must define a node in the "build_attributes" array
+in your package's config.php file, e.g. 
+
+    <?php 
+    
+    return array(
+        'package_name' => 'MyPackage',
+        // ... etc ...
+        'build_attributes' => array(
+            'Currency' => array(
+                xPDOTransport::PRESERVE_KEYS => true,
+                xPDOTransport::UPDATE_OBJECT => true, 
+                xPDOTransport::UNIQUE_KEY => array('code'),
+            ),
+        ),
+    );
+ 
+Your install.php file should include the necessary addPackage() calls so that custom data classes can
+be used.

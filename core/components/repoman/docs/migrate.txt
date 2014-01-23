@@ -13,11 +13,6 @@ create custom tables.
 
 Parameters:
 
-    --seed : a sub-dir(s) inside your defined "seeds_dir" (default is model/seeds"). This may
-        be a comma-separated string or an array, e.g. 
-        
-            php repoman.php migrate <pkg_root_dir> --seed=base,dev
-
     --from : a valid version number.  Normal behavior is to uninstall all migrations, then 
         install them: this guarantees that the local environment is in the most current state.
         If you wish to preserve data or test your update scripts, you can skip the uninstall and
@@ -26,31 +21,6 @@ Parameters:
     --log_level: integer. Default is 3 (info), but you may wish to set this to 4 while troubleshooting.
         This option is available to all Repoman functions.
         
-
-Build Attributes:
-
-Migrating objects respects the xPDOTransport::UPDATE_OBJECT build attribute for the classnames
-involved.  This is important so that some records do not get updated (i.e. overwritten) after 
-they are first installed.  This behavior is usually desired primarily for settings: the package 
-defines the setting's name and description, but the user supplies the value. This subtlety
-crops up more often when building and updating packages.
-
-When migrating custom data for custom tables you must define a node in the "build_attributes" array
-in your package's config.php file, e.g. 
-
-    <?php 
-    
-    return array(
-        'package_name' => 'MyPackage',
-        // ... etc ...
-        'build_attributes' => array(
-            'Currency' => array(
-                xPDOTransport::PRESERVE_KEYS => true,
-                xPDOTransport::UPDATE_OBJECT => true, 
-                xPDOTransport::UNIQUE_KEY => array('code'),
-            ),
-        ),
-    );
  
 Your install.php file should include the necessary addPackage() calls so that custom data classes can
-be used.
+be used and their corresponding database tables can be accessed.

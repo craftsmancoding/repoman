@@ -502,15 +502,6 @@ class Repoman {
             ));
         }
 
-/*
-        $validator_attributes = array(
-            'vehicle_class' => 'xPDOScriptVehicle',
-            'source' => dirname(__FILE__).'/validator.php',
-            xPDOTransport::ABORT_INSTALL_ON_VEHICLE_FAIL => $this->get('abort_install_on_fail')
-        );
-        $vehicle->validate('php', $validator_attributes);
-*/        
-        //$vehicle->validate('php', array('source' => dirname(__FILE__).'/validator.php'));        
         $builder->putVehicle($vehicle);
         
         // Migrations: we attach our all-purpose resolver to handle migrations
@@ -520,6 +511,21 @@ class Repoman {
         $vehicle = $builder->createVehicle($config,$attributes);
         $builder->putVehicle($vehicle);
 
+        // Add Version Setting
+        $repoman_version_build_attributes = array(
+        	xPDOTransport::UNIQUE_KEY => 'key',
+        	xPDOTransport::PRESERVE_KEYS => true,
+        	xPDOTransport::UPDATE_OBJECT => true, // Tricky: we need to update the value here
+        );
+        $VersionSetting = $this->modx->newObject('modSystemSetting');
+        $VersionSetting->set('key', $this->get('namespace').'.version');
+        $VersionSetting->set('value', $this->get('version'));
+        $VersionSetting->set('xtype', 'textfield');
+        $VersionSetting->set('namespace', $this->get('namespace'));
+        $VersionSetting->set('area', $this->get('namespace').':default');
+        $vehicle = $builder->createVehicle($VersionSetting, $repoman_version_build_attributes);
+        $builder->putVehicle($vehicle);
+        
         
         // Optionally Load Seed data
         $dirs = $this->get_seed_dirs($pkg_root_dir);
@@ -1037,6 +1043,7 @@ class Repoman {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         self::import($pkg_root_dir);
         self::migrate($pkg_root_dir);
+        self::seed($pkg_root_dir);
     }
 
     /** 
@@ -1115,8 +1122,6 @@ class Repoman {
             include $f;
         }
         
-        // Load Seed data
-        $this->seed($pkg_root_dir);
     }
 
     /**
@@ -1132,10 +1137,10 @@ class Repoman {
             foreach ($objects as $classname => $info) {
                 foreach ($info as $k => $Obj) {
                     if (!$Obj->save()) {
-                        $modx->log(modX::LOG_LEVEL_ERROR, 'Error saving object '. $classname);
+                        $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error saving object '. $classname);
                     }
                     else {
-                        $modx->log(modX::LOG_LEVEL_DEBUG, 'Saved object '.$classname);
+                        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Saved object '.$classname);
                     }
                 }
             }
@@ -1350,6 +1355,24 @@ class Repoman {
      */
     public function uninstall($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
+
+        // uninstall migrations. Global $modx and $object variables used so the 
+        // included files are compat. with the build functionality.
+        global $modx;
+        $object = $this->config;
+        $migrations_path = $pkg_root_dir .'core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+
+        if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
+            return;
+        }
+
+        if (file_exists($migrations_path.'/uninstall.php')) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
+            include $migrations_path.'/uninstall.php';
+        }
+        
+        // Remove installed objects
         $cache_dir = MODX_CORE_PATH.'cache/repoman/'.$this->get('namespace');
         if (file_exists($cache_dir) && is_dir($cache_dir)) {
             $obj_dirs = array_diff(scandir($cache_dir), array('..', '.'));
@@ -1379,21 +1402,6 @@ class Repoman {
         else {
             $this->modx->log(modX::LOG_LEVEL_WARN, 'No cached import data at '.$cache_dir);
         }
-        
-        // uninstall migrations. Global modx so that included files can reference $modx object.
-        global $modx;
-        
-        $migrations_path = $pkg_root_dir .'core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
-
-        if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
-            return;
-        }
-
-        if (file_exists($migrations_path.'/uninstall.php')) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
-            include $migrations_path.'/uninstall.php';
-        }        
     }
 	
 }

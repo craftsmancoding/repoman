@@ -63,13 +63,14 @@ class modTemplate_parser extends Repoman_parser {
                 $templateid = $Obj->get('id');
                 if ($templateid) {
                     $TV = $this->modx->getObject('modTemplateVar', array('name'=>trim($t)));
+                    modTemplateVarTemplate
                 }
                 else {
 //                    $TV = $this->modx->newObject('modPluginEvent');
 //                    $TV->set('event',trim($e));                
                 }
                 
-//                Repoman::$queue[] = 'modPluginEvent: '. $Event->get('event');
+//                Repoman::$queue[] = 'modTemplateVarTemplate: '. $Event->get('event');
 //                $events[] = $Event;
 */
             }

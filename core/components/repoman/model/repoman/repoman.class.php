@@ -1148,7 +1148,7 @@ class Repoman {
     public function schema($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);   
 
-        $this->_prep($pkg_root_dir); // populate the system settings.
+        // $this->_prep($pkg_root_dir); // populate the system settings not req'd
         
         $action = strtolower($this->get('action')); // write|parse|both
         $model = trim(strtolower($this->get('model')),'/'); // name of the schema and the subdir

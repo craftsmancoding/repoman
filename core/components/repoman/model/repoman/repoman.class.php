@@ -174,15 +174,15 @@ class Repoman {
 	 * @return string full path with trailing slash
 	 */
 	public static function get_dir($path) {
-        $realpath = strtr(realpath($path), '\\', '/');
-        if (!file_exists($realpath)){
-            throw new Exception('Directory does not exist: '.$path);
-        }
-        elseif(!is_dir($realpath)) {
-            throw new Exception('Path is not a directory: '.$realpath);
-        }
+            $realpath = strtr(realpath($path), '\\', '/');
+            if (!file_exists($realpath)){
+                throw new Exception('Directory does not exist: '.$path);
+            }
+            elseif(!is_dir($realpath)) {
+                throw new Exception('Path is not a directory: '.$realpath);
+            }
         
-        return rtrim($realpath,'/') .'/';
+            return rtrim($realpath,'/') .'/';
 	}
     	
     /**
@@ -973,9 +973,16 @@ class Repoman {
      * @param string $pkg_root_dir path to local package root (w trailing slash)     
      */
     public function import($pkg_root_dir) {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
-
-        $this->_prep($pkg_root_dir);
+        $pkg_root_dir = self::get_dir($pkg_root_dir);  
+        self::_create_namespace($this->get('namespace'),$pkg_root_dir);
+       
+        // Settings
+        $key = $this->get('namespace') .'.assets_url';
+        $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_root_dir); // convert path to url
+        $assets_url = MODX_BASE_URL.$rel_path .'/assets/';
+        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
+        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_root_dir.'/assets/');
+        self::_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_root_dir .'/core/');        
      
         // The gratis Category
         $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));

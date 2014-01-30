@@ -40,7 +40,7 @@ class Repoman {
      *
      * @param array $args
      */
-    private function _addPkgs($args) {
+    private static function _addPkgs($args) {
         global $modx;
         
         $pkg = (isset($args['packages'])) ? $args['packages'] : false;
@@ -294,7 +294,7 @@ class Repoman {
         $aggregates = (isset($args['aggregates'])) ? $args['aggregates'] : false;
         $composites = (isset($args['composites'])) ? $args['composites'] : false;
 
-        $this->_addPkgs($args);
+        self::_addPkgs($args);
        
         if (empty($classname)) {
             $out = "\n-------------------------\n";
@@ -707,7 +707,7 @@ class Repoman {
 
         $where = json_decode($where, true);
 
-        $this->_addPkgs($this->config);
+        self::_addPkgs($this->config);
         
         $criteria = $this->modx->newQuery($classname);
         if (!empty($where)) {
@@ -1105,11 +1105,12 @@ class Repoman {
         }
 
         if (file_exists($migrations_path.'/uninstall.php')) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations uninstall.php");
             include $migrations_path.'/uninstall.php';
         }
+
         if (file_exists($migrations_path.'/install.php')) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/install.php");
+            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations install.php");
             include $migrations_path.'/install.php';
         }
         // Loop over remaining migrations
@@ -1133,7 +1134,7 @@ class Repoman {
      */
     public function seed($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-        $this->_addPkgs($this->config);
+        self::_addPkgs($this->config);
         $dirs = $this->get_seed_dirs($pkg_root_dir);
         foreach ($dirs as $d) {
         $objects = $this->crawl_dir($d);
@@ -1162,7 +1163,7 @@ class Repoman {
      */
     public function schema($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);   
-        $this->_addPkgs($this->config);
+        self::_addPkgs($this->config);
         // $this->_prep($pkg_root_dir); // populate the system settings not req'd
         
         $action = strtolower($this->get('action')); // write|parse|both

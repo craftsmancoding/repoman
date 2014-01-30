@@ -5,13 +5,14 @@ Repoman Usage:
 Available Functions:
 
 build       - Build a MODX transport package
-import      - Import elements and objects from the filesystem into MODX 
 export      - Export elements and objects from MODX into your repository filesystem
+graph       - View an object's data structure
+import      - Import elements and objects from the filesystem into MODX 
 install     - Installs a dev version of your AddOn from its files in the filesystem
-migrate     - Run database migrations
+migrate     - Manipulate database structure
 schema      - Write or parse an XML schema file to get the ORM PHP classes generated.
-uninstall   - Remove all installed elements and migrations.
-graph       - View an object's data structure.
+seed        - Install seed data into your database
+uninstall   - Remove all installed elements and migrations
 
 To get help on a function, you can run:
 

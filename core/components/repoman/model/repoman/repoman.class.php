@@ -43,9 +43,13 @@ class Repoman {
      * @return void or throws error
      */
     private function _check_build_attributes($atts,$classname) {
+        
+        if ($this->get('overwrite')) return;
+        
         foreach ($this->breadcrumb as $alias) {
             if (isset($atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias])) {
                 $atts = $atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias]; 
+                // Do something?
             }
             else {
                 throw new Exception('Build attributes not set for '.$classname.'-->'.implode('-->',$this->breadcrumb));
@@ -631,8 +635,8 @@ class Repoman {
                 // Does the object already exist?
                 if (!$this->get('is_build')) {
                     $Object = $this->modx->getObject($classname, $this->get_criteria($classname,$objectdata));
-                    if ($Object && !$attributes[$classname][xPDOTransport::UPDATE_OBJECT] && !$this->get('override')) {
-                        $this->modx->log(modX::LOG_LEVEL_INFO,'Skipping... Update Object not allowed without override: '.$classname);
+                    if ($Object && !$attributes[$classname][xPDOTransport::UPDATE_OBJECT] && !$this->get('overwrite')) {
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Skipping... Update Object not allowed without overwrite: '.$classname);
                         continue;
                     }
                 }
@@ -860,6 +864,7 @@ class Repoman {
         }
         
         $Object->fromArray($objectdata,'',$set_pks,$rawvalues);
+
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
         foreach ($objectdata as $k => $v) {
             if (isset($related[$k])) {

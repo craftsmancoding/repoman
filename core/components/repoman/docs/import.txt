@@ -6,7 +6,7 @@ to your project's repository.
 
 Usage:
 
-    php repoman.php import <pkg_root_dir>
+    php repoman import <pkg_root_dir>
     
 Parameters:
 

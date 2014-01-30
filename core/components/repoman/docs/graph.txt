@@ -6,7 +6,7 @@ getCollectionGraph methods().
 
 Usage:
 
-    php repoman.php map [<classname>] [options]
+    php repoman graph [<classname>] [options]
     
 If <classname> is omitted, all available MODX classes will be shown.
 <classname> must be a recognized MODX object type classname.  By default both
@@ -21,4 +21,4 @@ Available options are:
     
 Examples:
 
-    php repoman.php map MyObject '--pkg=mypkg:/full/path/to/core/components/mypkg/model/:xyz_'
+    php repoman graph MyObject '--pkg=mypkg:/full/path/to/core/components/mypkg/model/:xyz_'

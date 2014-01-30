@@ -4,7 +4,7 @@ Repoman help: type the function name you would like more information on.
 
 Usage:
 
-php repoman.php help <function>
+php repoman help <function>
 
 
 Available Functions:

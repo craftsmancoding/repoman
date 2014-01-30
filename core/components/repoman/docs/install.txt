@@ -5,7 +5,7 @@ should appear the same as if you had installed the AddOn via a MODX package.
 
 Usage:
 
-    php repoman.php install <pkg_root_dir>
+    php repoman install <pkg_root_dir>
     
 
 Running "install" is equivalent to running "import", "migrate", and "seed" commands.

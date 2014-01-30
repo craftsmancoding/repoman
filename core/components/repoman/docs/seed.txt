@@ -1,12 +1,12 @@
 Seed
 
-Use the seed function to add objects to your database. This is how you can add 
+Use the seed function to add records to your database. This is how you can add 
 resources, actions, menus, or any supported MODX object into your database. This
-is also useful for loading test data. 
+can also be used to load test data. 
 
 Usage:
 
-    php repoman.php seed <pkg_root_dir> [options]
+    php repoman seed <pkg_root_dir> [options]
 
 
 The objects can be stored as PHP or JSON arrays.  The filename must reference the object 
@@ -32,14 +32,11 @@ Parameters:
     --seed : a sub-dir(s) inside your defined "seeds_dir" (default is model/seeds"). This may
         be a comma-separated string or an array, e.g. "base,dev".
         
-            php repoman.php migrate <pkg_root_dir> --seed=base,dev
+            php repoman migrate <pkg_root_dir> --seed=base,dev
 
     --overwrite : if set, existing objects will be rewritten regardless of their build attribute
         settings.
     
-
-    --log_level: integer. Default is 3 (info), but you may wish to set this to 4 while troubleshooting.
-        This option is available to all Repoman functions.
 
 Build Attributes:
 

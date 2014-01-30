@@ -11,7 +11,7 @@ packages from it using Repoman.
 
 Usage:
 
-    php repoman.php export <pkg_root_dir> --classname=<classname> --where=<json_criteria>
+    php repoman export <pkg_root_dir> --classname=<classname> --where=<json_criteria>
     
 
 Options:
@@ -65,15 +65,15 @@ Examples:
 
 Exporting a template:
         
-    php repoman.php export /path/to/my/repo --classname=modTemplate '--where={"templatename":"Home Page"}' --target=dev
+    php repoman export /path/to/my/repo --classname=modTemplate '--where={"templatename":"Home Page"}' --target=dev
 
 Exporting Multiple Templates by name:
 
-    php repoman.php export /path/to/my/repo --classname=modTemplate '--where={"templatename:IN":["Home Page","Contact"]}' --target=dev
+    php repoman export /path/to/my/repo --classname=modTemplate '--where={"templatename:IN":["Home Page","Contact"]}' --target=dev
 
 Exporting a Plugin with its events:
 
-    php repoman.php export /path/to/my/repo --classname=modPlugin '--graph={"Events":{}}' '--where={"name":"Bloodline"}' --target=prod
+    php repoman export /path/to/my/repo --classname=modPlugin '--graph={"Events":{}}' '--where={"name":"Bloodline"}' --target=prod
 
 
 See Also: http://rtfm.modx.com/xpdo/2.x/class-reference/xpdoquery/xpdoquery.where

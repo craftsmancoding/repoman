@@ -36,6 +36,34 @@ class Repoman {
 	}
 
     /**
+     * Add packages to MODX's radar so we can use their objects.
+     *
+     * @param array $args
+     */
+    private function _addPkgs($args) {
+        global $modx;
+        
+        $pkg = (isset($args['packages'])) ? $args['packages'] : false;
+        if ($pkg && is_array($pkg)) {
+            foreach ($pkg as $p) {
+                $modx->addPackage($p[0],$p[1],$p[2]);   
+            }
+        }
+        elseif ($pkg) {
+            $parts = explode(':',$pkg);
+            if (isset($parts[2])) {
+                $modx->addPackage($parts[0],$parts[1],$parts[2]);     
+            }
+            elseif(isset($parts[1])) {
+                $modx->addPackage($parts[0],$parts[1]);
+            }
+            else {
+                $modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/model/');
+            }
+        }    
+    }
+    
+    /**
      * Make sure build attributes have been defined for the current breadcrumb.
      * 
      * @param array $atts
@@ -43,9 +71,13 @@ class Repoman {
      * @return void or throws error
      */
     private function _check_build_attributes($atts,$classname) {
+        
+        if ($this->get('overwrite')) return;
+        
         foreach ($this->breadcrumb as $alias) {
             if (isset($atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias])) {
                 $atts = $atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias]; 
+                // Do something?
             }
             else {
                 throw new Exception('Build attributes not set for '.$classname.'-->'.implode('-->',$this->breadcrumb));
@@ -257,23 +289,12 @@ class Repoman {
 	 */
 	public static function graph($classname, $args) {
 
-        global $modx;
+        global $modx; // why global?  Just because...
              
         $aggregates = (isset($args['aggregates'])) ? $args['aggregates'] : false;
         $composites = (isset($args['composites'])) ? $args['composites'] : false;
-        $pkg = (isset($args['pkg'])) ? $args['pkg'] : false;
-        if ($pkg) {
-            $parts = explode(':',$pkg);
-            if (isset($parts[2])) {
-                $modx->addPackage($parts[0],$parts[1],$parts[2]);     
-            }
-            elseif(isset($parts[1])) {
-                $modx->addPackage($parts[0],$parts[1]);
-            }
-            else {
-                $modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/model/');
-            }
-        }
+
+        $this->_addPkgs($args);
        
         if (empty($classname)) {
             $out = "\n-------------------------\n";
@@ -631,8 +652,8 @@ class Repoman {
                 // Does the object already exist?
                 if (!$this->get('is_build')) {
                     $Object = $this->modx->getObject($classname, $this->get_criteria($classname,$objectdata));
-                    if ($Object && !$attributes[$classname][xPDOTransport::UPDATE_OBJECT] && !$this->get('override')) {
-                        $this->modx->log(modX::LOG_LEVEL_INFO,'Skipping... Update Object not allowed without override: '.$classname);
+                    if ($Object && !$attributes[$classname][xPDOTransport::UPDATE_OBJECT] && !$this->get('overwrite')) {
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Skipping... Update Object not allowed without overwrite: '.$classname);
                         continue;
                     }
                 }
@@ -686,28 +707,8 @@ class Repoman {
 
         $where = json_decode($where, true);
 
-        $package = $this->get('package');
-        if ($package) {
-            $parts = explode(':',$package);
-            if (isset($parts[2])) {
-                $this->modx->log(modX::LOG_LEVEL_INFO,'Adding package '.$parts[0].' at '.$parts[1].' with prefix '.$parts[2]);
-                $this->modx->addPackage($parts[0],$parts[1],$parts[2]);     
-            }
-            elseif(isset($parts[1])) {
-                $this->modx->log(modX::LOG_LEVEL_INFO,'Adding package '.$parts[0].' at '.$parts[1]);
-                $this->modx->addPackage($parts[0],$parts[1]);
-            }
-            else {
-                $this->modx->log(modX::LOG_LEVEL_INFO,'Adding package '.$parts[0]); 
-                $this->modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/model/');
-            }
-        }
-        $packages = $this->get('packages');
-        foreach ($packages as $p) {
-            $this->modx->log(modX::LOG_LEVEL_INFO,'Adding package '.$p[0]); 
-            $this->modx->addPackage($p[0],$p[1],$p[2]);        
-        }
-
+        $this->_addPkgs($this->config);
+        
         $criteria = $this->modx->newQuery($classname);
         if (!empty($where)) {
             $criteria->where($where);
@@ -860,6 +861,7 @@ class Repoman {
         }
         
         $Object->fromArray($objectdata,'',$set_pks,$rawvalues);
+
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
         foreach ($objectdata as $k => $v) {
             if (isset($related[$k])) {
@@ -1131,6 +1133,7 @@ class Repoman {
      */
     public function seed($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $this->_addPkgs($this->config);
         $dirs = $this->get_seed_dirs($pkg_root_dir);
         foreach ($dirs as $d) {
         $objects = $this->crawl_dir($d);
@@ -1159,7 +1162,7 @@ class Repoman {
      */
     public function schema($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);   
-
+        $this->_addPkgs($this->config);
         // $this->_prep($pkg_root_dir); // populate the system settings not req'd
         
         $action = strtolower($this->get('action')); // write|parse|both

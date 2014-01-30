@@ -6,6 +6,11 @@ and generating the corresponding PHP classes. The behavior is controlled by the
 manipulating the database structure.
 
 
+Usage:
+
+    php repoman schema <pkg_root_dir> --action=[write|parse] --model=<model-sub-folder> [options]
+
+
 Write Mode
 
 Write an XML schema file based off of existing database tables, usually identified
@@ -48,14 +53,14 @@ Options
 
 --dir_perms : (optional) the permissions mask to use if it is necessary to create directories.
     The global default is 0777, and it should rarely need to be changed: permissions are best
-    left defined by the parent environment not forced by a script.
+    left defined by the parent environment not forced by this script.
 
 
 Examples:
 
 Write an XML schema file from all database tables whose names begin with "mypre_":
 
-    php repoman.php schema <pkg_root_dir> --action=write --table_prefix=mypre_ --model=mypkg
+    php repoman schema <pkg_root_dir> --action=write --table_prefix=mypre_ --model=mypkg
 
 Parse the XML file located at model/schema/mypre.mysql.schema.xml into classfiles.
 

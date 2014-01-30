@@ -5,7 +5,7 @@ Migrations are structural changes to your database, e.g. used to create or modif
 
 Usage:
 
-    php repoman.php migrate <pkg_root_dir> [options]
+    php repoman migrate <pkg_root_dir> [options]
 
 Migrate will first execute the "uninstall.php" script to clean out the database,
 then it will run the "install.php" script to add necessary packages using addPackage() and 

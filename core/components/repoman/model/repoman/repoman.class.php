@@ -860,7 +860,10 @@ class Repoman {
             }
         }
         
-        $Object->fromArray($objectdata,'',$set_pks,$rawvalues);
+        //$Object->fromArray($objectdata,'',$set_pks,$rawvalues);
+        //foreach ($objectdata as $k =>$v) {
+        //    $Object->set($k,$v);
+        //}
 
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
         foreach ($objectdata as $k => $v) {

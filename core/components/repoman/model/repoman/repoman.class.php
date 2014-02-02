@@ -659,7 +659,7 @@ class Repoman {
                 }
 
                 $this->breadcrumb = array();
-                $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true);
+                $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true,true);
                 $this->_check_build_attributes($attributes[$classname], $classname);
 
             }
@@ -860,7 +860,7 @@ class Repoman {
             }
         }
         
-        //$Object->fromArray($objectdata,'',$set_pks,$rawvalues);
+        $Object->fromArray($objectdata,'',$set_pks,$rawvalues);
         //foreach ($objectdata as $k =>$v) {
         //    $Object->set($k,$v);
         //}
@@ -984,7 +984,8 @@ class Repoman {
      * @param string $pkg_root_dir path to local package root (w trailing slash)     
      */
     public function import($pkg_root_dir) {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);  
+        $pkg_root_dir = self::get_dir($pkg_root_dir);
+
         self::_create_namespace($this->get('namespace'),$pkg_root_dir);
        
         // Settings

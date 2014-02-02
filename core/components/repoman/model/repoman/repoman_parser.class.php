@@ -56,7 +56,7 @@ abstract class Repoman_parser {
 
         $array = $Obj->toArray('',false,false,$graph);
         $content = $Obj->getContent();
-        $dir = $pkg_dir.'/core/components/'.$this->Repoman->get('namespace').'/'.$this->Repoman->get($this->dir_key);
+        $dir = $pkg_dir.'core/components/'.$this->Repoman->get('namespace').'/'.$this->Repoman->get($this->dir_key);
         $filename = $dir.'/'.$attributes[$this->objectname].$this->write_ext;
         if (file_exists($filename) && !$this->Repoman->get('overwrite')) {
             throw new Exception('Element already exists. Overwrite not allowed. '.$filename);
@@ -120,7 +120,7 @@ abstract class Repoman_parser {
 
         // Calculate the element's directory given the repo dir...
         // TODO: this should be configurable! Dept. of redundancy Dept.
-        $dir = $pkg_dir.'/core/components/'.$this->Repoman->get('namespace').'/'.$this->Repoman->get($this->dir_key).'/';
+        $dir = $pkg_dir.'core/components/'.$this->Repoman->get('namespace').'/'.$this->Repoman->get($this->dir_key).'/';
 
         if (!file_exists($dir) || !is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_DEBUG,'Directory does not exist: '. $dir);

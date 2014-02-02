@@ -130,7 +130,7 @@ abstract class Repoman_parser {
         $files = glob($dir.$this->ext);
         $i = 0;
         foreach($files as $f) {
-
+//print self::path_to_rel($f,MODX_BASE_PATH) ."\n"; exit;
             $content = file_get_contents($f);
             $attributes = self::repossess($content,$this->dox_start,$this->dox_end);
             if ($this->Repoman->get('is_build')) {
@@ -163,12 +163,15 @@ abstract class Repoman_parser {
 
             // Force Static
             if ($this->Repoman->get('force_static')) {
+                $attributes['source'] = 1;
                 $attributes['static'] = 1;
                 $attributes['static_file'] = self::path_to_rel($f,MODX_BASE_PATH);
             }
             
             $Obj->fromArray($attributes);
-            $Obj->setContent($content);
+            if (!$this->Repoman->get('force_static')) {
+                $Obj->setContent($content);
+            }
             
             $this->relate($attributes,$Obj);
               

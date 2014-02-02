@@ -985,16 +985,7 @@ class Repoman {
      */
     public function import($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-
-        self::_create_namespace($this->get('namespace'),$pkg_root_dir);
-       
-        // Settings
-        $key = $this->get('namespace') .'.assets_url';
-        $rel_path = str_replace(MODX_BASE_PATH,'',$pkg_root_dir); // convert path to url
-        $assets_url = MODX_BASE_URL.$rel_path .'/assets/';
-        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
-        self::_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', $pkg_root_dir.'/assets/');
-        self::_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', $pkg_root_dir .'/core/');        
+        $this->_prep($pkg_root_dir);
      
         // The gratis Category
         $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));
@@ -1006,13 +997,13 @@ class Repoman {
         else {
             $this->modx->log(modX::LOG_LEVEL_INFO, "Using existing category: ".$this->get('category'));        
         }
-        
+
         // Import Elements
         $chunks = self::_get_elements('modChunk',$pkg_root_dir);
         $plugins = self::_get_elements('modPlugin',$pkg_root_dir);
         $snippets = self::_get_elements('modSnippet',$pkg_root_dir);
         $templates = self::_get_elements('modTemplate',$pkg_root_dir);
-        $tvs = self::_get_elements('modTemplateVar',$pkg_root_dir);
+        //$tvs = self::_get_elements('modTemplateVar',$pkg_root_dir);
         
         if ($chunks) $Category->addMany($chunks);
         if ($plugins) $Category->addMany($plugins);

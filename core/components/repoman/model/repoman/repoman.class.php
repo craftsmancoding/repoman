@@ -485,13 +485,13 @@ class Repoman {
         $plugins = self::_get_elements('modPlugin',$pkg_root_dir);
         $snippets = self::_get_elements('modSnippet',$pkg_root_dir);
         $templates = self::_get_elements('modTemplate',$pkg_root_dir);
-        $tvs = self::_get_elements('modTemplateVar',$pkg_root_dir);
+        //$tvs = self::_get_elements('modTemplateVar',$pkg_root_dir);
 
         if ($chunks) $Category->addMany($chunks);
         if ($plugins) $Category->addMany($plugins);
         if ($snippets) $Category->addMany($snippets);
         if ($templates) $Category->addMany($templates);
-        if ($tvs) $Category->addMany($tvs);
+        //if ($tvs) $Category->addMany($tvs);
 
         // TODO: skip this if there are no elements
         //if (empty($chunks) && empty($plugins) && empty($snippets) && empty($templates) && empty($tvs)) {
@@ -1009,7 +1009,7 @@ class Repoman {
         if ($plugins) $Category->addMany($plugins);
         if ($snippets) $Category->addMany($snippets);
         if ($templates) $Category->addMany($templates);
-        if ($tvs) $Category->addMany($tvs);
+        //if ($tvs) $Category->addMany($tvs);
         
         if (!$this->get('dry_run') && $Category->save()) {
             $data = $this->get_criteria('modCategory', $Category->toArray());

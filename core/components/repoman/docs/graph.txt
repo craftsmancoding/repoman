@@ -16,9 +16,9 @@ Available options are:
 
     --aggregates (optional) if set, the output will show only aggregate objects.
     --composites (optional) if set, the output will show only composite objects
-    --pkg (optional) use this to load additional packages via addPackage.
+    --packages (optional) use this to load additional packages via addPackage.
         Format is '<package>:<model_path>:<table_prefix>'
     
 Examples:
 
-    php repoman graph MyObject '--pkg=mypkg:/full/path/to/core/components/mypkg/model/:xyz_'
+    php repoman graph MyObject '--packages=mypkg:/full/path/to/core/components/mypkg/model/:xyz_'

@@ -74,7 +74,7 @@ class Repoman {
         
         if ($this->get('overwrite')) return;
         
-        foreach ($this->breadcrumb as $alias) {
+        foreach ($this->breadcrumb as $i => $alias) {
             if (isset($atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias])) {
                 $atts = $atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias]; 
                 // Do something?
@@ -659,7 +659,7 @@ class Repoman {
                 }
 
                 $this->breadcrumb = array();
-                $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true,true);
+                $objects[$classname][] = $this->fromDeepArray($classname,$objectdata,true,true,true,0);
                 $this->_check_build_attributes($attributes[$classname], $classname);
 
             }
@@ -840,9 +840,10 @@ class Repoman {
      * @param boolen $set_pk sets primary keys
      * @param boolean $rawvalues e.g. for modUser, you'd enter the password plaintext and it gets hashed. 
      *      Set to true if you want to store the literal hash.
+     * @param integer $breadcrumb_i tracks depth of breadcrumb
      * @return object
      */
-    function fromDeepArray($classname, $objectdata, $set_pks=false,$rawvalues=false) {
+    function fromDeepArray($classname, $objectdata, $set_pks=false,$rawvalues=false,$breadcrumb_i=0) {
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'fromDeepArray begin setting '.$classname. ' (set_pks: '.$set_pks.' rawvalues: '.$rawvalues."):\n".print_r($objectdata,true));
         
         // Find existing object or make a new one
@@ -859,26 +860,30 @@ class Repoman {
                 $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Using existing object for '.$classname);
             }
         }
-        
+        // The sincere hope is that we can rely on this glorious function...
         $Object->fromArray($objectdata,'',$set_pks,$rawvalues);
+        // ...and not this alternative:
         //foreach ($objectdata as $k =>$v) {
         //    $Object->set($k,$v);
         //}
 
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
-        foreach ($objectdata as $k => $v) {
-            if (isset($related[$k])) {
-                $alias = $k;
-                $rel_data = $v;
+
+        foreach ($related as $alias => $def) {
+            // Is there any data provided for related objects?
+            if (isset($objectdata[$alias])) {
+                $rel_data = $objectdata[$alias];
                 $def = $related[$alias];
                 
-                if (!is_array($def)) {
+                if (!is_array($rel_data)) {
                     $this->modx->log(modX::LOG_LEVEL_WARN, 'Data in '.$classname.'['.$alias.'] not an array.');
                     continue;
                 }
-                $this->breadcrumb[] = $alias;
+
+                $this->breadcrumb[$breadcrumb_i] = $alias;
+
                 if ($def['cardinality'] == 'one') {
-                    $one = $this->fromDeepArray($def['class'],$rel_data,$set_pks,$rawvalues);
+                    $one = $this->fromDeepArray($def['class'],$rel_data,$set_pks,$rawvalues,$breadcrumb_i+1);
                     $Object->addOne($one);
                 }
                 else {
@@ -887,7 +892,7 @@ class Repoman {
                     }
                     $many = array();
                     foreach ($rel_data as $r) {
-                        $many[] = $this->fromDeepArray($def['class'],$r,$set_pks,$rawvalues);   
+                        $many[] = $this->fromDeepArray($def['class'],$r,$set_pks,$rawvalues,$breadcrumb_i+1);   
                     }
                     $Object->addMany($many);
                 }

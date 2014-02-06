@@ -1059,6 +1059,7 @@ class Repoman {
         self::import($pkg_root_dir);
         self::migrate($pkg_root_dir);
         self::seed($pkg_root_dir);
+        $this->modx->cacheManager->refresh();
     }
 
     /** 

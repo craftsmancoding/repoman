@@ -302,12 +302,11 @@ class Repoman {
             foreach (scandir($dir) as $file) {
                 if ('.' === $file) continue;
                 if ('..' === $file) continue;
-
                 if (is_dir($dir.$file)) {
                     $attributes = self::load_config($dir.$file.'/');
                     self::_addPkgs($attributes);
                 }
-            }            
+            }
         }
         
         if (empty($classname)) {

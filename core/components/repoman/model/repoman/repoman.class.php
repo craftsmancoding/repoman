@@ -60,7 +60,7 @@ class Repoman {
             else {
                 $modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/model/');
             }
-        }    
+        }
     }
     
     /**
@@ -295,7 +295,21 @@ class Repoman {
         $composites = (isset($args['composites'])) ? $args['composites'] : false;
 
         self::_addPkgs($args);
-       
+
+        //Load up configs packages
+        if ($dir = $modx->getOption('repoman.dir')) {
+            $dir = self::get_dir($dir);
+            foreach (scandir($dir) as $file) {
+                if ('.' === $file) continue;
+                if ('..' === $file) continue;
+
+                if (is_dir($dir.$file)) {
+                    $attributes = self::load_config($dir.$file.'/');
+                    self::_addPkgs($attributes);
+                }
+            }            
+        }
+        
         if (empty($classname)) {
             $out = "\n-------------------------\n";
             $out .= "All Available Classes\n";
@@ -351,8 +365,8 @@ class Repoman {
 	
         $global = include dirname(__FILE__).'/global.config.php';
         $config = array();
-        if (file_exists($pkg_root_dir.'/'.self::CONFIG_FILE)) {
-            $config = include $pkg_root_dir.'/'.self::CONFIG_FILE;
+        if (file_exists($pkg_root_dir.self::CONFIG_FILE)) {
+            $config = include $pkg_root_dir.self::CONFIG_FILE;
             if (!is_array($config)) {    
                 $config = array();
             }
@@ -1060,7 +1074,6 @@ class Repoman {
             throw new Exception('Loading data failed. File does not exist: '. $file);
         }
 
-        
         $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$file . ' (json: '.$json);                                
             
         if ($json) {

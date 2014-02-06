@@ -192,7 +192,7 @@ unset($argv[0]);
 unset($argv[2]);
 $overrides = Repoman::parse_args($argv);
 
-if (!file_exists($pkg_path.'/config.php')) {
+if (!file_exists($pkg_path.'config.php')) {
     print message('No config.php file detected.','WARNING');
 }
 

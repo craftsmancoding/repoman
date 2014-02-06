@@ -19,8 +19,7 @@ return array(
     'repo_url' => 'https://github.com/craftsmancoding/repoman',
     'clone_url' => 'https://github.com/craftsmancoding/repoman.git',
     'copyright' => date('Y'),
-    
     'category' => 'Repoman',
-    'seed' => array(),
+    'seed' => array('base'),
 );
 /*EOF*/

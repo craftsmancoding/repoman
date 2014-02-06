@@ -87,36 +87,36 @@ class Repoman {
 
 	/**
 	 * Create/Update the namespace
-	 * @param string $package_name (lowercase)
-	 * @param string $path to the repo
+	 * @param string $pkg_root_dir to the repo
 	 */
-	private function _create_namespace($name, $path) {
-        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Creating namespace: $name");
+	private function _create_namespace($pkg_root_dir) {
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Creating namespace: ".$this->get('namespace'));
         
+        $name = $this->get('namespace');
         if (empty($name)) {
             throw new Exception('namespace parameter cannot be empty.');
         }
-        if (preg_match('/[^a-z0-9_\-]/', $name)) {
-            throw new Exception('Invalid namespace :'.$name);
+        if (preg_match('/[^a-z0-9_\-]/', $this->get('namespace'))) {
+            throw new Exception('Invalid namespace :'.$this->get('namespace'));
         }
 
-		$N = $this->modx->getObject('modNamespace',$name);
+		$N = $this->modx->getObject('modNamespace',$this->get('namespace'));
 		if (!$N) {
 			$N = $this->modx->newObject('modNamespace');
-			$N->set('name', $name);
+			$N->set('name', $this->get('namespace'));
 		}
-		$N->set('path', $path.'core/components/'.$name.'/');
-		$N->set('assets_path',$path.'assets/components/'.$name.'/');
+		$N->set('path', $this->get_src_dir($pkg_root_dir));
+		$N->set('assets_path',$this->get_assets_dir($pkg_root_dir));
 		
-		Repoman::$queue['modNamespace'][] = $name;
+		Repoman::$queue['modNamespace'][] = $this->get('namespace');
 
         if (!$this->get('dry_run')) {
     		$N->save();
     		// Prepare Cache folder for tracking object creation
-    		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR.'/'.$name);
+    		self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR.'/'.$this->get('namespace'));
     		$data = $this->get_criteria('modNamespace',$N->toArray());
             $this->modx->cacheManager->set('modNamespace/'.$N->get('name'), $data, 0, Repoman::$cache_opts);
-    		$this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: $name");
+    		$this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: ".$this->get('namespace'));
         }
 	}
     
@@ -168,7 +168,7 @@ class Repoman {
         
         $this->modx->log(modX::LOG_LEVEL_DEBUG, "Prep: creating namespace and system settings.");
         
-        $this->_create_namespace($this->get('namespace'),$pkg_root_dir);
+        $this->_create_namespace($pkg_root_dir);
        
         // Settings
         $rel_path = preg_replace('/^'.preg_quote(MODX_BASE_PATH,'/').'/','', $pkg_root_dir); // convert path to url
@@ -216,62 +216,7 @@ class Repoman {
         
             return rtrim($realpath,'/') .'/';
 	}
-    	
-    /**
-     * When building packages, these attributes govern how objects are updated
-     * when the package is installed.  One difficulty here is that one instance 
-     * of an object may have many related objects (and thus require deeply nested
-     * build attributes), whereas another object instance may have no related objects.
-     * So this function traces out all of an object's relations and grows the build
-     * attributes accordingly.
-     *
-     * @param object $Obj
-     * @param string $classname
-     *
-     * @return array 
-     */
-    public function get_build_attributes($Obj,$classname) {
 
-        $attributes = $this->get('build_attributes');
-        if (!isset($attributes[$classname])) {
-            throw new Exception('Build attributes not defined for class '.$classname);
-        }
-
-        // The attributes for the base
-        $out = $attributes[$classname];
-        return $out; 
-        // BUG: dynamic detection is not working... TODO: fix the wormhole. Let the user specify this manually too.
-        // see _check_build_attributes.
-        // Any related objects?
-/*
-        $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
-
-        foreach ($related as $alias => $def) {            
-            if (!empty($Obj->$alias)) {
-                // WTF?  Not sure why the Resources alias comes overloaded with info
-                // if unchecked, this will bomb out the memory usage
-                if ($classname == 'modTemplate' && $alias == 'Resources') {
-                    continue;
-                }
-                if (in_array($alias, array('LexiconEntries'))) {
-                    continue;
-                }
-                $out[xPDOTransport::RELATED_OBJECTS] = true;
-                $rel_class = $def['class'];
-                if ($def['cardinality'] == 'one') {
-                    $relObj = $Obj->getOne($alias);
-                }
-                else {
-                    $relObjs = $Obj->getMany($alias);
-                    $relObj = array_shift($relObjs);
-                }
-                $out[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$rel_class] = $this->get_build_attributes($relObj,$def['class']);
-            }
-        }
-        return $out;
-*/
-    }
-	
 	/**
 	 * Assistence function for examining MODX objects and their relations.
 	 * _pkg (string) colon-separated string defining the arguments for addPackage() -- 
@@ -473,7 +418,7 @@ class Repoman {
         
         // Tests (Validators): this is run BEFORE your package code is in place
         // so you cannot include package files from your validator! They won't exist when the code is run.
-        $validator_file = $pkg_root_dir.'core/components/'.$this->get('namespace').'/'.$this->get('validators_dir').'/install.php';
+        $validator_file = $this->get_src_dir($pkg_root_dir).$this->get('validators_dir').'/install.php';
         if (file_exists($validator_file)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaging validator '.$validator_file);
             $config = $this->config;
@@ -518,20 +463,20 @@ class Repoman {
 
         // Files...: TODO: these need their own builder
         // Assets
-        $dir = $pkg_root_dir.'/assets/components/'.$this->get('namespace');
+        $dir = $this->get_assets_dir($pkg_root_dir);
         if (file_exists($dir) && is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing assets from '.$dir);
             $vehicle->resolve('file', array(
-                'source' => $dir,
+                'source' => rtrim($dir,'/'),
                 'target' => "return MODX_ASSETS_PATH . 'components/';",
             ));
         }        
         // Core
-        $dir = $pkg_root_dir.'core/components/'.$this->get('namespace');
+        $dir = $this->get_src_dir($pkg_root_dir);
         if (file_exists($dir) && is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing core files from '.$dir);
             $vehicle->resolve('file', array(
-                'source' => $dir,
+                'source' => rtrim($dir,'/'),
                 'target' => "return MODX_CORE_PATH . 'components/';",
             ));
         }
@@ -576,7 +521,7 @@ class Repoman {
         }
         
         // Package Attributes (Documents)
-        $dir = $pkg_root_dir.'core/components/'.$this->get('namespace').'/docs/';
+        $dir = $this->get_docs_dir($pkg_root_dir);
         // defaults
         $docs = array(
             'readme'=>'This package was built using Repoman (https://github.com/craftsmancoding/repoman/)',
@@ -761,8 +706,7 @@ class Repoman {
             elseif (preg_match('/[^a-zA-Z0-9_\-]/', $target)) {
                 throw new Exception('Name of target directory can contain only letters and numbers.');
             }            
-            $dir = $pkg_root_dir. 'core/components/'.$this->get('namespace').'/'
-                .$this->get('seeds_dir').'/'.$this->get('target');
+            $dir = $this->get_src_dir($pkg_root_dir).$this->get('seeds_dir').'/'.$this->get('target');
             
             if (!file_exists($dir)) {
                 if (false === mkdir($dir, $this->get('dir_mode'), true)) {
@@ -925,6 +869,61 @@ class Repoman {
 	}
 
     /**
+     * When building packages, these attributes govern how objects are updated
+     * when the package is installed.  One difficulty here is that one instance 
+     * of an object may have many related objects (and thus require deeply nested
+     * build attributes), whereas another object instance may have no related objects.
+     * So this function traces out all of an object's relations and grows the build
+     * attributes accordingly.
+     *
+     * @param object $Obj
+     * @param string $classname
+     *
+     * @return array 
+     */
+    public function get_build_attributes($Obj,$classname) {
+
+        $attributes = $this->get('build_attributes');
+        if (!isset($attributes[$classname])) {
+            throw new Exception('Build attributes not defined for class '.$classname);
+        }
+
+        // The attributes for the base
+        $out = $attributes[$classname];
+        return $out; 
+        // BUG: dynamic detection is not working... TODO: fix the wormhole. Let the user specify this manually too.
+        // see _check_build_attributes.
+        // Any related objects?
+/*
+        $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
+
+        foreach ($related as $alias => $def) {            
+            if (!empty($Obj->$alias)) {
+                // WTF?  Not sure why the Resources alias comes overloaded with info
+                // if unchecked, this will bomb out the memory usage
+                if ($classname == 'modTemplate' && $alias == 'Resources') {
+                    continue;
+                }
+                if (in_array($alias, array('LexiconEntries'))) {
+                    continue;
+                }
+                $out[xPDOTransport::RELATED_OBJECTS] = true;
+                $rel_class = $def['class'];
+                if ($def['cardinality'] == 'one') {
+                    $relObj = $Obj->getOne($alias);
+                }
+                else {
+                    $relObjs = $Obj->getMany($alias);
+                    $relObj = array_shift($relObjs);
+                }
+                $out[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$rel_class] = $this->get_build_attributes($relObj,$def['class']);
+            }
+        }
+        return $out;
+*/
+    }
+    
+    /**
      * Generate an array that can be passed as filter criteria to getObject so that we 
      * can identify and load existing objects. In practice, we don't always use the primary 
      * key to load an object (because we are defining objects abstractly and the primary key
@@ -978,7 +977,7 @@ class Repoman {
     public function get_seed_dirs($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         $dirs = array();
-        $seeds_dir = $pkg_root_dir.'core/components/'.$this->get('namespace').'/'.$this->get('seeds_dir');
+        $seeds_dir = $this->get_src_dir($pkg_root_dir).$this->get('seeds_dir');
         if ($seed = $this->get('seed')) {
             if (!is_array($seed)) {
                 $seed = explode(',',$seed);
@@ -1050,6 +1049,50 @@ class Repoman {
     }
 
     /**
+     * Get the dir containing the goods.  In redundant MODX parlance, this is 
+     * usually core/components/<namespace>/  (the default).
+     * For better compatibility with composer, this is configurable.
+     *
+     * @param string $pkg_root_dir
+     * @return string dir with trailing slash
+     */
+    public function get_src_dir($pkg_root_dir) {
+        if ($this->get('src_dir')) {
+            return $pkg_root_dir . $this->get('src_dir');
+        }
+        return $pkg_root_dir .'core/components/'.$this->get('namespace').'/';
+    }
+
+    /**
+     * Get the dir containing the assets.  In redundant MODX parlance, this is 
+     * usually assets/components/<namespace>/  (the default).
+     * For better compatibility with composer, this is configurable.
+     *
+     * @param string $pkg_root_dir
+     * @return string dir with trailing slash
+     */
+    public function get_assets_dir($pkg_root_dir) {
+        if ($this->get('assets_dir')) {
+            return $pkg_root_dir . $this->get('assets_dir');
+        }
+        return $pkg_root_dir .'assets/components/'.$this->get('namespace').'/';
+    }    	
+    /**
+     * Get the dir containing the assets.  In redundant MODX parlance, this is 
+     * usually assets/components/<namespace>/  (the default).
+     * For better compatibility with composer, this is configurable.
+     *
+     * @param string $pkg_root_dir
+     * @return string dir with trailing slash
+     */
+    public function get_docs_dir($pkg_root_dir) {
+        if ($this->get('docs_dir')) {
+            return $pkg_root_dir . $this->get('docs_dir');
+        }
+        return $pkg_root_dir.'core/components/'.$this->get('namespace').'/docs/';
+    }    	
+	        
+    /**
      * Install all elements and run migrations
      *
      * @param string $pkg_root_dir path to local package root (w trailing slash)
@@ -1116,8 +1159,7 @@ class Repoman {
         $object = $this->config;
         // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
         // if this has been installed via a package, then skip??
-        // TODO: make this configurable... Dept. of Redundency Dept.
-        $migrations_path = $pkg_root_dir .'core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        $migrations_path = $this->get_src_dir($pkg_root_dir).$this->get('migrations_dir');
         
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
@@ -1207,8 +1249,8 @@ class Repoman {
         }
         
         $now = time();
-        $schema_file = $pkg_root_dir .'core/components/'.$this->get('namespace').'/model/schema/'.$model.'.mysql.schema.xml';
-        $model_dir = $pkg_root_dir.'core/components/'.$this->get('namespace').'/model/';
+        $schema_file = $this->get_src_dir($pkg_root_dir).'model/schema/'.$model.'.mysql.schema.xml';
+        $model_dir = $this->get_src_dir($pkg_root_dir).'model/';
         
         $manager = $this->modx->getManager();
         $generator = $manager->getGenerator();
@@ -1218,7 +1260,7 @@ class Repoman {
         if ($action == 'write') {
             if (file_exists($schema_file)) {
                 if ($overwrite == 'polite') {
-                    $schema_file_new = $pkg_root_dir .'core/components/'.$this->get('namespace').'/model/schema/'.$model.'.'.$now.'.mysql.schema.xml';
+                    $schema_file_new = $this->get_src_dir($pkg_root_dir).'model/schema/'.$model.'.'.$now.'.mysql.schema.xml';
                     if (!rename($schema_file, $schema_file_new)) {
                         throw new Exception('Could not rename schema file '.$schema_file);
                     }
@@ -1384,7 +1426,7 @@ class Repoman {
         // included files are compat. with the build functionality.
         global $modx;
         $object = $this->config;
-        $migrations_path = $pkg_root_dir .'core/components/'.$this->get('namespace').'/'.$this->get('migrations_dir');
+        $migrations_path = $this->get_src_dir($pkg_root_dir).$this->get('migrations_dir');
 
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);

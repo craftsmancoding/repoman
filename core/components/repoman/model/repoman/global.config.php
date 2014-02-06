@@ -252,11 +252,24 @@ return array(
             xPDOTransport::UNIQUE_KEY => 'key',   
        ),
        'modDashboardWidget' => array(
-            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::PRESERVE_KEYS => true,
             xPDOTransport::UPDATE_OBJECT => true,
             xPDOTransport::UNIQUE_KEY => array('name','namespace'),
+            xPDOTransport::RELATED_OBJECTS => true,
+            xPDOTransport::RELATED_OBJECT_ATTRIBUTES => array (
+               'Placements' => array(
+                    xPDOTransport::PRESERVE_KEYS => true,
+                    xPDOTransport::UPDATE_OBJECT => true,
+                    xPDOTransport::UNIQUE_KEY => array('dashboard','widget'),
+               ),
+            ),
+            
        ),
-
+       'modDashboardWidgetPlacement' => array(
+            xPDOTransport::PRESERVE_KEYS => false,
+            xPDOTransport::UPDATE_OBJECT => true,
+            xPDOTransport::UNIQUE_KEY => array('dashboard','widget'),
+        )
         
     ), // end build_attributes
 );

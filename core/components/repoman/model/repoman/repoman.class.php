@@ -1059,12 +1059,19 @@ class Repoman {
         if (!file_exists($file)) {
             throw new Exception('Loading data failed. File does not exist: '. $file);
         }
+
+        
         $this->modx->log(modX::LOG_LEVEL_DEBUG,'Processing object(s) in '.$file . ' (json: '.$json);                                
             
         if ($json) {
             $data = json_decode(file_get_contents($file),true);
         }
         else {
+            // check file syntax
+            $out = exec(escapeshellcmd("php -l $file"));
+            if (preg_match('/^Errors parsing/', $out)) {
+                throw new Exception($out);
+            }
             $data = include $file;
         }        
         

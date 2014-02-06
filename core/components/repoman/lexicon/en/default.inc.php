@@ -28,11 +28,8 @@
 $_lang['repoman'] = 'RepoMan';
 $_lang['repoman_desc'] = 'Repository interface manager for MODX developers.';
 
-// Errors
-$_lang['xxx'] = 'xxx';
-
 // System Settings
-$_lang['setting_repoman.repo_dir'] = 'Repository Directory';
-$_lang['setting_repoman.repo_dir_desc'] = 'Directory within your MODX web root containing your local Git/SVN repositories. Path should be relative to MODX root and end with a trailing slash, e.g. "myrepos/"';
+$_lang['setting_repoman.dir'] = 'Repository Directory';
+$_lang['setting_repoman.dir_desc'] = 'Directory within your MODX web root containing your local Git/SVN repositories. Path should be relative to MODX root and end with a trailing slash, e.g. "myrepos/"';
 
 /*EOF*/

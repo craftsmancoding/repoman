@@ -42,16 +42,22 @@ class modPlugin_parser extends Repoman_parser {
 	}
 	
 	/** 
-	 * Attach events to the plugin
+	 * Attach and Remove plugin's events
 	 *
 	 */
 	public function relate($attributes,&$Obj) {
         $events = array();
+        $pluginid = $Obj->get('id');
         if (isset($attributes['PluginEvents'])) {
             $event_names = explode(',',$attributes['PluginEvents']);
+            // Remove unassociated events
+            $existingEvents = $this->modx->getCollection('modPluginEvent', array('pluginid'=>$pluginid, 'event:NOT IN'=> $event_names));
+            foreach ($existingEvents as $ee) {
+                $ee->remove();
+            }
+            
             foreach ($event_names as $e) {
-                $pluginid = $Obj->get('id');
-                if (!$Event = $this->modx->getObject('modPluginEvent', array('pluginid'=>$pluginid,'event'=>$e))) {
+                if (!$Event = $this->modx->getObject('modPluginEvent', array('pluginid'=>$pluginid,'event'=>trim($e)))) {
                     $Event = $this->modx->newObject('modPluginEvent');
                     $Event->set('event',trim($e));                
                 }
@@ -59,6 +65,13 @@ class modPlugin_parser extends Repoman_parser {
                 Repoman::$queue[$this->objecttype][] = 'modPluginEvent: '. $Event->get('event');
                 $events[] = $Event;
             }
+        }
+        else {
+        // Remove all Events
+            $existingEvents = $this->modx->getCollection('modPluginEvent', array('pluginid'=>$pluginid));
+            foreach ($existingEvents as $ee) {
+                $ee->remove();
+            }        
         }
     	$Obj->addMany($events);
 	}

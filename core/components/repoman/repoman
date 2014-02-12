@@ -192,8 +192,8 @@ unset($argv[0]);
 unset($argv[2]);
 $overrides = Repoman::parse_args($argv);
 
-if (!file_exists($pkg_path.'config.php')) {
-    print message('No config.php file detected.','WARNING');
+if (!file_exists($pkg_path.'config.php') && !file_exists($pkg_path.'composer.json')) {
+    print message('No config.php or composer.json file detected.','WARNING');
 }
 
 $config = Repoman::load_config($pkg_path,$overrides);

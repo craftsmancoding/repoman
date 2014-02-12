@@ -15,6 +15,11 @@
  * @package repoman 
  * @return array
  */
+// xPDOTransport::PRESERVE_KEYS => preserve_keys
+// xPDOTransport::UPDATE_OBJECT => update_object
+// xPDOTransport::UNIQUE_KEY => unique_key
+// xPDOTransport::RELATED_OBJECTS => related_objects
+// xPDOTransport::RELATED_OBJECT_ATTRIBUTES => related_object_attributes
 return array(
     'package_name' => basename($pkg_root_dir),
     'namespace' => strtolower(basename($pkg_root_dir)),

@@ -96,8 +96,8 @@ class Repoman {
         if (empty($name)) {
             throw new Exception('namespace parameter cannot be empty.');
         }
-        if (preg_match('/[^a-z0-9_\-]/', $this->get('namespace'))) {
-            throw new Exception('Invalid namespace :'.$this->get('namespace'));
+        if (preg_match('/[^a-z0-9_\-\/]/', $this->get('namespace'))) {
+            throw new Exception('Invalid namespace: '.$this->get('namespace'));
         }
 
 		$N = $this->modx->getObject('modNamespace',$this->get('namespace'));
@@ -316,6 +316,19 @@ class Repoman {
             }
             if (isset($config['package_name']) && !isset($config['category'])) {
                 $config['category'] = $config['package_name'];
+            }
+        }
+        elseif (file_exists($pkg_root_dir.'composer.json')) {
+            $str = file_get_contents($pkg_root_dir.'composer.json');
+            $config = json_decode($str,true);
+            if (!is_array($config)) {    
+                $config = array();
+            }
+            if (isset($config['package_name']) && !isset($config['category'])) {
+                $config['category'] = $config['package_name'];
+            }
+            if (!isset($config['namespace'])) {
+                $config['namespace'] = $config['name'];
             }
         }
         
@@ -994,6 +1007,51 @@ class Repoman {
         }
         return $dirs;
     }
+
+    /**
+     * Get the dir containing the goods.  In redundant MODX parlance, this is 
+     * usually core/components/<namespace>/  (the default).
+     * For better compatibility with composer, this is configurable.
+     *
+     * @param string $pkg_root_dir
+     * @return string dir with trailing slash
+     */
+    public function get_src_dir($pkg_root_dir) {
+        if ($this->get('src_dir')) {
+            return $pkg_root_dir . rtrim($this->get('src_dir'),'/').'/';
+        }
+        return $pkg_root_dir .'core/components/'.$this->get('namespace').'/';
+    }
+        
+    /**
+     * Get the dir containing the assets.  In redundant MODX parlance, this is 
+     * usually assets/components/<namespace>/  (the default).
+     * For better compatibility with composer, this is configurable.
+     *
+     * @param string $pkg_root_dir
+     * @return string dir with trailing slash
+     */
+    public function get_assets_dir($pkg_root_dir) {
+        if ($this->get('assets_dir')) {
+            return $pkg_root_dir . $this->get('assets_dir');
+        }
+        return $pkg_root_dir .'assets/components/'.$this->get('namespace').'/';
+    }    	
+    /**
+     * Get the dir containing the assets.  In redundant MODX parlance, this is 
+     * usually assets/components/<namespace>/  (the default).
+     * For better compatibility with composer, this is configurable.
+     *
+     * @param string $pkg_root_dir
+     * @return string dir with trailing slash
+     */
+    public function get_docs_dir($pkg_root_dir) {
+        if ($this->get('docs_dir')) {
+            return $pkg_root_dir . $this->get('docs_dir');
+        }
+        return $pkg_root_dir.'core/components/'.$this->get('namespace').'/docs/';
+    }    	
+
     /** 
      * Import pkg elements (Snippets,Chunks,Plugins,Templates) into MODX from the filesystem. 
      * They will be marked as static elements.
@@ -1047,50 +1105,6 @@ class Repoman {
             $this->modx->log(modX::LOG_LEVEL_INFO, $msg);		
         }
     }
-
-    /**
-     * Get the dir containing the goods.  In redundant MODX parlance, this is 
-     * usually core/components/<namespace>/  (the default).
-     * For better compatibility with composer, this is configurable.
-     *
-     * @param string $pkg_root_dir
-     * @return string dir with trailing slash
-     */
-    public function get_src_dir($pkg_root_dir) {
-        if ($this->get('src_dir')) {
-            return $pkg_root_dir . $this->get('src_dir');
-        }
-        return $pkg_root_dir .'core/components/'.$this->get('namespace').'/';
-    }
-
-    /**
-     * Get the dir containing the assets.  In redundant MODX parlance, this is 
-     * usually assets/components/<namespace>/  (the default).
-     * For better compatibility with composer, this is configurable.
-     *
-     * @param string $pkg_root_dir
-     * @return string dir with trailing slash
-     */
-    public function get_assets_dir($pkg_root_dir) {
-        if ($this->get('assets_dir')) {
-            return $pkg_root_dir . $this->get('assets_dir');
-        }
-        return $pkg_root_dir .'assets/components/'.$this->get('namespace').'/';
-    }    	
-    /**
-     * Get the dir containing the assets.  In redundant MODX parlance, this is 
-     * usually assets/components/<namespace>/  (the default).
-     * For better compatibility with composer, this is configurable.
-     *
-     * @param string $pkg_root_dir
-     * @return string dir with trailing slash
-     */
-    public function get_docs_dir($pkg_root_dir) {
-        if ($this->get('docs_dir')) {
-            return $pkg_root_dir . $this->get('docs_dir');
-        }
-        return $pkg_root_dir.'core/components/'.$this->get('namespace').'/docs/';
-    }    	
 	        
     /**
      * Install all elements and run migrations

@@ -51,32 +51,46 @@ class modTemplate_parser extends Repoman_parser {
 	}
 	
 	/** 
-	 * Attach TVs to the template
+	 * Attach and Remove Template's TVs
 	 *
 	 */
 	public function relate($attributes,&$Obj) {
         $tvs = array();
+        $templateid = $Obj->get('id');
         if (isset($attributes['TVs'])) {
             $tv_names = explode(',',$attributes['TVs']);
-            foreach ($tv_names as $t) {
+            // Remove unassociated TVs
 /*
-                $templateid = $Obj->get('id');
-                if ($templateid) {
-                    $TV = $this->modx->getObject('modTemplateVar', array('name'=>trim($t)));
-                    modTemplateVarTemplate
-                }
-                else {
-//                    $TV = $this->modx->newObject('modPluginEvent');
-//                    $TV->set('event',trim($e));                
-                }
-                
-//                Repoman::$queue[] = 'modTemplateVarTemplate: '. $Event->get('event');
-//                $events[] = $Event;
+            $TVTs = $this->modx->getCollection('modTemplateVarTemplate', array('templateid'=>$templateid, 'event:NOT IN'=> $tv_names));
+            foreach ($TVTs as $t) {
+                $t->remove();
+            }
 */
+            
+            foreach ($tv_names as $t) {
+                $t = trim($t);
+                if (!$TV = $this->modx->getObject('modTemplateVar', array('name'=>$t))) {
+                    $TV = $this->modx->newObject('modTemplateVar');
+                }
+                // Set TV attributes?  This is like Seed data, but it lives in elements/tvs
+                $filename = $this->Repoman->get_src_dir($this->pkg_dir).$this->Repoman->get('tvs_dir').'/'.$t.'.php';
+                $data = $this->Repoman->load_data($filename);
+                $TV->fromArray($data[0]); // one at a time only.
+
+                Repoman::$queue[$this->objecttype][] = 'modTemplateVarTemplate: '. $TV->get('name') .' '.$Obj->get('templatename');
+                $tvs[] = $TV;
             }
         }
-    	//$Obj->addMany($events);
+        else {
+        // Remove all TVs
+            $TVTs = $this->modx->getCollection('modTemplateVarTemplate', array('pluginid'=>$pluginid));
+            foreach ($TVTs as $t) {
+                $t->remove();
+            }        
+        }
+    	$Obj->addMany($tvs);
 	}
+
 	
 }
 /*EOF*/

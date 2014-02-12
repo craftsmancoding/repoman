@@ -54,8 +54,8 @@ return array(
     'validators_dir' => 'tests',
 
     // When the 'export' command is used, the following classnames will be saved as Elements using 
-    // DocBlocks and not as objects. Omitting modTemplateVar b/c it's a pain.
-    'export_elements' => array('modSnippet','modChunk','modTemplate','modPlugin'),
+    // DocBlocks and not as objects.
+    'export_elements' => array('modSnippet','modChunk','modTemplate','modPlugin','modTemplateVar'),
     // When exporting, this determines how many records are packed into each seed file
     'limit' => 50,
     

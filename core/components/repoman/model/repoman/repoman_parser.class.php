@@ -23,6 +23,7 @@ abstract class Repoman_parser {
 	public $comment_end = 'REPOMAN_COMMENT_END-->';
 	
 	public $extensions = '';
+	public $pkg_dir;
 
     /**
      * Any tags to skip in the doc block, e.g. @param, that may have significance for PHPDoc and 
@@ -56,7 +57,7 @@ abstract class Repoman_parser {
 
         $array = $Obj->toArray('',false,false,$graph);
         $content = $Obj->getContent();
-        $dir = $pkg_dir.'core/components/'.$this->Repoman->get('namespace').'/'.$this->Repoman->get($this->dir_key);
+        $dir = $this->Repoman->get_src_dir($pkg_dir).$this->Repoman->get($this->dir_key).'/';
         $filename = $dir.'/'.$attributes[$this->objectname].$this->write_ext;
         if (file_exists($filename) && !$this->Repoman->get('overwrite')) {
             throw new Exception('Element already exists. Overwrite not allowed. '.$filename);
@@ -112,15 +113,16 @@ abstract class Repoman_parser {
     
 	/**
 	 * Gather all elements as objects in the given directory
-	 * @param string $dir name
+	 * @param string $pkg_dir name
 	 * @return array
 	 */
 	public function gather($pkg_dir) {
+        
+        $this->pkg_dir = $pkg_dir;
+        
         $objects = array();
 
         // Calculate the element's directory given the repo dir...
-        // TODO: this should be configurable! Dept. of redundancy Dept.
-        //$dir = $pkg_dir.'core/components/'.$this->Repoman->get('namespace').'/'.$this->Repoman->get($this->dir_key).'/';
         $dir = $this->Repoman->get_src_dir($pkg_dir).$this->Repoman->get($this->dir_key).'/';
         if (!file_exists($dir) || !is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_DEBUG,'Directory does not exist: '. $dir);
@@ -130,7 +132,6 @@ abstract class Repoman_parser {
         $files = glob($dir.$this->ext);
         $i = 0;
         foreach($files as $f) {
-//print self::path_to_rel($f,MODX_BASE_PATH) ."\n"; exit;
             $content = file_get_contents($f);
             $attributes = self::repossess($content,$this->dox_start,$this->dox_end);
             if ($this->Repoman->get('is_build')) {

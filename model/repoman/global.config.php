@@ -21,18 +21,10 @@
 // xPDOTransport::RELATED_OBJECTS => related_objects
 // xPDOTransport::RELATED_OBJECT_ATTRIBUTES => related_object_attributes
 return array(
-    'package_name' => basename($pkg_root_dir),
+    'name' => basename($pkg_root_dir),
     'namespace' => strtolower(basename($pkg_root_dir)),
     'description' => 'This package was built with Repoman (https://github.com/craftsmancoding/repoman)',
     'version' => '1.0.0',
-    'release' => '',
-    'author_name' => 'Unknown',
-    'author_email' => '',
-    'author_site' => '',    
-    'author_url' => '',
-    'documentation_url' => 'http://xkcd.com/293/', // Please please please add docs for your users!
-    'repo_url' => '',   // https://github.com/username/pkg
-    'clone_url' => '',  // git@github.com:username/pkg.git or https://github.com/username/pkg.git
     'copyright' => date('Y'),
     'category' => basename($pkg_root_dir), // Default category for elements
     
@@ -41,7 +33,7 @@ return array(
     'overwrite' => false, // if true, will overwrite repo files during extract operations
     'log_level' => modX::LOG_LEVEL_INFO,
     
-    // Dirs relative to core/components/$pkg_name/ 
+    // Dirs relative to src_dir/
     'chunks_dir' => 'elements/chunks',
     'plugins_dir' => 'elements/plugins',
     'snippets_dir' => 'elements/snippets',
@@ -53,9 +45,9 @@ return array(
     'seeds_dir' => 'model/seeds',
     'validators_dir' => 'tests',
 
-    // When the 'export' command is used, the following classnames will be saved as Elements using 
-    // DocBlocks and not as objects.
-    'export_elements' => array('modSnippet','modChunk','modTemplate','modPlugin','modTemplateVar'),
+    // Directories to omit from packaging to core/components/$namespace/
+    'omit_dirs' => array('assets/','screenshots/','tests/'),
+    
     // When exporting, this determines how many records are packed into each seed file
     'limit' => 50,
     
@@ -80,7 +72,7 @@ return array(
      * Syntax is:
      *
      * 'packages = array(
-     *      array( <model_name>, $pkg_root_dir.'/core/components/<namespace>/model/', <table_prefix>)
+     *      array( 'pkg'=> <model_name>, 'path'=> $pkg_root_dir.'/core/components/<namespace>/model/', 'table_prefix' => <table_prefix>)
      *  ),
      */
     'packages' => array(),

@@ -1,0 +1,41 @@
+{
+    "name": "craftsmancoding/repoman",
+    "description": "Repository manager for MODX Revolution.",
+    "type": "library",
+    "keywords": ["modx","composer","git","repository","manager"],
+    "homepage": "github.com/craftsmancoding/repoman",
+    "license": "GPL2",
+    "authors": [
+        {
+            "name": "Everett Griffiths",
+            "email": "everett@craftsmancoding.com",
+            "homepage": "http://craftsmancoding.com"
+        }        
+    ],
+    "support": {
+        "email": "donotreply@craftsmancoding.org",
+        "issues": "github.com/craftsmancoding/repoman/issues",
+        "forum": "forums.modx.com/",
+        "wiki": "github.com/craftsmancoding/repoman/wiki",
+        "source": "github.com/craftsmancoding/repoman"
+    },    
+    "require": {
+        "php": ">=5.3"
+    },
+    "autoload": {
+        "classmap":["model/repoman/"]
+    },
+    "repoman" {
+        "name": "repoman",
+        "namespace": "repoman",
+        "version": "0.0.9",
+        "release": "dev",
+        "category":"repoman",
+        "src_dir": "",
+        "assets_dir" : "",
+        "docs_dir" : "docs/",
+        "seed": [],
+        "packages":[],
+        "build_attributes":{}
+    }
+}

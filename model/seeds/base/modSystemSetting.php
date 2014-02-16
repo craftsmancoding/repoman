@@ -9,7 +9,7 @@ return array(
         'key'  =>     'repoman.dir',
 		'value'=>     '',
 		'xtype'=>     'textfield',
-		'namespace' => 'moxycart',
+		'namespace' => 'repoman',
 		'area' => 'repoman:default'
     ),
 );

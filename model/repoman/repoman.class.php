@@ -303,13 +303,36 @@ class Repoman {
 	 *
      * @param string $pkg_root_dir path to local package root (w trailing slash)
      * @param array $overrides any run-time overrides
-	 * @return array
+	 * @return array combined config
 	 */
 	public static function load_config($pkg_root_dir, $overrides=array()) {
 	
         $global = include dirname(__FILE__).'/global.config.php';
         $config = array();
-        if (file_exists($pkg_root_dir.self::CONFIG_FILE)) {
+        if (file_exists($pkg_root_dir.'composer.json')) {
+            $str = file_get_contents($pkg_root_dir.'composer.json');
+
+            $composer = json_decode($str,true);
+
+            if (is_array($composer)) {
+                if (isset($composer['repoman']) && is_array($composer['repoman'])) {
+                    $config = $composer['repoman'];
+                }
+                if (!isset($config['namespace']) && $composer['name']) {
+                    $config['namespace'] = substr($composer['name'],strpos($composer['name'],'/') + 1);
+                }
+                if (!isset($config['description']) && isset($composer['description'])) {
+                    $config['description'] = $composer['description'];
+                }
+                if (isset($config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $config['version'])) {
+                    throw new Exception('Invalid version in composer.json');       
+                }
+            }
+            else {
+                throw new Exception('Invalid JSON in composer.json');
+            }
+        }        
+        elseif (file_exists($pkg_root_dir.self::CONFIG_FILE)) {
             $config = include $pkg_root_dir.self::CONFIG_FILE;
             if (!is_array($config)) {    
                 $config = array();
@@ -318,19 +341,7 @@ class Repoman {
                 $config['category'] = $config['package_name'];
             }
         }
-        elseif (file_exists($pkg_root_dir.'composer.json')) {
-            $str = file_get_contents($pkg_root_dir.'composer.json');
-            $config = json_decode($str,true);
-            if (!is_array($config)) {    
-                $config = array();
-            }
-            if (isset($config['package_name']) && !isset($config['category'])) {
-                $config['category'] = $config['package_name'];
-            }
-            if (!isset($config['namespace'])) {
-                $config['namespace'] = $config['name'];
-            }
-        }
+
         
         // This nukes any deeply nested structure, e.g. build_attributes
         $out = array_merge($global, $config, $overrides);
@@ -668,7 +679,7 @@ class Repoman {
 
         $is_element = false;
         $Parser = null;
-        if (in_array($classname, $this->get('export_elements'))) {
+        if (in_array($classname, array('modSnippet','modChunk','modTemplate','modPlugin','modTemplateVar'))) {
             require_once dirname(__FILE__).'/repoman_parser.class.php';
             require_once dirname(__FILE__).'/objecttypes/'.strtolower($classname).'_parser.class.php';
             $is_element = true;

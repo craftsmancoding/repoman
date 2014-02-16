@@ -1,0 +1,11 @@
+Install
+
+Install into MODX all the package elements and run all migrations. The end result
+should appear the same as if you had built the package and installed it via the MODX package manager.
+
+Usage:
+
+    php repoman install <pkg_root_dir>
+    
+
+Running "install" is equivalent to running "import", "migrate", and "seed" commands.

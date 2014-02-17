@@ -1,0 +1,42 @@
+{
+    "name": "vendorname/pkg6",
+    "description": "Testing package",
+    "type": "library",
+    "keywords": ["one","two","three"],
+    "homepage": "github.com/craftsmancoding/repoman",
+    "license": "GPL2",
+    "authors": [
+        {
+            "name": "Everett Griffiths",
+            "email": "everett@craftsmancoding.com",
+            "homepage": "http://craftsmancoding.com"
+        }        
+    ],
+    "support": {
+        "email": "donotreply@craftsmancoding.org",
+        "issues": "github.com/craftsmancoding/repoman/issues",
+        "forum": "forums.modx.com/",
+        "wiki": "github.com/craftsmancoding/repoman/wiki",
+        "source": "github.com/craftsmancoding/repoman"
+    },    
+    "require": {
+        "php": ">=5.3"
+    },
+    "repoman": {
+        "chunks_path": "chunks/",
+        "snippets_path": "snippets/",
+        "templates_path": "templates/",
+        "plugins_path": "plugins/",
+        "tvs_path": "tvs/",
+        "name": "Package 6",
+        "namespace":"pkg6",
+        "version": "1.2.3",
+        "release": "",
+        "category":"Mycategory",
+        "core_path": "",
+        "assets_path" : "assets/",
+        "docs_path" : "docs/",
+        "seed": [],
+        "packages":[]
+    }
+}

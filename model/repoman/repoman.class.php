@@ -341,10 +341,19 @@ class Repoman {
         if (isset($config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $config['version'])) {
             throw new Exception('Invalid version.');       
         }
-        
-        // This nukes any deeply nested structure, e.g. build_attributes
+                
+
         $out = array_merge($global, $config, $overrides);
+
+        if ($out['core_path'] == $out['assets_path']) {
+            throw new Exception('core_path cannot match assets_path');       
+        }
+        elseif ($out['core_path'] == $out['docs_path']) {
+            throw new Exception('core_path cannot match docs_path');       
+        }
+        // Todo... all path directives must be unique.
         
+        // This nukes any deeply nested structure, e.g. build_attributes        
         $out['build_attributes'] = $global['build_attributes'];
         if (isset($config['build_attributes']) && is_array($config['build_attributes'])) {
             foreach ($config['build_attributes'] as $classname => $def) {
@@ -1032,6 +1041,10 @@ class Repoman {
         if ($this->get('core_path') !== null) {
             return $pkg_root_dir . rtrim($this->get('core_path'),'/').'/';
         }
+        elseif ($this->get('core_path') == '/' || $this->get('core_path') == '.') {
+            return $pkg_root_dir;
+        }
+        // Oldschool default
         return $pkg_root_dir .'core/components/'.$this->get('namespace').'/';
     }
         

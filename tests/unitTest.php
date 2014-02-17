@@ -123,12 +123,92 @@ class unitTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue(is_array($out['Store']), 'Related objects should be included.');
     }
     
+    /**
+     *
+     */
     public function testImport() {
-    
+        if ($Chunk = self::$modx->getObject('modChunk', array('name'=>'test_pkg6'))) {
+            $Chunk->remove();
+        }
+        if ($Snippet = self::$modx->getObject('modSnippet', array('name'=>'test_pkg6'))) {
+            $Snippet->remove();
+        }
+        if ($Plugin = self::$modx->getObject('modPlugin', array('name'=>'test_pkg6'))) {
+            $Plugin->remove();
+        }
+        if ($Template = self::$modx->getObject('modTemplate', array('templatename'=>'test_template_pkg6'))) {
+            $Template->remove();
+        }
+        if ($TV = self::$modx->getObject('modTemplateVar', array('name'=>'test_pkg6'))) {
+            $TV->remove();
+        }
+                
+        self::$modx->setOption('repoman.dir', dirname(__FILE__).'/repos/'); // prob'ly not req'd
+        $pkg_root = dirname(__FILE__).'/repos/pkg6/';
+        $config = Repoman::load_config($pkg_root);
+        $Repoman = new Repoman(self::$modx,$config);
+        $Repoman->import($pkg_root);
+
+        $Chunk = self::$modx->getObject('modChunk', array('name'=>'test_pkg6'));
+        $this->assertTrue(is_object($Chunk), 'Chunk should have been imported.');
+        $this->assertTrue($Chunk->get('description') == "C'mon Barbie let's go party", 'Chunk should have been imported.');
+        $this->assertTrue(strpos($Chunk->getContent(), 'This is a test chunk.') !== false, 'Chunk should have been imported.');
+
+        $Snippet = self::$modx->getObject('modSnippet', array('name'=>'test_pkg6'));
+        $this->assertTrue(is_object($Snippet), 'Snippet should have been imported.');
+        $this->assertTrue($Snippet->get('description') == "Let me make you some coffee", 'Snippet should have been imported.');
+        $this->assertTrue(strpos($Snippet->getContent(), "return date('Y-m-d H:i:s');") !== false, 'Snippet should have been imported.');
+
+        $Plugin = self::$modx->getObject('modPlugin', array('name'=>'test_pkg6'));
+        $this->assertTrue(is_object($Plugin), 'Plugin should have been imported.');
+        $this->assertTrue($Plugin->get('description') == "Ladies and Gentlemen...", 'Plugin should have been imported.');
+        $this->assertTrue(strpos($Plugin->getContent(), "return date('Y-m-d H:i:s');") !== false, 'Plugin should have been imported.');
+        if ($Events = $Plugin->getMany('PluginEvents')) {
+            foreach($Events as $E) {
+                $this->assertTrue($E->get('event') == 'OnPageNotFound', 'Plugin Events should have been imported.');
+            }
+        }
+        $this->assertTrue(is_array($Events), 'Plugin should have events attached.');        
+
+        $TV = self::$modx->getObject('modTemplateVar', array('name'=>'test_pkg6'));
+        $this->assertTrue(is_object($TV), 'TV should have been imported.');
+        $this->assertTrue($TV->get('description') == "Now that is a Kankle", 'TV should have been imported.');
+
+
+        
+        $Template = self::$modx->getObject('modTemplate', array('templatename'=>'test_template_pkg6'));
+        $this->assertTrue(is_object($Template), 'Template should have been imported.');
+        $this->assertTrue($Template->get('description') == 'Gnar gnar description', 'Template should have been imported.');
+        $this->assertTrue(strpos($Template->getContent(), 'This is my template.') !== false, 'Template should have been imported.');
+        if ($TVTs = $Template->getMany('TemplateVarTemplates')) {
+            foreach($TVTs as $t) {
+                if ($TVs = $t->getMany('TemplateVar')) {
+                    foreach ($TVs as $tv)
+                    $this->assertTrue($tv->get('name') == 'test_pkg6', 'TV should have been imported.');            
+                }
+            }
+        }
+        
+        // Cleanup
+        if ($Chunk) {
+            $Chunk->remove();
+        }
+        if ($Snippet) {
+            $Snippet->remove();
+        }
+        if ($Plugin) {
+            $Plugin->remove();
+        }
+        if ($Template) {
+            $Template->remove();
+        }
+        if ($TV) {
+            $TV->remove();
+        }
     }
     
     public function testSeed() {
-    
+        
     }
     
     public function testBuild() {

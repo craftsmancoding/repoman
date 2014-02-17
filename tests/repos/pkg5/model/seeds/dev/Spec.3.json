@@ -1,0 +1,8 @@
+{
+    "spec_id": 3,
+    "name": "Length (in)",
+    "description": "Length of the product in inches",
+    "seq": 1,
+    "group": "Default",
+    "type": "text"
+}

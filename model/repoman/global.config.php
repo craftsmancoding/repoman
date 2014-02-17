@@ -33,20 +33,20 @@ return array(
     'overwrite' => false, // if true, will overwrite repo files during extract operations
     'log_level' => modX::LOG_LEVEL_INFO,
     
-    // Dirs relative to src_dir/
-    'chunks_dir' => 'elements/chunks',
-    'plugins_dir' => 'elements/plugins',
-    'snippets_dir' => 'elements/snippets',
-    'templates_dir' => 'elements/templates',
-    'tvs_dir' => 'elements/tvs',
+    // Dirs relative to core_path/
+    'chunks_path' => 'elements/chunks',
+    'plugins_path' => 'elements/plugins',
+    'snippets_path' => 'elements/snippets',
+    'templates_path' => 'elements/templates',
+    'tvs_path' => 'elements/tvs',
     
     // Relative to core/components/<namespace/  (do not start these with a slash!)
-    'migrations_dir' => 'model/migrations',
-    'seeds_dir' => 'model/seeds',
-    'validators_dir' => 'tests',
+    'migrations_path' => 'model/migrations',
+    'seeds_path' => 'model/seeds',
+    'validators_path' => 'tests',
 
-    // Directories to omit from packaging to core/components/$namespace/
-    'omit_dirs' => array('assets/','screenshots/','tests/'),
+    // Directories or files omit from packaging to core/components/$namespace/
+    'omit' => array('assets','screenshots','tests','composer.json','composer.lock'),
     
     // When exporting, this determines how many records are packed into each seed file
     'limit' => 50,

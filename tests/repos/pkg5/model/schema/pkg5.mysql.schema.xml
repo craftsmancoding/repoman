@@ -1,0 +1,362 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- http://wiki.foxycart.com/v/0.7.1/products -->
+<!-- http://wiki.foxycart.com/v/1.1/coupons_and_discounts#discount_types -->
+<!-- http://www.cannonlewis.com/product.php?productid=177 -->
+<!-- http://www.anthropologie.com/anthro/product/shopsale-freshcuts/28810513.jsp?cm_sp=Fluid-_-28810513-_-Regular_1 -->
+<!-- http://www.urbanoutfitters.com/urban/catalog/productdetail.jsp?id=28741783x&parentid=SALE_M_CLOTHING_JACKETS -->
+
+<model package="pkg5" version="1.0" baseClass="xPDOObject" platform="mysql" defaultEngine="MyISAM">
+
+    <!-- ! Store: a container for products -->
+    <!-- Additional properties:
+        default_template : which template is used for these products
+        track_inventory : 
+    -->
+    <object class="Store" extends="modResource">
+        <composite alias="Products" class="Product" local="id" foreign="store_id" cardinality="many" owner="local" />
+    </object>
+
+    <!-- ! Taxonomy: a container for Terms -->
+    <object class="Taxonomy" extends="modResource">
+        <composite alias="Terms" class="Term" local="id" foreign="parent" cardinality="many" owner="local" />
+        <validation>
+            <rule field="parent" name="parent" type="xPDOValidationRule" rule="TaxonomyParents" message="Invalid parent" />
+        </validation>
+    </object>
+    <!-- ! Terms: tags, categories, etc -->
+    <object class="Term" extends="modResource">
+        <aggregate alias="Taxonomy" class="Taxonomy" local="parent" foreign="id" cardinality="one" owner="foreign" />
+        <!-- children terms of terms? -->
+        <validation>
+            <rule field="parent" name="parent" type="xPDOValidationRule" rule="TermParents" message="Invalid parent" />
+        </validation>
+    </object>
+    
+    <!-- ! Currencies -->    
+	<object class="Currency" table="currencies" extends="xPDOObject">
+		<field key="currency_id" dbtype="int" precision="4" phptype="integer" null="false" index="pk"  generated="native" />
+		<field key="code" dbtype="varchar" precision="10" phptype="string" null="false" />
+		<field key="name" dbtype="varchar" precision="256" phptype="string" null="false" />
+		<field key="symbol" dbtype="varchar" precision="4" phptype="string" null="true" />
+        <field key="is_active" dbtype="tinyint" precision="1" attributes="unsigned" phptype="boolean" null="false" default="1" />
+		<field key="seq" dbtype="int" precision="3" phptype="integer" null="true" />
+
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="currency_id" collation="A" null="false" />
+		</index>
+		
+		<composite alias="Products" class="Product" local="currency_id" foreign="currency_id" cardinality="many" owner="local" />
+	</object>
+
+    <!-- ! Product -->
+    <object class="Product" table="products" extends="xPDOObject">
+        <field key="product_id" dbtype="int" precision="11" phptype="integer" null="false" index="pk"  generated="native" />
+        <field key="store_id" dbtype="int" precision="11" phptype="integer" null="true" />
+        <field key="parent_id" dbtype="int" precision="11" phptype="integer" null="true" comment="variations are stored as children"/>
+        <field key="template_id" dbtype="int" precision="11" phptype="integer" null="true" />
+        <field key="currency_id" dbtype="int" precision="4" phptype="integer" null="true" />
+        <field key="name" dbtype="varchar" precision="60" phptype="string" null="false" />
+        <field key="title" dbtype="varchar" precision="60" phptype="string" null="false" comment="For the webpage"/>
+        <field key="description" dbtype="varchar" precision="255" phptype="string" null="true" />
+        <field key="content" dbtype="mediumtext" phptype="string" null="false" default="" />
+        <field key="type" dbtype="enum" precision="'regular','subscription','download'" phptype="string" null="true" />
+        <field key="sku" dbtype="varchar" precision="255" phptype="string" null="false" />
+        <field key="sku_vendor" dbtype="varchar" precision="255" phptype="string" null="false" comment="SKU from your provider"/>
+        <field key="variant_matrix" dbtype="varchar" precision="255" phptype="string" null="false" comment="JSON hash to identify specific type:term combo(s)"/>
+        <field key="alias" dbtype="varchar" precision="255" phptype="string" null="false" />
+        <field key="uri" dbtype="varchar" precision="255" phptype="string" null="false" />
+
+        <field key="track_inventory" dbtype="tinyint" precision="1" phptype="integer" null="false" default="0" comment="Sum of child variants"/>
+        <!-- in stock -->
+        <field key="qty_inventory" dbtype="int" precision="11" phptype="integer" null="false" />
+        <field key="qty_alert" dbtype="int" precision="11" phptype="integer" null="false" comment="Stock count at which you need to reorder"/>
+        <field key="qty_min" dbtype="int" precision="11" phptype="integer" null="false" comment="Minimum quantity that should be allowed per product, per cart."/>
+        <field key="qty_max" dbtype="int" precision="11" phptype="integer" null="false" comment="Maximum quantity that should be allowed per product, per cart."/>
+        <field key="qty_backorder_max" dbtype="int" precision="11" phptype="integer" null="false" comment="Number of units you can oversell."/>
+        <field key="price" dbtype="decimal" precision="8,2" phptype="float" null="true" />
+        <field key="price_strike_thru" dbtype="decimal" precision="8,2" phptype="float" null="true" comment="Eye candy only"/>
+        <field key="price_sale" dbtype="decimal" precision="8,2" phptype="float" null="true" comment="Used when on sale"/>
+        <field key="sale_start" dbtype="datetime" phptype="datetime" />
+        <field key="sale_end" dbtype="datetime" phptype="datetime" />
+        
+        <field key="category" dbtype="varchar" precision="32" phptype="string" null="true" comment="Foxycart category (not a taxonomy)"/>
+        <field key="image_id" dbtype="int" precision="11" phptype="integer" null="true" comment="Thumbnail image"/>
+        <field key="is_active" dbtype="tinyint" precision="1" phptype="integer" null="false" default="1" comment="Used to disable/enable products"/>
+        <field key="in_menu" dbtype="tinyint" precision="1" phptype="integer" null="false" default="1" comment="For hiding products from menu"/>        
+        
+        <!-- subscription/membership products Only -->
+        <field key="billing_unit" dbtype="enum" precision="'hours','days','weeks','months','years'" phptype="string" null="true" />
+        <field key="billing_interval" dbtype="int" precision="3" phptype="integer" null="false" default="1"/>
+
+        <field key="duration_unit" dbtype="enum" precision="'hours','days','weeks','months','years'" phptype="string" null="false" />
+        <field key="duration_interval" dbtype="int" precision="3" phptype="integer" null="false" default="1"/>
+
+        <field key="user_group_id" dbtype="int" precision="11" phptype="integer" null="true" />
+        <field key="role_id" dbtype="int" precision="11" phptype="integer" null="true" />
+
+        <!-- downloadable products (link to a MODX static resource)-->
+        <field key="payload_id" dbtype="int" precision="11" phptype="integer" null="true"/>
+        
+        <field key="author_id" dbtype="int" precision="11" phptype="integer" null="true" />
+		<field key="timestamp_created" dbtype="timestamp" phptype="timestamp" null="true" default="CURRENT_TIMESTAMP" />
+		<field key="timestamp_modified" dbtype="timestamp" phptype="timestamp" null="true" />
+        
+        <field key="seq" dbtype="int" precision="3" phptype="integer" null="true" />
+        
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="product_id" collation="A" null="false" />
+		</index>
+		<!-- sku may not be unique if variations are used -->
+        <index alias="sku" name="sku" primary="false" unique="false">
+			<column key="sku" collation="A" null="true" />
+		</index>
+        <index alias="factory_sku" name="factory_sku" primary="false" unique="false">
+			<column key="factory_sku" collation="A" null="true" />
+		</index>
+        <index alias="alias" name="alias" primary="false" unique="true"  type="BTREE">
+			<column key="store_id" collation="A" null="true" />
+			<column key="alias" collation="A" null="true" />
+		</index>
+
+        <index alias="uri" name="uri" primary="false" unique="true"  type="BTREE">
+			<column key="uri" collation="A" null="false" />
+		</index>
+
+        <index alias="image_id" name="image_id" primary="false" unique="false">
+			<column key="image_id" collation="A" null="true" />
+		</index>
+				
+		<aggregate alias="Store" class="Store" local="store_id" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="Template" class="modTemplate" local="template_id" foreign="id" cardinality="one" owner="foreign" />
+		<aggregate alias="Currency" class="Currency" local="currency_id" foreign="currency_id" cardinality="one" owner="foreign" />
+		<aggregate alias="Payload" class="modResource" local="payload_id" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="Author" class="modUser" local="author_id" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="UserGroup" class="modUserGroup" local="user_group_id" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="Role" class="modUserGroupRole" local="role_id" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="Thumbnail" class="Image" local="image_id" foreign="image_id" cardinality="one" owner="foreign" />
+        
+        <!-- parent is the main product: children represent variants in all permutations -->
+        <composite alias="Parent" class="Product" local="parent_id" foreign="product_id" cardinality="one" owner="foreign" />
+        <aggregate alias="Variant" class="Product" local="product_id" foreign="parent_id" cardinality="many" owner="local" />		
+		<composite alias="Images" class="Image" local="product_id" foreign="product_id" cardinality="many" owner="local" />
+		<composite alias="Terms" class="ProductTerm" local="product_id" foreign="product_id" cardinality="many" owner="local" />
+		<composite alias="Taxonomies" class="ProductTaxonomy" local="product_id" foreign="product_id" cardinality="many" owner="local" />
+        <composite alias="Specs" class="ProductSpec" local="product_id" foreign="product_id" cardinality="many" owner="local" />
+		<composite alias="Relations" class="ProductRelation" local="product_id" foreign="product_id" cardinality="many" owner="local" />
+		<composite alias="Reviews" class="Review" local="product_id" foreign="product_id" cardinality="many" owner="local" />
+    </object>
+
+
+	<!-- ! Specs -->
+	<!-- a la custom fields-->
+	<object class="Spec" table="specs" extends="xPDOObject">
+		<field key="spec_id" dbtype="int" precision="11" phptype="integer" null="false" index="pk"  generated="native" />
+		<field key="identifier" dbtype="varchar" precision="32" phptype="string" null="false" comment="Lowercase slug"/>
+		<field key="name" dbtype="varchar" precision="64" phptype="string" null="false" comment="Human readable, translated."/>
+		<field key="description" dbtype="varchar" precision="255" phptype="string" null="true" />
+		<field key="seq" dbtype="tinyint" precision="3" phptype="integer" null="true" />
+		<field key="group" dbtype="varchar" precision="32" phptype="string" null="true" />
+		<!-- future use? -->
+		<field key="type" dbtype="varchar" precision="32" phptype="string" null="false" default="text"/>
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="spec_id" collation="A" null="false" />
+		</index>
+        <index alias="identifier" name="identifier" primary="false" unique="true"  type="BTREE">
+			<column key="identifier" collation="A" null="false" />
+		</index>
+
+        <composite alias="Products" class="ProductSpec" local="spec_id" foreign="spec_id" cardinality="many" owner="local" />
+		
+	</object>
+
+    <!-- ! ProductSpec -->
+    <!-- custom fields for specifying height, weight etc. -->
+	<object class="ProductSpec" table="product_specs" extends="xPDOSimpleObject">
+		<field key="product_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+        <field key="spec_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+        <field key="value" dbtype="varchar" precision="255" phptype="string" null="false" />
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="id" collation="A" null="false" />
+		</index>
+
+        <aggregate alias="Product" class="Product" local="product_id" foreign="product_id" cardinality="one" owner="foreign" />
+        <aggregate alias="Spec" class="Spec" local="spec_id" foreign="spec_id" cardinality="one" owner="foreign" />
+	</object>
+
+	<!-- ! ProductReview -->
+	<!-- Some fields may be redundant because conf allows for anonymous users to post reviews -->
+	<object class="Review" table="reviews" extends="xPDOSimpleObject">
+		<field key="product_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+        <field key="author_id" dbtype="int" precision="11" phptype="integer" null="true" comment="user may not be logged in"/>
+        <field key="name" dbtype="varchar" precision="100" phptype="string" null="false" />
+        <field key="email" dbtype="varchar" precision="64" phptype="string" null="false" />
+        <field key="rating" dbtype="int" precision="3" phptype="integer" null="false"/>
+        <field key="content" dbtype="mediumtext" phptype="string" null="false" default="" />
+        <field key="state" dbtype="varchar" precision="16" phptype="string" null="false" default="pending" comment="pending, approved, archived"/>
+
+		<field key="timestamp_created" dbtype="timestamp" phptype="timestamp" null="true" default="CURRENT_TIMESTAMP" />
+		<field key="timestamp_modified" dbtype="timestamp" phptype="timestamp" null="true" />
+        
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="id" collation="A" null="false" />
+		</index>
+			
+        <aggregate alias="Author" class="modUser" local="author_id" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="Product" class="Product" local="product_id" foreign="product_id" cardinality="one" owner="foreign" />
+	</object>
+
+
+	<!-- ! Variation Types -->
+	<!-- eg. "Color", "Size", "Material" -->
+	<object class="VariationType" table="variation_types" extends="xPDOObject">
+		<field key="vtype_id" dbtype="int" precision="11" phptype="integer" null="false" index="pk"  generated="native" />
+		<field key="name" dbtype="varchar" precision="32" phptype="string" null="false" />
+		<field key="description" dbtype="varchar" precision="255" phptype="string" null="true" />
+		<field key="seq" dbtype="int" precision="4" phptype="integer" null="true" />
+
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="vtype_id" collation="A" null="false" />
+		</index>
+        <index alias="name" name="name" primary="false" unique="true">
+			<column key="name" collation="A" null="true" />
+		</index>		
+		
+		<composite alias="Terms" class="VariationTerm" local="vtype_id" foreign="vtype_id" cardinality="many" owner="local" />
+	</object>
+
+    <!-- ! Variation Terms -->
+    <!-- e.g. "Small", "Medium", "Large" -->
+	<object class="VariationTerm" table="variation_terms" extends="xPDOObject">
+    	<field key="vterm_id" dbtype="int" precision="11" phptype="integer" null="false" index="pk"  generated="native" />
+		<field key="vtype_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+		<field key="name" dbtype="varchar" precision="255" phptype="string" null="false" />
+		<field key="sku_prefix" dbtype="varchar" precision="16" phptype="string" null="false" />
+		<field key="sku_suffix" dbtype="varchar" precision="16" phptype="string" null="false" />
+		<field key="seq" dbtype="tinyint" precision="3" phptype="integer" null="true" />
+		
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="vterm_id" collation="A" null="false" />
+		</index>
+
+        <aggregate alias="Type" class="VariationType" local="vtype_id" foreign="vtype_id" cardinality="one" owner="foreign" />
+	</object>
+
+    <!-- ! ProductRelation -->
+    <!-- for linking products together -->
+	<object class="ProductRelation" table="product_relations" extends="xPDOSimpleObject">
+		<field key="product_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+        <field key="related_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+        <field key="type" dbtype="varchar" precision="32" phptype="string" null="false" default="related"/>
+		<field key="seq" dbtype="tinyint" precision="3" phptype="integer" null="true" />		
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="id" collation="A" null="false" />
+		</index>
+
+        <aggregate alias="Product" class="Product" local="product_id" foreign="product_id" cardinality="one" owner="foreign" />
+        <aggregate alias="Relation" class="Product" local="related_id" foreign="product_id" cardinality="one" owner="foreign" />
+	</object>
+	
+	<!-- ! Product Variation Types -->
+	<!-- 
+	e.g. says "this parent product varies by Color, Size, and Material 
+	is_variant: if 1, this means that price, qty, etc. will change for the product 
+	is_variant: if 0, then the options here are just aesthetic options
+	-->
+	<object class="ProductVariationTypes" table="product_variation_types" extends="xPDOSimpleObject">
+		<field key="product_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+		<field key="vtype_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+        <field key="name" dbtype="varchar" precision="255" phptype="string" null="false" />
+        <field key="seq" dbtype="tinyint" precision="3" phptype="integer" null="true" />
+		<field key="is_variant" dbtype="tinyint" precision="1" phptype="integer" null="false" default="0" />
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="id" collation="A" null="false" />
+		</index>
+		
+        <aggregate alias="Type" class="VariationType" local="vtype_id" foreign="vtype_id" cardinality="one" owner="foreign" />
+        <aggregate alias="Product" class="Product" local="product_id" foreign="product_id" cardinality="one" owner="foreign" />
+	</object>
+	
+    <!-- ! ProductTaxonomy -->
+    <!-- for enabling taxonomies at the product level -->
+	<object class="ProductTaxonomy" table="product_taxonomies" extends="xPDOSimpleObject">
+		<field key="product_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+        <field key="taxonomy_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+		<field key="seq" dbtype="tinyint" precision="3" phptype="integer" null="true" />		
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="id" collation="A" null="false" />
+		</index>
+
+        <aggregate alias="Taxonomy" class="Taxonomy" local="taxonomy_id" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="Product" class="Product" local="product_id" foreign="product_id" cardinality="one" owner="foreign" />
+	</object>
+	    
+    <!-- ! ProductTerm -->
+    <!-- for adding tags/categories to products -->
+	<object class="ProductTerm" table="product_terms" extends="xPDOSimpleObject">
+		<field key="product_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+        <field key="term_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+		<field key="seq" dbtype="tinyint" precision="3" phptype="integer" null="true" />		
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="id" collation="A" null="false" />
+		</index>
+
+        <aggregate alias="Term" class="Term" local="term_id" foreign="id" cardinality="one" owner="foreign" />
+        <aggregate alias="Product" class="Product" local="product_id" foreign="product_id" cardinality="one" owner="foreign" />
+	</object>
+	
+	
+	<!-- ! Coupons -->
+	
+	    
+    <!-- ! Carts -->
+    <!-- 
+    what if you have multiple currencies in the cart? 
+    how to handle variations?
+    -->
+	<object class="Cart" table="carts" extends="xPDOObject">
+    	<field key="cart_id" dbtype="int" precision="11" phptype="integer" null="false" index="pk"  generated="native" />
+		<field key="product_id" dbtype="int" precision="11" phptype="integer" null="false"/>
+
+        <field key="price" dbtype="decimal" precision="8,2" phptype="float" null="true" />
+        <field key="currency_id" dbtype="int" precision="4" phptype="integer" null="true" />
+		<field key="qty" dbtype="int" precision="11" phptype="integer" null="false" default="0"/>
+
+        <field key="info" dbtype="text" phptype="string" null="true" comment="JSON data including varations/options"/>
+
+        <field key="author_id" dbtype="int" precision="11" phptype="integer" null="true" comment="user may not be logged in"/>
+		<field key="timestamp_created" dbtype="timestamp" phptype="timestamp" null="true" default="CURRENT_TIMESTAMP" />
+		<field key="timestamp_modified" dbtype="timestamp" phptype="timestamp" null="true" />
+
+		
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="cart_id" collation="A" null="false" />
+		</index>
+
+        <aggregate alias="Product" class="Product" local="product_id" foreign="product_id" cardinality="one" owner="foreign" />
+        <aggregate alias="Author" class="modUser" local="author_id" foreign="id" cardinality="one" owner="foreign" />
+        
+	</object>
+    
+	<!-- ! Image -->
+	<!-- Each Product can have multiple images -->
+	<object class="Image" table="images" extends="xPDOObject">
+    	<field key="image_id" dbtype="int" precision="11" phptype="integer" null="false" index="pk"  generated="native" />
+    	<field key="product_id" dbtype="int" precision="11" phptype="integer" null="true"/>
+		<field key="title" dbtype="varchar" precision="255" phptype="string" null="false" />
+		<field key="alt" dbtype="varchar" precision="255" phptype="string" null="false" />
+		<field key="url" dbtype="varchar" precision="255" phptype="string" null="false" />
+		<field key="thumbnail_url" dbtype="varchar" precision="255" phptype="string" null="false"/>
+		<field key="path" dbtype="varchar" precision="255" phptype="string" null="true" />
+		<field key="width" dbtype="int" precision="4" phptype="integer" null="false" />
+		<field key="height" dbtype="int" precision="4" phptype="integer" null="false" />
+		<field key="size" dbtype="int" precision="11" phptype="integer" null="false" />
+		<field key="seq" dbtype="int" precision="4" phptype="integer" null="false" />
+		<field key="is_active" dbtype="tinyint" precision="1" attributes="unsigned" phptype="boolean" null="false" default="1" />
+		<index alias="PRIMARY" name="PRIMARY" primary="true" unique="true">
+			<column key="image_id" collation="A" null="false" />
+		</index>
+
+		<aggregate alias="Product" class="Product" local="product_id" foreign="product_id" cardinality="one" owner="foreign" />
+	</object>
+
+</model>

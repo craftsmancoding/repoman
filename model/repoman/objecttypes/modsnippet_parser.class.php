@@ -4,7 +4,7 @@
  *
  */
 class modSnippet_parser extends RepoMan_parser {
-    public $dir_key = 'snippets_dir';
+    public $dir_key = 'snippets_path';
 	public $ext = '*.php';
     public $objecttype = 'modSnippet';
 

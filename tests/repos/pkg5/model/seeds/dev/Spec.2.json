@@ -1,0 +1,8 @@
+{
+    "spec_id": 2,
+    "name": "Shipping Weight (lb)",
+    "description": "Weight used for shipping calculations",
+    "seq": 1,
+    "group": "Default",
+    "type": "text"
+}

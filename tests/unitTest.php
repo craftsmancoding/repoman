@@ -83,10 +83,105 @@ class unitTest extends PHPUnit_Framework_TestCase {
      * Test for bad version number
      *
      * @expectedException Exception
-     * @expectedExceptionMessage Invalid version in composer.json
+     * @expectedExceptionMessage Invalid version
      */
     public function testConfig3() {
         $config = Repoman::load_config(dirname(__FILE__).'/pkg3/');
     }
+
+    /**
+     *
+     */    
+    public function testPrep() {
+        $config = Repoman::load_config(dirname(__FILE__).'/pkg4/');
+        $config['dry_run'] = true;
+        self::$modx->setLogLevel(modX::LOG_LEVEL_FATAL);
+        self::$modx->setLogTarget('ECHO'); 
+        $Repoman = new Repoman(self::$modx,$config);
+        $Repoman->import(dirname(__FILE__).'/pkg4/');
+
+        $assets_url = MODX_BASE_URL .preg_replace('#'.MODX_BASE_PATH.'#', '', dirname(__FILE__).'/pkg4/').$config['assets_path'];
+        $assets_path = dirname(__FILE__).'/pkg4/'.$config['assets_path'];
+        $core_path = dirname(__FILE__).'/pkg4/'.$config['core_path'];
+
+        $this->assertTrue(Repoman::$queue['modSystemSetting']['pkg4.assets_url']['value'] == $assets_url, 'Improper value for assets_url');
+        $this->assertTrue(Repoman::$queue['modSystemSetting']['pkg4.assets_path']['value'] == $assets_path, 'Improper value for assets_path');
+        $this->assertTrue(Repoman::$queue['modSystemSetting']['pkg4.core_path']['value'] == $core_path, 'Improper value for core_path');        
+    }
+
     
+    /**
+     *
+     */
+    public function testGraph() {
+        $Repoman = new Repoman(self::$modx,array());
+        $out = $Repoman->graph('modDocument');
+        $this->assertTrue($out['type'] == 'document', 'Type attribute should be "document"');
+        
+        self::$modx->setOption('repoman.dir', dirname(__FILE__).'/repos/');
+        $out = $Repoman->graph('Product');
+        $this->assertTrue(is_array($out['Store']), 'Related objects should be included.');
+    }
+    
+    public function testImport() {
+    
+    }
+    
+    public function testSeed() {
+    
+    }
+    
+    public function testBuild() {
+    
+    }
+
+    /**
+     *
+     */
+    public function testRtfm() {
+        $out = Repoman::rtfm('asdfasdf');
+        $this->assertTrue('No manual page found.' == $out, 'Expected missing manual page.');
+    }
+
+    /**
+     * Test loading data from a file
+     * @expectedException Exception
+     * @expectedExceptionMessage not an array     
+     */
+    public function testLoadData1() {
+        $Repoman = new Repoman(self::$modx,array());
+        $data = $Repoman->load_data(dirname(__FILE__).'/repos/pkg5/bad_data/modChunk.no_array.php');
+    }
+
+    /**
+     * Test loading data from a file
+     * @expectedException Exception
+     * @expectedExceptionMessage Errors parsing
+     */
+    public function testLoadData2() {
+        $Repoman = new Repoman(self::$modx,array());
+        $data = $Repoman->load_data(dirname(__FILE__).'/repos/pkg5/bad_data/modChunk.bad_syntax.php');
+    }
+
+    /**
+     * Test loading data from a file
+     * @expectedException Exception
+     * @expectedExceptionMessage Bad JSON in
+     */
+    public function testLoadData3() {
+        $Repoman = new Repoman(self::$modx,array());
+        $data = $Repoman->load_data(dirname(__FILE__).'/repos/pkg5/bad_data/modChunk.bad_json.json',true);
+    }
+    
+    /**
+     *
+     */
+    public function testParseArgs() {
+        $args = array('--flag','--x=y','skip=me');
+        $parsed = Repoman::parse_args($args);
+        $this->assertTrue($parsed['flag'], 'Flag should be set.');   
+        $this->assertTrue($parsed['x'] == 'y', 'Value should be set.');   
+        $this->assertTrue(count($parsed) == 2, 'Two arguments should come through.');   
+        $this->assertFalse(isset($parsed['skip']), 'Value should not be set.');   
+    }
 }

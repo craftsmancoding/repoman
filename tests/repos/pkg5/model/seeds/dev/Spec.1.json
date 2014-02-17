@@ -1,0 +1,8 @@
+{
+    "spec_id": 1,
+    "name": "Weight (lb)",
+    "description": "Weight of the product by itself",
+    "seq": 0,
+    "group": "Default",
+    "type": "text"
+}

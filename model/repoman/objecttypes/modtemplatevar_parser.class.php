@@ -5,7 +5,7 @@
  */
 class modTemplateVar_parser extends Repoman_parser {
 
-    public $dir_key = 'tvs_dir';
+    public $dir_key = 'tvs_path';
 	public $ext = '*.php';
     public $write_ext = '.tv';	
     public $objecttype = 'modTemplateVar';
@@ -23,7 +23,7 @@ class modTemplateVar_parser extends Repoman_parser {
         $objects = array();
 
         // Calculate the element's directory given the repo dir...
-        $dir = $this->Repoman->get_src_dir($pkg_dir).$this->Repoman->get($this->dir_key).'/';
+        $dir = $this->Repoman->get_core_path($pkg_dir).$this->Repoman->get($this->dir_key).'/';
         if (!file_exists($dir) || !is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_DEBUG,'Directory does not exist: '. $dir);
             return array();

@@ -1,0 +1,8 @@
+{
+    "spec_id": 4,
+    "name": "Watts (W)",
+    "description": "Wattage",
+    "seq": 1,
+    "group": "Electric",
+    "type": "text"
+}

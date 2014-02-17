@@ -123,7 +123,7 @@ flush();
 // Get req'd <function> parameter
 if (!isset($argv[1])) {
     print message('Missing required <function> parameter.','INFO');
-    print Repoman::rtfm('usage');
+    print Repoman::rtfm('usage')."\n\n";;
     exit(1);
 }
 
@@ -138,7 +138,13 @@ switch ($function) {
         unset($argv[2]);
         $args = Repoman::parse_args($argv);
         try {
-            print Repoman::graph($classname, $args);
+            $Repoman = new Repoman($modx,$config);
+            $out = $Repoman->graph($classname, $args);
+            $out = print_r($out,true); 
+            // Try to make the result pretty. TODO: make it have correct syntax!!!
+            $out = str_replace(array('Array','[',']',')'), array('array',"'","'",'),'), $out);
+            
+            print $out;
             exit;
         }  
         catch (Exception $e) {
@@ -173,16 +179,16 @@ switch ($function) {
     case 'help':
         if (isset($argv[2])) {
             print message($argv[2],'HELP');
-            print Repoman::rtfm($argv[2]);
+            print Repoman::rtfm($argv[2])."\n\n";
         }
         else {
             print message('Repoman: Repository Manager for MODX Revolution','HEADER');
-            print Repoman::rtfm('usage');   
+            print Repoman::rtfm('usage')."\n\n";;   
         }
         exit();
     default:
         print message('Unknown function','ERROR');
-        print Repoman::rtfm('usage');
+        print Repoman::rtfm('usage')."\n\n";;
         exit(1);
 }
 
@@ -196,7 +202,15 @@ if (!file_exists($pkg_path.'config.php') && !file_exists($pkg_path.'composer.jso
     print message('No config.php or composer.json file detected.','WARNING');
 }
 
-$config = Repoman::load_config($pkg_path,$overrides);
+try {
+    $config = Repoman::load_config($pkg_path,$overrides);
+}  
+catch (Exception $e) {
+    print message($e->getMessage(),'ERROR');
+    print "Try running 'composer update' to get more detailed information on where your syntax is wrong.\n";
+    exit(5);
+}
+
 
 // Run time stuff
 $modx->setLogLevel($config['log_level']);

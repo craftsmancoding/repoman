@@ -1,0 +1,43 @@
+{
+    "name": "vendorname/packagename",
+    "description": "My description here.",
+    "type": "library",
+    "keywords": ["one","two","three"],
+    "homepage": "github.com/craftsmancoding/repoman",
+    "license": "GPL2",
+    "authors": [
+        {
+            "name": "Everett Griffiths",
+            "email": "everett@craftsmancoding.com",
+            "homepage": "http://craftsmancoding.com"
+        }        
+    ],
+    "support": {
+        "email": "donotreply@craftsmancoding.org",
+        "issues": "github.com/craftsmancoding/repoman/issues",
+        "forum": "forums.modx.com/",
+        "wiki": "github.com/craftsmancoding/repoman/wiki",
+        "source": "github.com/craftsmancoding/repoman"
+    },    
+    "require": {
+        "php": ">=5.3"
+    },
+    "repoman": {
+        "name": "Package Name",
+        "namespace":"pkg5",
+        "version": "1.2.3",
+        "release": "",
+        "category":"Mycategory",
+        "core_path": "",
+        "assets_path" : "assets/",
+        "docs_path" : "docs/",
+        "seed": [],
+        "packages":[
+            {
+                "pkg":"pkg5",
+                "path":"model/",
+                "table_prefix": "moxy_"
+            }
+        ]
+    }
+}

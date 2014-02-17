@@ -31,9 +31,9 @@
         "version": "0.0.9",
         "release": "dev",
         "category":"repoman",
-        "src_dir": "",
-        "assets_dir" : "",
-        "docs_dir" : "docs/",
+        "core_path": "",
+        "assets_path" : "",
+        "docs_path" : "docs/",
         "seed": [],
         "packages":[],
         "build_attributes":{}

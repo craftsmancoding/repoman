@@ -5,7 +5,7 @@
  */
 class modTemplate_parser extends Repoman_parser {
 
-    public $dir_key = 'templates_dir';
+    public $dir_key = 'templates_path';
 	public $ext = '*.*';
     public $write_ext = '.html';	  
     public $objecttype = 'modTemplate';
@@ -73,7 +73,7 @@ class modTemplate_parser extends Repoman_parser {
                     $TV = $this->modx->newObject('modTemplateVar');
                 }
                 // Set TV attributes?  This is like Seed data, but it lives in elements/tvs
-                $filename = $this->Repoman->get_src_dir($this->pkg_dir).$this->Repoman->get('tvs_dir').'/'.$t.'.php';
+                $filename = $this->Repoman->get_core_path($this->pkg_dir).$this->Repoman->get('tvs_dir').'/'.$t.'.php';
                 $data = $this->Repoman->load_data($filename);
                 $TV->fromArray($data[0]); // one at a time only.
 

@@ -27,9 +27,9 @@
         "version": "123.456.789",
         "release": "",
         "category":"Moxycart",
-        "src_dir": "",
-        "assets_dir" : "assets/",
-        "docs_dir" : "docs/",
+        "core_path": "",
+        "assets_path" : "assets/",
+        "docs_path" : "docs/",
         "seed": ["base"]
     }
 }

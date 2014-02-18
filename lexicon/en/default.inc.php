@@ -25,8 +25,8 @@
  * @package repoman
  * @subpackage lexicon
  */
-$_lang['repoman'] = 'RepoMan';
-$_lang['repoman_desc'] = 'Repository interface manager for MODX developers.';
+$_lang['repoman'] = 'Repoman';
+$_lang['repoman_desc'] = 'Repository Manager for MODX Revolution';
 
 // System Settings
 $_lang['setting_repoman.dir'] = 'Repository Directory';

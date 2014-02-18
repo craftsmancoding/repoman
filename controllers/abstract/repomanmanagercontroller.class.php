@@ -55,6 +55,18 @@ abstract class RepomanManagerController extends modExtraManagerController {
     public function checkPermissions() {
         return true; // TODO
     }
+
+	/** 
+	 * Relies on $this->props
+	 */
+	private function _render() {
+		
+		extract($this->props);
+		
+		ob_start();
+		include(REPOMAN_PATH.'views/templates/mgr_page.php');
+		return ob_get_clean();
+	}
     
     /**
      * Get a URL for a given action in the manager

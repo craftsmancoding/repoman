@@ -269,17 +269,70 @@ class unitTest extends PHPUnit_Framework_TestCase {
      *
      */
     public function testBuildPrep() {
-//print 'asdfadf'; exit;
+
         $pkg_root_dir = dirname(__FILE__).'/repos/pkg8/';
         $config = Repoman::load_config($pkg_root_dir);
-//        print_r($config); exit;
-//        print '>>>'; print $config['core_path']; exit;
-//        $config = array();
+        // Generate a random namespace for the package to ensure that the proper folder structure is generated.
+        $charset='abcdefghijklmnopqrstuvwxyz';
+        $str = '';
+        $length = 8;
+        $count = strlen($charset);
+        while ($length--) {
+            $str .= $charset[mt_rand(0, $count-1)];
+        }
+
+        $config['namespace'] = $str;
+
         $Repoman = new Repoman(self::$modx,$config);
         $core_path = $Repoman->get_core_path($pkg_root_dir);
-//        print '-->'.$core_path ."\n"; exit;
+
         $Repoman->build_prep($pkg_root_dir);
+    
+        $core_dir = MODX_CORE_PATH.'cache/repoman/_build/core/components/'.$str;
+        $this->assertTrue(file_exists($core_dir), 'Build prep should have created a valid directory structure.');
+        $this->assertTrue(is_dir($core_dir), 'Build prep should have created a valid directory structure.');
     }
+
+    /**
+     *
+     */
+    public function testBuild() {
+        // Generate a random namespace for the package to ensure that the proper folder structure is generated.
+        $charset='abcdefghijklmnopqrstuvwxyz';
+        $namespace = '';
+        $length = 8;
+        $count = strlen($charset);
+        while ($length--) {
+            $namespace .= $charset[mt_rand(0, $count-1)];
+        }
+        // Generate random version number
+        $ver = rand(0,100).'.'.rand(0,100).'.'.rand(0,100);
+        $release = 'beta';
+
+
+        $pkg_root_dir = dirname(__FILE__).'/repos/pkg8/';
+        $config = Repoman::load_config($pkg_root_dir);
+
+        $config['namespace'] = $namespace;
+        $config['package_name'] = $namespace;
+        $config['version'] = $ver;
+        $config['release'] = $release;
+
+
+        $Repoman = new Repoman(self::$modx,$config);
+
+        $Repoman->build($pkg_root_dir);
+    
+        $pkg = MODX_CORE_PATH.'packages/'.$namespace.'-'.$ver.'-'.$release;
+        $this->assertTrue(file_exists($pkg.'.transport.zip'), 'Building should have created a package: '.$pkg.'.transport.zip');
+        $this->assertTrue(is_dir($pkg), 'Building should have created a package directory: '.$pkg);
+
+        // Check the manifest
+        $this->assertTrue(file_exists($pkg.'/manifest.php'), 'Building should have created a manifest: '.$pkg.'/manifest.php');
+        Repoman::rrmdir($pkg);
+        unlink($pkg.'.transport.zip');
+    }
+
 
     /**
      *

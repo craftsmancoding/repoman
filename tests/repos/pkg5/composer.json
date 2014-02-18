@@ -23,7 +23,7 @@
         "php": ">=5.3"
     },
     "repoman": {
-        "name": "Package Name",
+        "package_name": "Package Name",
         "namespace":"pkg5",
         "version": "1.2.3",
         "release": "",

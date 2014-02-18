@@ -1,9 +1,9 @@
 <?php
 /**
- * Our Swiss-Army Resolver.
+ * Repoman's Swiss-Army Resolver.
  *
  * We can use the same resolver for all packages so long as they follow the correct 
- * Repoman syntax.
+ * Repoman syntax. See https://github.com/craftsmancoding/repoman
  *
  * 
  * @param $trasport - the transport class, containing the xpdo instance

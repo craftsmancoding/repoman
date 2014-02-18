@@ -27,7 +27,7 @@
         "classmap":["model/pkg8/"]
     },
     "repoman": {
-        "name": "Package 8",
+        "package_name": "Package 8",
         "namespace": "pkg8",
         "version": "1.0.0",
         "release": "dev",

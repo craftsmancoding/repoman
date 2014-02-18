@@ -21,7 +21,7 @@
 // xPDOTransport::RELATED_OBJECTS => related_objects
 // xPDOTransport::RELATED_OBJECT_ATTRIBUTES => related_object_attributes
 return array(
-    'name' => basename($pkg_root_dir),
+    'package_name' => basename($pkg_root_dir),
     'namespace' => strtolower(basename($pkg_root_dir)),
     'description' => 'This package was built with Repoman (https://github.com/craftsmancoding/repoman)',
     'version' => '1.0.0',

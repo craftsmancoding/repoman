@@ -22,6 +22,9 @@ class Repoman {
     
     public $prepped = false;
     
+    public $build_core_path;
+    public $build_assets_path;
+    
     const CACHE_DIR = 'repoman';
     const CONFIG_FILE = 'config.php';
         
@@ -210,15 +213,14 @@ class Repoman {
 	 * @return string full path with trailing slash
 	 */
 	public static function get_dir($path) {
-            $realpath = strtr(realpath($path), '\\', '/');
-            if (!file_exists($realpath)){
-                throw new Exception('Directory does not exist: '.$path);
-            }
-            elseif(!is_dir($realpath)) {
-                throw new Exception('Path is not a directory: '.$realpath);
-            }
-        
-            return rtrim($realpath,'/') .'/';
+        $realpath = strtr(realpath($path), '\\', '/');
+        if (!file_exists($realpath)){
+            throw new Exception('Directory does not exist: '.$path);
+        }
+        elseif(!is_dir($realpath)) {
+            throw new Exception('Path is not a directory: '.$realpath);
+        }        
+        return preg_replace('#/+$#','',$realpath) . '/';
 	}
 
 	/**
@@ -405,7 +407,7 @@ class Repoman {
                 }
                 $PathDir = $source . '/' . $readdirectory; 
                 if ( is_dir( $PathDir ) ) {
-                    Repoman::rcopy( $PathDir, $destination . '/' . $readdirectory );
+                    return Repoman::rcopy( $PathDir, $destination.'/'.$readdirectory, $omissions);
                     continue;
                 }
                 
@@ -417,10 +419,8 @@ class Repoman {
             $directory->close();
         }
         else {
-            copy( $source, $destination );
+            return copy( $source, $destination );
         }
-        
-        return $result;
     }
 
 	/** 
@@ -473,7 +473,7 @@ class Repoman {
      */
     public function build($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-        
+        $this->build_prep($pkg_root_dir);
         $this->config['is_build'] = true; // TODO
         $this->config['force_static'] = false; // TODO
         
@@ -492,7 +492,7 @@ class Repoman {
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
         
         // Tests (Validators): this is run BEFORE your package code is in place
-        // so you cannot include package files from your validator! They won't exist when the code is run.
+        // so you cannot reference/include package files from your validator! They won't exist when the code is run.
         $validator_file = $this->get_core_path($pkg_root_dir).$this->get('validators_dir').'/install.php';
         if (file_exists($validator_file)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaging validator '.$validator_file);
@@ -537,21 +537,20 @@ class Repoman {
 
 
         // Files...: TODO: these need their own builder
+        // We package these from the temporary copies inside of repoman's cache.
         // Assets
-        $dir = $this->get_assets_dir($pkg_root_dir);
-        if (file_exists($dir) && is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing assets from '.$dir);
+        if (file_exists($this->build_assets_path) && is_dir($this->build_assets_path)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing assets from '.$this->build_assets_path);
             $vehicle->resolve('file', array(
-                'source' => rtrim($dir,'/'),
+                'source' => rtrim($this->build_assets_path,'/'),
                 'target' => "return MODX_ASSETS_PATH . 'components/';",
             ));
         }        
         // Core
-        $dir = $this->get_core_path($pkg_root_dir);
-        if (file_exists($dir) && is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing core files from '.$dir);
+        if (file_exists($this->build_core_path) && is_dir($this->build_core_path)) {
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Packing core files from '.$this->build_core_path);
             $vehicle->resolve('file', array(
-                'source' => rtrim($dir,'/'),
+                'source' => rtrim($this->build_core_path,'/'),
                 'target' => "return MODX_CORE_PATH . 'components/';",
             ));
         }
@@ -584,7 +583,7 @@ class Repoman {
         // Optionally Load Seed data
         $dirs = $this->get_seed_dirs($pkg_root_dir);
         foreach ($dirs as $d) {
-        $objects = $this->crawl_dir($d);
+            $objects = $this->crawl_dir($d);
             foreach ($objects as $classname => $info) {
                 foreach ($info as $k => $Obj) {
                     $build_attributes = $this->get_build_attributes($Obj,$classname);
@@ -633,7 +632,7 @@ class Repoman {
         // Zip up the package
         $builder->pack();
 
-        $zip = $this->get('namespace').'-'.$this->get('version').'-'.$this->get('release').'.transport.zip';
+        $zip = strtolower($this->get('package_name')).'-'.$this->get('version').'-'.$this->get('release').'.transport.zip';
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Build complete: '. MODX_CORE_PATH.'packages/'.$zip);
     }
     
@@ -647,9 +646,15 @@ class Repoman {
 
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         
+        if (!$this->get('namespace')) {
+            throw new Exception('Namespace cannot be empty.');
+        }
+        
         $build_dir = MODX_CORE_PATH.'cache/repoman/_build/';
-        $assets_dest = $build_dir.'assets/components/'.$this->get('namespace');
-        $core_dest = $build_dir.'core/components/'.$this->get('namespace');
+        
+        $this->build_assets_path = $build_dir.'assets/components/'.$this->get('namespace');
+        $this->build_core_path = $build_dir.'core/components/'.$this->get('namespace');
+        
         $assets_src = $this->get_assets_dir($pkg_root_dir);
         $core_src = $this->get_core_path($pkg_root_dir);
 
@@ -662,23 +667,23 @@ class Repoman {
         }
         
         if (file_exists($assets_src)) {
-            if (false === mkdir($assets_dest, $this->get('dir_mode'), true)) {
-                throw new Exception('Could not create directory '.$assets_dest);
+            if (false === mkdir($this->build_assets_path, $this->get('dir_mode'), true)) {
+                throw new Exception('Could not create directory '.$this->build_assets_path);
             }
             else {
-                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$assets_dest);
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$this->build_assets_path);
             }
-            self::rcopy($assets_src, $assets_dest);
+            self::rcopy($assets_src, $this->build_assets_path);
         }
         
-        if (false === mkdir($core_dest, $this->get('dir_mode'), true)) {
-            throw new Exception('Could not create directory '.$core_dest);
+        if (false === mkdir($this->build_core_path, $this->get('dir_mode'), true)) {
+            throw new Exception('Could not create directory '.$this->build_core_path);
         }
         else {
-            $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$core_dest);
+            $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$this->build_core_path);
         }
    
-        self::rcopy($core_src, $core_dest,$omissions);
+        self::rcopy($core_src,$this->build_core_path,$omissions);
     }
 
 	/**
@@ -1090,23 +1095,28 @@ class Repoman {
     /**
      * Get a list of all seed directories
      *
-     * @param string $pkg_root_dir path to local package root (w trailing slash)          
+     * @param string $pkg_root_dir path to local package root
      * @return array
      */
     public function get_seed_dirs($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         $dirs = array();
-//        print $this->get('seeds_path') ."\n"; exit;
-        $seeds_path = $this->get_core_path($pkg_root_dir).$this->get('seeds_path');
-//        print $seeds_path."\n"; exit;
-        if ($seed = $this->get('seed')) {
-            if (!is_array($seed)) {
-                $seed = explode(',',$seed);
+        $seeds = $this->get('seeds_path');
+        if (!is_array($seeds)) {
+            if (strpos($seeds, ',') !== false) {
+                $seeds = explode(',',$seeds);
             }
-            foreach ($seed as $s) {
-                $dirs[] = $seeds_path.'/'.$s;
-            }                
+            else {
+                $seeds = array($seeds);
+            }
         }
+        foreach ($seeds as $s) {
+            $d = $this->get_core_path($pkg_root_dir).trim($s);
+            if (file_exists($d) && is_dir($d)) {
+                $dirs[] = $d;
+            }
+        }
+
         if (empty($dirs)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'No seed directories defined.');
         }

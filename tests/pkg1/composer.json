@@ -23,7 +23,7 @@
         "php": ">=5.3"
     },
     "repoman": {
-        "name": "Package Name",
+        "package_name": "Package Name",
         "version": "123.456.789",
         "release": "",
         "category":"Moxycart",

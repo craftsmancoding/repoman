@@ -1,0 +1,41 @@
+{
+    "name": "craftsmancoding/repoman",
+    "description": "Test Package 8",
+    "type": "library",
+    "keywords": ["modx","composer","git","repository","manager"],
+    "homepage": "github.com/craftsmancoding/repoman",
+    "license": "GPL-2.0",
+    "authors": [
+        {
+            "name": "Everett Griffiths",
+            "email": "everett@craftsmancoding.com",
+            "homepage": "http://craftsmancoding.com"
+        }        
+    ],
+    "support": {
+        "email": "donotreply@craftsmancoding.org",
+        "issues": "github.com/craftsmancoding/repoman/issues",
+        "forum": "forums.modx.com/",
+        "wiki": "github.com/craftsmancoding/repoman/wiki",
+        "source": "github.com/craftsmancoding/repoman"
+    },    
+    "require": {
+        "php": ">=5.3",
+        "twitter/api": "dev-master"
+    },
+    "autoload": {
+        "classmap":["model/pkg8/"]
+    },
+    "repoman": {
+        "name": "Package 8",
+        "namespace": "pkg8",
+        "version": "1.0.0",
+        "release": "dev",
+        "category":"Package 8",
+        "core_path": "",
+        "assets_path" : "assets/",
+        "docs_path" : "docs/",
+        "seeds_path" : "model/seeds/",
+        "seed": ["dev/"]
+    }
+}

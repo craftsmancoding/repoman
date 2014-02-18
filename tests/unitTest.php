@@ -265,8 +265,20 @@ class unitTest extends PHPUnit_Framework_TestCase {
         }
     }
     
-    public function testBuild() {
-    
+    /**
+     *
+     */
+    public function testBuildPrep() {
+//print 'asdfadf'; exit;
+        $pkg_root_dir = dirname(__FILE__).'/repos/pkg8/';
+        $config = Repoman::load_config($pkg_root_dir);
+//        print_r($config); exit;
+//        print '>>>'; print $config['core_path']; exit;
+//        $config = array();
+        $Repoman = new Repoman(self::$modx,$config);
+        $core_path = $Repoman->get_core_path($pkg_root_dir);
+//        print '-->'.$core_path ."\n"; exit;
+        $Repoman->build_prep($pkg_root_dir);
     }
 
     /**

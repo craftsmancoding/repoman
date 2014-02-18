@@ -386,22 +386,65 @@ class Repoman {
         }	
         return $overrides;
 	}
-		
+
+    /**
+     * Recursively copy files and directories.
+     *
+     * @param string $source dir
+     * @param string $dest dir
+     * @param array $omissions full path to any files to omit (optional)
+     */
+    static public function rcopy($source, $destination, $omissions=array()) {
+        
+       if ( is_dir($source) ) {
+            @mkdir($destination);
+            $directory = dir( $source );
+            while ( false !== ( $readdirectory = $directory->read() ) ) {
+                if ( $readdirectory == '.' || $readdirectory == '..' ) {
+                    continue;
+                }
+                $PathDir = $source . '/' . $readdirectory; 
+                if ( is_dir( $PathDir ) ) {
+                    Repoman::rcopy( $PathDir, $destination . '/' . $readdirectory );
+                    continue;
+                }
+                
+                if (!in_array($PathDir,$omissions)) {
+                    copy( $PathDir, $destination . '/' . $readdirectory );
+                }
+            }
+            
+            $directory->close();
+        }
+        else {
+            copy( $source, $destination );
+        }
+        
+        return $result;
+    }
+
 	/** 
 	 * Recursively remove a directory and all its subdirectories and files.
 	 * See http://www.php.net/manual/en/function.rmdir.php
 	 * @param string $dir full path name (with or without trailing slash)
 	 */
     public static function rrmdir($dir) {
-        foreach(glob($dir . '/*') as $file) {
-            if(is_dir($file)) {
-                Repoman::rrmdir($file);
+        $dir = rtrim($dir,'/');
+        if (is_dir($dir)) { 
+            $objects = scandir($dir); 
+            foreach ($objects as $object) { 
+                if ($object != '.' && $object != '..') { 
+                    if (filetype($dir.'/'.$object) == "dir") {
+                        Repoman::rrmdir($dir.'/'.$object); 
+                    }
+                    else {
+                        unlink($dir.'/'.$object);
+                    }
+                }
             }
-            else {
-                unlink($file);
-            }
+            reset($objects); 
+            rmdir($dir); 
         }
-        return rmdir($dir);
     }
     
 	/**
@@ -594,6 +637,50 @@ class Repoman {
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Build complete: '. MODX_CORE_PATH.'packages/'.$zip);
     }
     
+    /**
+     * Move directories into place in preparation for build. This recreates the 
+     * directory structure MODx uses for packages.
+     *
+     * @param string $pkg_root_dir
+     */
+    public function build_prep($pkg_root_dir) {
+
+        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        
+        $build_dir = MODX_CORE_PATH.'cache/repoman/_build/';
+        $assets_dest = $build_dir.'assets/components/'.$this->get('namespace');
+        $core_dest = $build_dir.'core/components/'.$this->get('namespace');
+        $assets_src = $this->get_assets_dir($pkg_root_dir);
+        $core_src = $this->get_core_path($pkg_root_dir);
+
+        self::rrmdir($build_dir);
+
+        $omissions = array();
+        $omit = $this->get('omit');
+        foreach ($omit as $o) {
+            $omissions[] = $pkg_root_dir.'/'.$o;
+        }
+        
+        if (file_exists($assets_src)) {
+            if (false === mkdir($assets_dest, $this->get('dir_mode'), true)) {
+                throw new Exception('Could not create directory '.$assets_dest);
+            }
+            else {
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$assets_dest);
+            }
+            self::rcopy($assets_src, $assets_dest);
+        }
+        
+        if (false === mkdir($core_dest, $this->get('dir_mode'), true)) {
+            throw new Exception('Could not create directory '.$core_dest);
+        }
+        else {
+            $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$core_dest);
+        }
+   
+        self::rcopy($core_src, $core_dest,$omissions);
+    }
+
 	/**
 	 * Iterate over the specified $dir to load up either PHP or JSON arrays representing objects,
 	 * then return an array of the corresponding objects.  The classname of the objects must be 
@@ -1038,14 +1125,18 @@ class Repoman {
      * @return string dir with trailing slash
      */
     public function get_core_path($pkg_root_dir) {
-        if ($this->get('core_path') !== null) {
-            return $pkg_root_dir . rtrim($this->get('core_path'),'/').'/';
-        }
-        elseif ($this->get('core_path') == '/' || $this->get('core_path') == '.') {
+        if ($this->get('core_path') == null || $this->get('core_path') == '/' || $this->get('core_path') == '.') {
             return $pkg_root_dir;
         }
+        else {
+            return $pkg_root_dir.rtrim($this->get('core_path'),'/').'/';        
+        }
+        
         // Oldschool default
-        return $pkg_root_dir .'core/components/'.$this->get('namespace').'/';
+        if (!$namespace = $this->get('namespace')) {
+            $namespace = basename($pkg_root_dir);
+        }
+        return $pkg_root_dir .'core/components/'.$namespace.'/';
     }
         
     /**

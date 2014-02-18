@@ -1,0 +1,60 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
+    ],
+    "hash": "d3d7c4527a93d704c0a7561ae2fc0a4a",
+    "packages": [
+        {
+            "name": "twitter/api",
+            "version": "dev-master",
+            "target-dir": "Twitter/Api",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/faruh-sibers/TwitterApi.git",
+                "reference": "ba618665292cd85aaefe4b3f11df2dfadb2f1d5a"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/faruh-sibers/TwitterApi/zipball/ba618665292cd85aaefe4b3f11df2dfadb2f1d5a",
+                "reference": "ba618665292cd85aaefe4b3f11df2dfadb2f1d5a",
+                "shasum": ""
+            },
+            "require": {
+                "php": ">=5.3.2"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-0": {
+                    "Twitter\\Api\\": "lib/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "description": "The first PHP Library to support OAuth for Twitter's REST API",
+            "keywords": [
+                "api",
+                "twitter"
+            ],
+            "time": "2014-02-13 06:12:39"
+        }
+    ],
+    "packages-dev": [
+
+    ],
+    "aliases": [
+
+    ],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "twitter/api": 20
+    },
+    "platform": {
+        "php": ">=5.3"
+    },
+    "platform-dev": [
+
+    ]
+}

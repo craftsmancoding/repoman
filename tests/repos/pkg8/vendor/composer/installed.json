@@ -1,0 +1,39 @@
+[
+    {
+        "name": "twitter/api",
+        "version": "dev-master",
+        "version_normalized": "9999999-dev",
+        "target-dir": "Twitter/Api",
+        "source": {
+            "type": "git",
+            "url": "https://github.com/faruh-sibers/TwitterApi.git",
+            "reference": "ba618665292cd85aaefe4b3f11df2dfadb2f1d5a"
+        },
+        "dist": {
+            "type": "zip",
+            "url": "https://api.github.com/repos/faruh-sibers/TwitterApi/zipball/ba618665292cd85aaefe4b3f11df2dfadb2f1d5a",
+            "reference": "ba618665292cd85aaefe4b3f11df2dfadb2f1d5a",
+            "shasum": ""
+        },
+        "require": {
+            "php": ">=5.3.2"
+        },
+        "time": "2014-02-13 06:12:39",
+        "type": "library",
+        "installation-source": "source",
+        "autoload": {
+            "psr-0": {
+                "Twitter\\Api\\": "lib/"
+            }
+        },
+        "notification-url": "https://packagist.org/downloads/",
+        "license": [
+            "MIT"
+        ],
+        "description": "The first PHP Library to support OAuth for Twitter's REST API",
+        "keywords": [
+            "api",
+            "twitter"
+        ]
+    }
+]

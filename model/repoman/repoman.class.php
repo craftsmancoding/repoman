@@ -302,7 +302,7 @@ class Repoman {
 	 * @return array combined config
 	 */
 	public static function load_config($pkg_root_dir, $overrides=array()) {
-	
+        $pkg_root_dir = self::get_dir($pkg_root_dir);
         $global = include dirname(__FILE__).'/global.config.php';
         $config = array();
         if (file_exists($pkg_root_dir.'composer.json')) {
@@ -322,7 +322,7 @@ class Repoman {
                 }
             }
             else {
-                throw new Exception('Invalid JSON in composer.json');
+                throw new Exception('Invalid JSON in '.$pkg_root_dir.'composer.json');
             }
         }        
         elseif (file_exists($pkg_root_dir.self::CONFIG_FILE)) {
@@ -346,10 +346,10 @@ class Repoman {
         $out = array_merge($global, $config, $overrides);
 
         if ($out['core_path'] == $out['assets_path']) {
-            throw new Exception('core_path cannot match assets_path');       
+            throw new Exception('core_path cannot match assets_path in '.$pkg_root_dir);       
         }
         elseif ($out['core_path'] == $out['docs_path']) {
-            throw new Exception('core_path cannot match docs_path');       
+            throw new Exception('core_path cannot match docs_path in '.$pkg_root_dir);       
         }
         // Todo... all path directives must be unique.
         
@@ -1232,7 +1232,8 @@ class Repoman {
     }
 
     /**
-     * Load up seed data into the local modx install. Not used by the build method.
+     * Load up seed data into the local modx install. (Not used by the build method).
+     * Config should be loaded by this point, otherwise build_attributes won't be defined.
      *
      * @param string $pkg_root_dir path to local package root (w trailing slash)    
      */
@@ -1241,7 +1242,7 @@ class Repoman {
         $this->_addPkgs($this->config,$pkg_root_dir);
         $dirs = $this->get_seed_dirs($pkg_root_dir);
         foreach ($dirs as $d) {
-        $objects = $this->crawl_dir($d);
+            $objects = $this->crawl_dir($d);
             foreach ($objects as $classname => $info) {
                 foreach ($info as $k => $Obj) {
                     if (!$Obj->save()) {

@@ -73,7 +73,7 @@ class unitTest extends PHPUnit_Framework_TestCase {
      * Test for bad JSON
      *
      * @expectedException Exception
-     * @expectedExceptionMessage Invalid JSON in composer.json
+     * @expectedExceptionMessage Invalid JSON
      */
     public function testConfig2() {
         $config = Repoman::load_config(dirname(__FILE__).'/pkg2/');
@@ -124,7 +124,7 @@ class unitTest extends PHPUnit_Framework_TestCase {
     }
     
     /**
-     *
+     * Big and important... make sure this stuff gets loaded correctly.
      */
     public function testImport() {
         if ($Chunk = self::$modx->getObject('modChunk', array('name'=>'test_pkg6'))) {
@@ -173,8 +173,6 @@ class unitTest extends PHPUnit_Framework_TestCase {
         $TV = self::$modx->getObject('modTemplateVar', array('name'=>'test_pkg6'));
         $this->assertTrue(is_object($TV), 'TV should have been imported.');
         $this->assertTrue($TV->get('description') == "Now that is a Kankle", 'TV should have been imported.');
-
-
         
         $Template = self::$modx->getObject('modTemplate', array('templatename'=>'test_template_pkg6'));
         $this->assertTrue(is_object($Template), 'Template should have been imported.');
@@ -207,8 +205,64 @@ class unitTest extends PHPUnit_Framework_TestCase {
         }
     }
     
+    /**
+     * Make sure we are getting our objects loaded up from the directory.
+     */
+    public function testCrawlDir() {
+        $config = Repoman::load_config(dirname(dirname(__FILE__)));
+        $Repoman = new Repoman(self::$modx,$config);
+        $objects = $Repoman->crawl_dir(dirname(__FILE__).'/pkg7/seeddata/');
+
+        $this->assertTrue(isset($objects['modMenu']), 'modMenu should have been detected in directory.');
+        $this->assertTrue(isset($objects['modResource']), 'modResource should have been detected in directory.');
+        foreach ($objects as $classname => $info) {
+            foreach ($info as $k => $Obj) {
+                if ($classname == 'modMenu') {
+                    $this->assertTrue($Obj->get('description') == '88CQMLEZMS', 'Menu description incorrect.');                    
+                }
+                if ($classname == 'modResource') {
+                    $this->assertTrue($Obj->get('description') == 'ZHD5I3KWRN', 'Page description incorrect.');                                                    
+                }
+            }
+        }
+    }
+
+    /**
+     * @expectedException Exception
+     * @expectedExceptionMessage Invalid filename
+     */
+    public function testCrawlDir2() {
+        $Repoman = new Repoman(self::$modx	);
+        $Repoman->crawl_dir(dirname(__FILE__).'/badseeddata/');        
+    }
+    
     public function testSeed() {
+        if ($Menu = self::$modx->getObject('modMenu', array('text'=>'88CQMLEZMS'))) {
+            $Menu->remove();
+        }
+        if ($Resource = self::$modx->getObject('modResource', array('alias'=>'ZHD5I3KWRN'))) {
+            $Resource->remove();
+        }
         
+        $config = Repoman::load_config(dirname(__FILE__).'/pkg7/');
+        $config['seed'] = 'seeddata/';
+        $Repoman = new Repoman(self::$modx,$config);
+        $Repoman->seed(dirname(__FILE__).'/pkg7/');
+
+        $Menu = self::$modx->getObject('modMenu', array('text'=>'88CQMLEZMS'));
+        $this->assertTrue(is_object($Menu), 'Menu object should have been seeded.');                    
+        $this->assertTrue($Menu->get('description')=='88CQMLEZMS', 'Menu object should have been seeded.');                    
+                
+        $Resource = self::$modx->getObject('modResource', array('alias'=>'ZHD5I3KWRN'));
+        $this->assertTrue(is_object($Resource), 'Resource object should have been seeded.');                    
+        $this->assertTrue($Resource->get('alias')=='ZHD5I3KWRN', 'Resource object should have been seeded.');                    
+        
+        if ($Menu) {
+            $Menu->remove();
+        }
+        if ($Resource) {
+            $Resource->remove();
+        }
     }
     
     public function testBuild() {

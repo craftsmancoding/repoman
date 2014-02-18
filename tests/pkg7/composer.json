@@ -1,6 +1,6 @@
 {
     "name": "craftsmancoding/repoman",
-    "description": "Repository manager for MODX Revolution.",
+    "description": "Test Package 7",
     "type": "library",
     "keywords": ["modx","composer","git","repository","manager"],
     "homepage": "github.com/craftsmancoding/repoman",
@@ -34,6 +34,7 @@
         "core_path": "",
         "assets_path" : "assets/",
         "docs_path" : "docs/",
+        "seeds_path": "",
         "seed": [],
         "packages":[],
         "build_attributes":{}

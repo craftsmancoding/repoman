@@ -65,7 +65,7 @@
 </style>
 
 <div id="repoman_mgr_page">
-	<h2><a href="<?php print REPOMAN_MGR_URL; ?>">Repo Man</a></h2>
+	<h2><a href="<?php print $this->getUrl('index'); ?>">Repoman</a></h2>
 	
 	<h3><?php print $pagetitle; ?></h3>
 	
@@ -74,6 +74,6 @@
 	<?php print $content; ?>
 	
 	<div id="repoman_footer">
-		&copy; 2013 <a href="http://craftsmancoding.com/">Craftsman Coding</a>
+		&copy; 2014 <a href="http://craftsmancoding.com/">Craftsman Coding</a>
 	</div>
 </div>

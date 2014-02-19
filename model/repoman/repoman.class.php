@@ -1302,8 +1302,8 @@ class Repoman {
         $object = $this->config;
         // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
         // if this has been installed via a package, then skip??
-        $migrations_path = $this->get_core_path($pkg_root_dir).$this->get('migrations_dir');
-        
+        $migrations_path = $this->get_core_path($pkg_root_dir).$this->get('migrations_path');
+
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
             return;
@@ -1570,7 +1570,7 @@ class Repoman {
         // included files are compat. with the build functionality.
         global $modx;
         $object = $this->config;
-        $migrations_path = $this->get_core_path($pkg_root_dir).$this->get('migrations_dir');
+        $migrations_path = $this->get_core_path($pkg_root_dir).$this->get('migrations_path');
 
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);

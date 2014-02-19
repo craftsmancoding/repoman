@@ -28,7 +28,53 @@ abstract class RepomanManagerController extends modExtraManagerController {
     //public $placeholders = array();
     
         
+	protected function _get_dir_options($current_val) {
+		
+		$options = '';
+		foreach (new RecursiveDirectoryIterator(MODX_BASE_PATH) as $filename) {
+			if (is_dir($filename)) {
+				$shortname = preg_replace('#^'.MODX_BASE_PATH.'#','',$filename);
+				if ($shortname != '.' && $shortname != '..'
+					&& '/'.$shortname.'/' != MODX_CONNECTORS_URL
+					&& '/'.$shortname.'/' != MODX_MANAGER_URL
+					&& '/'.$shortname.'/' != '/processors/'
+					&& '/'.$shortname.'/' != '/core/'
+					) {
+					//$val = '{base_path}'.$shortname;					
+					$val = MODX_BASE_PATH .$shortname;
+					$selected = '';					
+					if (MODX_BASE_PATH.$shortname == $current_val) {
+						$selected = ' selected="selected"';
+					}
+					$label = $shortname.'/';
+					$options .= sprintf('<option value="%s"%s>%s</option>',$val,$selected,$label);
+				}
+			}
+		}
+		return $options;
+	}
 
+	/**
+	 * Used for errors, warnings, and success messages
+	 *
+	 * @param string $msg
+	 * @param string $type error|warning|success
+	 */
+	protected function _get_msg($msg, $type='error') {
+		return $this->_load($type, array('msg'=>$msg));
+	}
+
+	/**
+	 * Loads a controller file.
+	 * @param	string	$file
+	 */
+	protected function _load($file, $data=array()) {
+		extract($data);
+		ob_start();
+		include $this->config['namespace_path'].'views/'.$file.'.php';
+		return ob_get_clean();
+	}
+	
     /**
      * Initializes the main manager controller. You may want to load certain classes,
      * assets that are shared across all controllers or configuration. 
@@ -59,15 +105,15 @@ abstract class RepomanManagerController extends modExtraManagerController {
 	/** 
 	 * Relies on $this->props
 	 */
-	private function _render() {
+	protected function _render() {
 		
 		extract($this->props);
 		
 		ob_start();
-		include(REPOMAN_PATH.'views/templates/mgr_page.php');
+		include $this->config['namespace_path'].'views/templates/mgr_page.php';
 		return ob_get_clean();
 	}
-    
+	    
     /**
      * Get a URL for a given action in the manager
      *

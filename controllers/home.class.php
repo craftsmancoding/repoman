@@ -11,11 +11,15 @@ class RepomanHomeManagerController extends RepomanManagerController {
     public $loadFooter = true;
     /** @var bool Set to false to prevent loading of the base MODExt JS classes. */
     public $loadBaseJavascript = true;
+    
+    public $props = array();
+    
     /**
      * Any specific processing we want to do here. Return a string of html.
      * @param array $scriptProperties
      */
     public function process(array $scriptProperties = array()) {
+//        print '<pre>'.print_r($this->config,true).'</pre>'; 
 		$this->props['pagetitle'] = 'Overview';
 		$pagedata = array('repo_dir_settings'=>'', 'cache_settings'=>'','repos'=>'');
 		$props = array();		
@@ -43,19 +47,7 @@ class RepomanHomeManagerController extends RepomanManagerController {
 		*/
 		$props['repo_dir'] = $this->repo_dir;
 		$props['options'] = $this->_get_dir_options($props['repo_dir']);
-		$pagedata['repo_dir_settings'] = $this->_load('selector_repo_dir', $props);
-		
-		/*
-		-----------------------------------
-		Caching System Settings
-		-----------------------------------
-		cache_scripts  : set to No to ensure that you always read the PHP from file
-		cache_resource : set to No to ensure that Chunks etc. are always read from file
-		*/
-		$props['cache_scripts'] = $this->modx->getOption('cache_scripts');
-		$props['cache_resource'] = $this->modx->getOption('cache_resource');
-		$pagedata['cache_settings'] = $this->_load('settings', $props);
-		
+		$pagedata['repo_dir_settings'] = $this->_load('selector_repo_dir', $props);		
 		
 		// Validate the setting
 /*
@@ -119,7 +111,7 @@ class RepomanHomeManagerController extends RepomanManagerController {
      * @return null|string
      */
     public function getPageTitle() {
-        return 'Repoman';
+        return 'Repoman ';
     }
     
     /**

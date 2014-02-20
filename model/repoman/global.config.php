@@ -33,6 +33,11 @@ return array(
     'overwrite' => false, // if true, will overwrite repo files during extract operations
     'log_level' => modX::LOG_LEVEL_INFO,
     
+    // Paths
+    'core_path' => '',
+    'assets_path' => 'assets/',
+    'docs_path' => 'docs/',
+    
     // Dirs relative to core_path/
     'chunks_path' => 'elements/chunks',
     'plugins_path' => 'elements/plugins',

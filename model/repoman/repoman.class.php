@@ -1126,32 +1126,26 @@ class Repoman {
     }
 
     /**
-     * Get the dir containing the goods.  In redundant MODX parlance, this is 
-     * usually core/components/<namespace>/  (the default).
+     * Get the full path containing the goods.  In redundant MODX parlance, this is 
+     * usually core/components/<namespace>/ 
      * For better compatibility with composer, this is configurable.
      *
      * @param string $pkg_root_dir
      * @return string dir with trailing slash
      */
     public function get_core_path($pkg_root_dir) {
-        if ($this->get('core_path') == null || $this->get('core_path') == '/' || $this->get('core_path') == '.') {
+        if (in_array($this->get('core_path'), array(null, '/','.'.'./'))) {
             return $pkg_root_dir;
         }
         else {
-            return $pkg_root_dir.rtrim($this->get('core_path'),'/').'/';        
+            return $pkg_root_dir.$this->get('core_path');  
         }
-        
-        // Oldschool default
-        if (!$namespace = $this->get('namespace')) {
-            $namespace = basename($pkg_root_dir);
-        }
-        return $pkg_root_dir .'core/components/'.$namespace.'/';
     }
         
     /**
      * Get the dir containing the assets.  In redundant MODX parlance, this is 
-     * usually assets/components/<namespace>/  (the default).
-     * For better compatibility with composer, this is configurable.
+     * usually assets/components/<namespace>/
+     * To reduce directory redundancy, this defaults to "assets/" (relative to the core_path)
      *
      * @param string $pkg_root_dir
      * @return string dir with trailing slash
@@ -1160,7 +1154,7 @@ class Repoman {
         if ($this->get('assets_dir')) {
             return $pkg_root_dir . $this->get('assets_dir');
         }
-        return $pkg_root_dir .'assets/components/'.$this->get('namespace').'/';
+        return $pkg_root_dir .'assets/';
     }    	
     /**
      * Get the dir containing the assets.  In redundant MODX parlance, this is 
@@ -1174,7 +1168,7 @@ class Repoman {
         if ($this->get('docs_path')) {
             return $pkg_root_dir . $this->get('docs_path');
         }
-        return $pkg_root_dir.rtrim($this->get('core_path'),'/').'/docs/';
+        return $pkg_root_dir.'docs/';
     }    	
 
     /** 

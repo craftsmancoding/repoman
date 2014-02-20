@@ -24,9 +24,11 @@ class IndexManagerController extends RepomanManagerController {
         return 'home';
     }
     
+/*
     public function process(array $scriptProperties = array()) {
         return 'XXxxxx';
     }
+*/
     
 }
 /*EOF*/

@@ -33,7 +33,7 @@ abstract class RepomanManagerController extends modExtraManagerController {
     public $valid_controllers = array('home','view','ajax');
     
     public function __construct(modX &$modx,$config = array()) {
-
+        
         require_once $modx->getOption('repoman.core_path','', MODX_CORE_PATH.'core/components/repoman/').'vendor/autoload.php';
         $controller = (isset($_REQUEST['action'])) ? $_REQUEST['action'] : '';
         if (!in_array($controller, $this->valid_controllers)) {

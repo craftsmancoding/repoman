@@ -3,6 +3,19 @@
 	#repoman_mgr_page{
 		margin-top:20px;
 	}
+
+	#repoman_mgr_page ol,
+	#repoman_mgr_page ul {
+		margin: 1em !important;
+		padding: 1em !important;
+	}
+	
+	#repoman_mgr_page ul {
+		list-style : disc !important;
+	}
+	#repoman_mgr_page ol {
+		list-style : decimal !important;
+	}
 	ul.repoman_list {}
 	li.repoman_item {}
 	div.repoman_error{

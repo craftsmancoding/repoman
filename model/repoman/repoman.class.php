@@ -332,6 +332,7 @@ class Repoman {
 	 * @return array combined config
 	 */
 	public static function load_config($pkg_root_dir, $overrides=array()) {
+
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         $global = include dirname(__FILE__).'/global.config.php';
         $config = array();
@@ -339,10 +340,21 @@ class Repoman {
             $str = file_get_contents($pkg_root_dir.'composer.json');
 
             $composer = json_decode($str,true);
-
             if (is_array($composer)) {
                 if (isset($composer['repoman']) && is_array($composer['repoman'])) {
                     $config = $composer['repoman'];
+                    if (isset($composer['support'])) {
+                        $config['support'] = $composer['support'];
+                    }
+                    if (isset($composer['authors'])) {
+                        $config['authors'] = $composer['authors'];
+                    }
+                    if (isset($composer['license'])) {
+                        $config['license'] = $composer['license'];
+                    }
+                    if (isset($composer['homepage'])) {
+                        $config['homepage'] = $composer['homepage'];
+                    }
                 }
                 if (!isset($config['namespace']) && $composer['name']) {
                     $config['namespace'] = substr($composer['name'],strpos($composer['name'],'/') + 1);
@@ -355,15 +367,6 @@ class Repoman {
                 throw new Exception('Invalid JSON in '.$pkg_root_dir.'composer.json');
             }
         }        
-        elseif (file_exists($pkg_root_dir.self::CONFIG_FILE)) {
-            $config = include $pkg_root_dir.self::CONFIG_FILE;
-            if (!is_array($config)) {    
-                $config = array();
-            }
-            if (isset($config['package_name']) && !isset($config['category'])) {
-                $config['category'] = $config['package_name'];
-            }
-        }
         
         if (preg_match('/[^a-z0-9_\-]/', $config['namespace'])) {
             throw new Exception('Invalid namespace: '.$config['namespace']);
@@ -371,7 +374,6 @@ class Repoman {
         if (isset($config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $config['version'])) {
             throw new Exception('Invalid version.');       
         }
-                
 
         $out = array_merge($global, $config, $overrides);
 

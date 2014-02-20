@@ -16,12 +16,13 @@ class RepomanViewManagerController extends RepomanManagerController {
      * @param array $scriptProperties
      */
     public function process(array $scriptProperties = array()) {
-		$this->props['pagetitle'] = 'View Repo';		
+		$this->props['pagetitle'] = 'View Repo';	
 
         $repo = $this->modx->getOption('repo', $scriptProperties);
-		
+		$info = $this->get_info($repo);
 		$this->props['content'] = $this->_load('page_repo', 
 			array(
+                'info' => $this->get_info($repo),
 				'readme'=>$this->get_readme($repo), 
 				'index_url' => $this->getUrl('home'), 
 			)

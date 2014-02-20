@@ -10,7 +10,7 @@ if ($installed):
 <?php
 else:
 ?>
-    <span class="repoman_button" onclick="javascript:repo_install('<?php print $namespace; ?>');">Install</span>
+    <span class="repoman_button install-btn" onclick="javascript:repo_install('<?php print $namespace; ?>');">Install</span>
 <?php
 endif;
 ?>
@@ -21,7 +21,7 @@ endif;
 //------------------------------------------------------------------------------
 if ($update_available):
 ?>
-    <span class="repoman_button" onclick="javascript:repo_update('<?php print $namespace; ?>');">Update</span>
+    <span class="update-btn repoman_button" onclick="javascript:repo_update('<?php print $namespace; ?>');">Update</span>
 <?php
 else:
 ?>
@@ -36,7 +36,7 @@ endif;
 //------------------------------------------------------------------------------
 if ($installed):
 ?>
-    <span class="repoman_button" onclick="javascript:confirm_uninstall('<?php print $namespace; ?>');">Uninstall</span>
+    <span class="repoman_button uninstall-btn" onclick="javascript:confirm_uninstall('<?php print $namespace; ?>');">Uninstall</span>
 <?php
 else:
 ?>

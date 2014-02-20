@@ -81,6 +81,15 @@ return array(
      *  ),
      */
     'packages' => array(),
+    
+    'support' => array(
+        'email' => '',
+        'issues' => '',
+        'forum' => '',
+        'wiki' => 'http://xkcd.com/293/',
+        'source' => '',
+    ),
+    'authors' => array(),
     /**
      * Used when building packages and for running install/import because we need to know 
      * which fields identify an object and how to handle them if they already exist.

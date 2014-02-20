@@ -35,7 +35,7 @@ abstract class RepomanManagerController extends modExtraManagerController {
     public function __construct(modX &$modx,$config = array()) {
 
         require_once $modx->getOption('repoman.core_path','', MODX_CORE_PATH.'core/components/repoman/').'vendor/autoload.php';
-        $controller = (isset($_REQUEST['action'])) ? $_REQUEST['action'] : '';
+        $controller = (isset($_REQUEST['action'])) ? $_REQUEST['action'] : 'home';
         if (!in_array($controller, $this->valid_controllers)) {
             $_REQUEST['action'] = '404';
         }
@@ -62,6 +62,18 @@ abstract class RepomanManagerController extends modExtraManagerController {
 		ob_start();
 		include $this->config['namespace_path'].'views/'.$file.'.php';
 		return ob_get_clean();
+	}
+
+	public function get_info($repo) {
+        try {
+            $dir = Repoman::get_dir(MODX_BASE_PATH.$this->modx->getOption('repoman.dir'));
+            $config = Repoman::load_config($dir.$repo);
+            //print '<pre>'.print_r($config,true).'</pre>'; exit;
+            return $this->_load('info', $config);
+        }
+        catch (Exception $e) {
+            return 'There were problems in the composer.json file. '.$e->getMessage();
+        }
 	}
 	
 	public function get_readme($repo) {

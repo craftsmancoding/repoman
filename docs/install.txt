@@ -9,3 +9,5 @@ Usage:
     
 
 Running "install" is equivalent to running "import", "migrate", and "seed" commands.
+
+Warning, this can overwrite custom data structures or other objects associated with the package.

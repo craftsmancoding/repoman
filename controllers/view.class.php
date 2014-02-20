@@ -16,31 +16,14 @@ class RepomanViewManagerController extends RepomanManagerController {
      * @param array $scriptProperties
      */
     public function process(array $scriptProperties = array()) {
-		$this->props['pagetitle'] = 'Invalid Repo';		
-		$repo = '';
-		if (isset($_GET['repo'])) {
-			$repo = $_GET['repo'];
-		}
+		$this->props['pagetitle'] = 'View Repo';		
 
-		if ($this->props['msg'] = $this->_invalid_repo_name($repo)) {
-			return $this->_render();
-		}
-		$this->props['pagetitle'] = $repo;	
-
-		if (!$readme = $this->repoman->get_readme($this->repo_dir .'/'.$repo)) {
-			$readme = $this->_get_msg('No README.md file found.','warning');
-		}
-		// Wrap/format the readme
-		else {
-			// TODO: http://michelf.ca/projects/php-markdown/ convert markdown
-			$readme = $this->_load('readme', array('readme'=>$readme));
-		}
+        $repo = $this->modx->getOption('repo', $scriptProperties);
 		
 		$this->props['content'] = $this->_load('page_repo', 
 			array(
-				'readme'=>$readme,
-				'index_url' => REPOMAN_MGR_URL, 
-				'sync_url' => REPOMAN_MGR_URL .'&action=sync&repo='.$repo, 
+				'readme'=>$this->get_readme($repo), 
+				'index_url' => $this->getUrl('home'), 
 			)
 		);
 		
@@ -53,7 +36,7 @@ class RepomanViewManagerController extends RepomanManagerController {
      * @return null|string
      */
     public function getPageTitle() {
-        return 'Repoman';
+        return 'View Repo';
     }
     
     /**

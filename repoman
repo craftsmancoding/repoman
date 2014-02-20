@@ -156,12 +156,13 @@ switch ($function) {
     case 'uninstall':
         // But only the namespace is required... prob'ly safer to require a pkg_path param
     case 'build':
+    case 'export':
     case 'import':
     case 'install':
     case 'migrate':
     case 'schema':
-    case 'export':
     case 'seed':
+    case 'update':
         if (!isset($argv[2]) || substr ($argv[2],0,2) == '--') {
             print message('Missing <repo_path> parameter.','ERROR');
             //print Repoman::rtfm($function);

@@ -1,0 +1,10 @@
+Update
+
+Update the specified package and its elements.  This will re-import all the package elements,
+seed data, and run outstanding migrations. 
+
+Usage:
+
+    php repoman update <pkg_root_dir>
+    
+

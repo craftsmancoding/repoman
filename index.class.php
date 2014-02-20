@@ -15,16 +15,6 @@ require_once dirname(__FILE__) .'/controllers/abstract/repomanmanagercontroller.
  */
 class IndexManagerController extends RepomanManagerController {
 
-    public $valid_controllers = array('home','view');
-    public function __construct(modX &$modx,$config = array()) {
-        //print '<pre>'.print_r($config,true).'</pre>'; exit;
-//        $_REQUEST['action'] = 'home';
-        $controller = (isset($_REQUEST['action'])) ? $_REQUEST['action'] : '';
-        if (!in_array($controller, $this->valid_controllers)) {
-            $_REQUEST['action'] = '404';
-        }
-        parent::__construct($modx,$config);
-    }
 
     /**
      * Defines the name or path to the default controller to load.

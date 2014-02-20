@@ -1,11 +1,11 @@
 <tr class="repoman_row <?php print $class; ?>">
 	<td class="repoman_name_cell">
-		<h4><?php print $repo; ?></h4>
+		<h4><?php print $package_name; ?></h4>
+		<p><?php print $description; ?></p>
 	</td>
 	<td class="repoman_view_cell">
-		<a href="<?php print $view_link; ?>" class="repoman_button">View</a>
-	</td>
-	<td class="repoman_view_cell">
-		<a href="<?php print $sync_link; ?>" class="repoman_button">Sync</a>
+	   
+        <?php print $this->get_repo_links($namespace); ?>
+        
 	</td>
 </li>

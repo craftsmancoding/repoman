@@ -27,33 +27,22 @@ abstract class RepomanManagerController extends modExtraManagerController {
     /** @var array An array of placeholders that are being set to the page */
     //public $placeholders = array();
     
-        
-	protected function _get_dir_options($current_val) {
-		
-		$options = '';
-		foreach (new RecursiveDirectoryIterator(MODX_BASE_PATH) as $filename) {
-			if (is_dir($filename)) {
-				$shortname = preg_replace('#^'.MODX_BASE_PATH.'#','',$filename);
-				if ($shortname != '.' && $shortname != '..'
-					&& '/'.$shortname.'/' != MODX_CONNECTORS_URL
-					&& '/'.$shortname.'/' != MODX_MANAGER_URL
-					&& '/'.$shortname.'/' != '/processors/'
-					&& '/'.$shortname.'/' != '/core/'
-					) {
-					//$val = '{base_path}'.$shortname;					
-					$val = MODX_BASE_PATH .$shortname;
-					$selected = '';					
-					if (MODX_BASE_PATH.$shortname == $current_val) {
-						$selected = ' selected="selected"';
-					}
-					$label = $shortname.'/';
-					$options .= sprintf('<option value="%s"%s>%s</option>',$val,$selected,$label);
-				}
-			}
-		}
-		return $options;
-	}
 
+    public $repo_dir;
+    
+    public $valid_controllers = array('home','view','ajax');
+    
+    public function __construct(modX &$modx,$config = array()) {
+
+        require_once $modx->getOption('repoman.core_path','', MODX_CORE_PATH.'core/components/repoman/').'vendor/autoload.php';
+        $controller = (isset($_REQUEST['action'])) ? $_REQUEST['action'] : '';
+        if (!in_array($controller, $this->valid_controllers)) {
+            $_REQUEST['action'] = '404';
+        }
+
+        parent::__construct($modx,$config);
+    }
+        
 	/**
 	 * Used for errors, warnings, and success messages
 	 *
@@ -73,6 +62,55 @@ abstract class RepomanManagerController extends modExtraManagerController {
 		ob_start();
 		include $this->config['namespace_path'].'views/'.$file.'.php';
 		return ob_get_clean();
+	}
+	
+	public function get_readme($repo) {
+        try {
+            $dir = Repoman::get_dir(MODX_BASE_PATH.$this->modx->getOption('repoman.dir'));
+            $valid_files = array('readme.md','README.md','README.MD','readme.txt','README.TXT');
+            foreach ($valid_files as $f) {                
+                if (file_exists($dir.$repo.'/'.$f)) {
+                    return \Michelf\Markdown::defaultTransform(file_get_contents($dir.$repo.'/'.$f));        
+                }
+            }
+            return $this->_get_msg('No README.md file found.','warning');
+        }
+        catch (Exception $e) {
+            return $e->getMessage();
+        }
+	}
+	
+	/**
+	 * Generate a series of links for the repo
+	 *
+	 */
+	public function get_repo_links($repo) {
+        $data = array();	
+        $data['update_available'] = false;
+        $data['repo'] = $repo;
+        try {
+            $dir = Repoman::get_dir(MODX_BASE_PATH.$this->modx->getOption('repoman.dir'));
+            $config = Repoman::load_config($dir.'/'.$repo);
+            $namespace = $config['namespace'].'.version';
+            $data['namespace'] = $config['namespace'];
+			if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace))) {
+                $data['installed'] = false;
+			}
+			else {
+                //print $Setting->get('value'); exit;
+                //print $config['version']; exit;
+			    $data['installed'] = true;
+			    if (version_compare($Setting->get('value'), $config['version'],'<')) {
+                    $data['update_available'] = true;
+			    }
+			}
+        }
+        catch (Exception $e) {
+            return $e->getMessage();
+        }
+
+        
+        return $this->_load('links', $data);
 	}
 	
     /**

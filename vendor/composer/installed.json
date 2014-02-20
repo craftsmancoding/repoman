@@ -1,23 +1,23 @@
 [
     {
         "name": "michelf/php-markdown",
-        "version": "dev-lib",
-        "version_normalized": "dev-lib",
+        "version": "1.4.0",
+        "version_normalized": "1.4.0.0",
         "source": {
             "type": "git",
             "url": "https://github.com/michelf/php-markdown.git",
-            "reference": "6f952ee180e9bd345f3dd6005aa11e0f5dcbd1b8"
+            "reference": "96d8150406f67e683ef4acc09fef91785fef1266"
         },
         "dist": {
             "type": "zip",
-            "url": "https://api.github.com/repos/michelf/php-markdown/zipball/6f952ee180e9bd345f3dd6005aa11e0f5dcbd1b8",
-            "reference": "6f952ee180e9bd345f3dd6005aa11e0f5dcbd1b8",
+            "url": "https://api.github.com/repos/michelf/php-markdown/zipball/96d8150406f67e683ef4acc09fef91785fef1266",
+            "reference": "96d8150406f67e683ef4acc09fef91785fef1266",
             "shasum": ""
         },
         "require": {
             "php": ">=5.3.0"
         },
-        "time": "2013-11-29 21:49:31",
+        "time": "2013-11-29 17:09:24",
         "type": "library",
         "extra": {
             "branch-alias": {

@@ -182,8 +182,7 @@ class Repoman {
         $assets_url = MODX_BASE_URL.$rel_path. trim($this->get('assets_path'),'/').'/'; // ensure trailing slash
         $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
         $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', rtrim($pkg_root_dir,'/').'/'.trim($this->get('assets_path'),'/').'/');
-        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', rtrim($pkg_root_dir,'/').trim($this->get('core_path'),'/').'/');      
-        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.version', trim($this->get('version')));      
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', rtrim($pkg_root_dir,'/').trim($this->get('core_path'),'/').'/');
         $this->prepped = true;
     }
     
@@ -1186,7 +1185,7 @@ class Repoman {
      */
     public function import($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-        $this->_prep($pkg_root_dir);
+        
      
         // The gratis Category
         $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));
@@ -1239,6 +1238,14 @@ class Repoman {
      */
     public function install($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
+        
+        // Is already installed?
+        $namespace = $this->get('namespace');
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace.'.version'))) {
+            throw new Exception('Package is already installed. Run "update" instead.');
+        }
+        $this->_prep($pkg_root_dir);
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.version', trim($this->get('version')));
         self::import($pkg_root_dir);
         self::migrate($pkg_root_dir);
         self::seed($pkg_root_dir);
@@ -1326,8 +1333,15 @@ class Repoman {
                 $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Skipping '.$base);
                 continue;
             }
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Running migration '.basename($f));
-            include $f;
+            
+            // Compare stored version to the version in the composer.json file
+    		if (version_compare($this->modx->getOption($this->get('namespace').'.version'), $this->get('version'), '<=' ) ) {
+                $this->modx->log(modX::LOG_LEVEL_INFO, 'Running migration '.basename($f));
+                include $f;
+            }
+            else {
+                $this->modx->log(modX::LOG_LEVEL_INFO, 'Skipping migration '.basename($f));
+            }
         }
         
     }
@@ -1553,7 +1567,28 @@ class Repoman {
     
     }
 
-
+    /**
+     * Update a package's elements and run outstanding migrations
+     *
+     * @param string $pkg_root_dir path to local package root (w trailing slash)
+     */
+    public function update($pkg_root_dir) {
+        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        
+        // Is already installed?
+        $namespace = $this->get('namespace');
+        if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace.'.version'))) {
+            throw new Exception('Package is not installed. Run "install" instead.');
+        }
+        $this->_prep($pkg_root_dir);
+        
+        self::import($pkg_root_dir);
+        self::migrate($pkg_root_dir);
+        self::seed($pkg_root_dir);
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.version', trim($this->get('version')));
+        $this->modx->cacheManager->refresh();
+    }
+    
     /**
      * Attempts to uninstall the default namespace, system settings, modx objects,
      * and any database migrations. The behavior is dependent on the MODX cache b/c

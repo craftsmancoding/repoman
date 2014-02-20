@@ -21,15 +21,15 @@
     },    
     "require": {
         "php": ">=5.3",
-        "michelf/php-markdown": "1.4.*@dev"
+        "michelf/php-markdown": "1.4.0"
     },
     "autoload": {
         "classmap":["model/repoman/"]
     },
     "repoman": {
-        "package_name": "repoman",
+        "package_name": "Repoman",
         "namespace": "repoman",
-        "version": "0.9.0",
+        "version": "0.9.1",
         "release": "dev",
         "category":"repoman",
         "core_path": "",

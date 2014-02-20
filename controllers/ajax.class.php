@@ -44,6 +44,13 @@ class RepomanAjaxManagerController extends RepomanManagerController {
                     $Repoman->install($pkg_root_dir);
                     $response['msg'] = 'Package installed.';
                     break;
+                case 'uninstall':
+                    $Repoman->uninstall($pkg_root_dir);
+                    $response['msg'] = 'Package uninstalled.';
+                    break;
+                // Get HTML for the repo-list
+                case 'repos':
+                    break;
                 default:
                     $response['success'] = false;
                     $response['msg'] = 'Unknown function: '.$function;

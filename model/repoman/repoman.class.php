@@ -185,6 +185,35 @@ class Repoman {
         $this->_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', rtrim($pkg_root_dir,'/').trim($this->get('core_path'),'/').'/');
         $this->prepped = true;
     }
+
+    /**
+     * Clean up for dismount
+     *
+     */
+    private function _dismount() {
+        if ($this->prepped) {
+            return;
+        }
+        
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Dismount: removing namespace and system settings.");
+        
+		if ($N = $this->modx->getObject('modNamespace',$this->get('namespace'))) {
+            $N->remove();
+		}
+
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.assets_url'))) {
+            $Setting->remove();
+        }
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.assets_path'))) {
+            $Setting->remove();
+        }
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.core_path'))) {
+            $Setting->remove();
+        }
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.version'))) {
+            $Setting->remove();
+        }
+    }
     
 	/**
 	 * Get an array of element objects for the given $objecttype
@@ -1641,6 +1670,8 @@ class Repoman {
         else {
             $this->modx->log(modX::LOG_LEVEL_WARN, 'No cached import data at '.$cache_dir);
         }
+        
+        $this->_dismount(); 
     }
 	
 }

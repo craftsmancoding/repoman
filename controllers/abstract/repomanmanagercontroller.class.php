@@ -30,7 +30,7 @@ abstract class RepomanManagerController extends modExtraManagerController {
 
     public $repo_dir;
     
-    public $valid_controllers = array('home','view','ajax');
+    public $valid_controllers = array('home','view','ajax','create');
     
     public function __construct(modX &$modx,$config = array()) {
         

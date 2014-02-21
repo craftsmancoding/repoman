@@ -6,11 +6,11 @@
         <?php print $msg; ?>
     	<code>MODX_BASE_PATH/</code><input type="text" name="repoman_dir" value="<?php print $this->modx->getOption('repoman.dir'); ?>" size="60"/>
     </div>
-	<br/>
-	
-	<input type="submit" value="Update Settings" />		
+	<input type="submit" class="repoman_button" value="Update Setting" />		
 
 </form>
+
+<a href="<?php print $this->getUrl('create'); ?>" class="repoman_button">Create New Repo</a>
 
 <h2 style="margin-top:20px;">Your Repositories</h2>
 

@@ -285,35 +285,31 @@ class Repoman {
         $config = array();
         if (file_exists($pkg_root_dir.'composer.json')) {
             $str = file_get_contents($pkg_root_dir.'composer.json');
-
-            $composer = json_decode($str,true);
-            if (is_array($composer)) {
-                if (isset($composer['extra']) && is_array($composer['extra'])) {
-                    $config = $composer['extra'];
-                    if (isset($composer['support'])) {
-                        $config['support'] = $composer['support'];
-                    }
-                    if (isset($composer['authors'])) {
-                        $config['authors'] = $composer['authors'];
-                    }
-                    if (isset($composer['license'])) {
-                        $config['license'] = $composer['license'];
-                    }
-                    if (isset($composer['homepage'])) {
-                        $config['homepage'] = $composer['homepage'];
-                    }
+            
+            $composer = \Composer\Json\JsonFile::parseJson($str,$pkg_root_dir.'composer.json');
+        
+            if (isset($composer['extra']) && is_array($composer['extra'])) {
+                $config = $composer['extra'];
+                if (isset($composer['support'])) {
+                    $config['support'] = $composer['support'];
                 }
-                if (!isset($config['namespace']) && $composer['name']) {
-                    $config['namespace'] = substr($composer['name'],strpos($composer['name'],'/') + 1);
+                if (isset($composer['authors'])) {
+                    $config['authors'] = $composer['authors'];
                 }
-                if (!isset($config['description']) && isset($composer['description'])) {
-                    $config['description'] = $composer['description'];
+                if (isset($composer['license'])) {
+                    $config['license'] = $composer['license'];
+                }
+                if (isset($composer['homepage'])) {
+                    $config['homepage'] = $composer['homepage'];
                 }
             }
-            else {
-                throw new Exception('Invalid JSON in '.$pkg_root_dir.'composer.json  Use "composer validate" to get more detailed information.');
+            if (!isset($config['namespace']) && $composer['name']) {
+                $config['namespace'] = substr($composer['name'],strpos($composer['name'],'/') + 1);
             }
-        }        
+            if (!isset($config['description']) && isset($composer['description'])) {
+                $config['description'] = $composer['description'];
+            }
+        }
         
         if (preg_match('/[^a-z0-9_\-]/', $config['namespace'])) {
             throw new Exception('Invalid namespace: '.$config['namespace']);

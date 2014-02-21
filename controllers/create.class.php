@@ -27,8 +27,7 @@ class RepomanCreateManagerController extends RepomanManagerController {
 		if (!empty($_POST)) {
             $data['namespace'] = preg_replace('/[^a-z0-9\_]/','',$this->modx->getOption('namespace', $_POST));
             $data['package_name'] = strip_tags($this->modx->getOption('package_name', $_POST));
-            $data['description'] = strip_tags($this->modx->getOption('description', $_POST));
-            
+            $data['description'] = strip_tags($this->modx->getOption('description', $_POST));   
 		}
 		
 		$this->props['content'] = $this->_load('page_create', array());
@@ -44,22 +43,6 @@ class RepomanCreateManagerController extends RepomanManagerController {
     public function getPageTitle() {
         return 'Create Repo';
     }
-    
-    /**
-     * Register needed assets. Using this method, it will automagically
-     * combine and compress them if that is enabled in system settings.
-     */
-    public function loadCustomCssJs() {
-/*
-        $this->addCss('url/to/some/css_file.css');
-        $this->addJavascript('url/to/some/javascript.js');
-        $this->addLastJavascript('url/to/some/javascript_load_last.js');
-        $this->addHtml('<script type="text/javascript">
-        Ext.onReady(function() {
-            // We could run some javascript here
-        });
-        </script>');
-*/
-    }
+
 }
 /*EOF*/

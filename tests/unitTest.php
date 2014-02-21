@@ -41,7 +41,7 @@ class unitTest extends PHPUnit_Framework_TestCase {
         if (!defined('MODX_API_MODE')) {
             define('MODX_API_MODE', false);
         }
-        
+        require_once dirname(dirname(__FILE__)).'/vendor/autoload.php';
         include_once MODX_CORE_PATH . 'model/modx/modx.class.php';
         require_once dirname(dirname(__FILE__)).'/model/repoman/repoman.class.php';         
         

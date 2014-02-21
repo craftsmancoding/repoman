@@ -97,7 +97,7 @@ class RepomanHomeManagerController extends RepomanManagerController {
                     		'package_name'=>$config['package_name'],
                     		'class'=>$class,
                     		'package_name' => $shortname,
-                    		'error' => $e->getMessage()
+                    		'error' => '<code>'.$e->getMessage().'</code>'
                     	)
                     );
                 }

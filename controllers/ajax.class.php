@@ -38,15 +38,15 @@ class RepomanAjaxManagerController extends RepomanManagerController {
             switch ($function) {
                 case 'update':
                     $Repoman->update($pkg_root_dir);
-                    $response['msg'] = 'Package updated.';
+                    $response['msg'] = $config['package_name'].' updated successfully to version '.$config['version'].'-'.$config['release'];
                     break;
                 case 'install':
                     $Repoman->install($pkg_root_dir);
-                    $response['msg'] = 'Package installed.';
+                    $response['msg'] = $config['package_name'].' installed successfully!';
                     break;
                 case 'uninstall':
                     $Repoman->uninstall($pkg_root_dir);
-                    $response['msg'] = 'Package uninstalled.';
+                    $response['msg'] = $config['package_name'].' uninstalled successfully!';
                     break;
                 // Get HTML for the repo-list
                 case 'repos':

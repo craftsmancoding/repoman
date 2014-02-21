@@ -26,8 +26,7 @@ class Repoman {
     public $build_assets_path;
     
     const CACHE_DIR = 'repoman';
-    const CONFIG_FILE = 'config.php';
-        
+
 	/**
 	 *
 	 * @param object MODX reference
@@ -191,27 +190,34 @@ class Repoman {
      *
      */
     private function _dismount() {
-        if ($this->prepped) {
-            return;
-        }
         
-        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Dismount: removing namespace and system settings.");
+        $this->modx->log(modX::LOG_LEVEL_INFO, "Removing ".$this->get('namespace')." namespace and system settings.");
         
 		if ($N = $this->modx->getObject('modNamespace',$this->get('namespace'))) {
-            $N->remove();
+            if (!$N->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing Namespace'.$this->get('namespace'));
+            }
 		}
 
         if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.assets_url'))) {
-            $Setting->remove();
+            if (!$Setting->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.assets_url');
+            }
         }
         if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.assets_path'))) {
-            $Setting->remove();
+            if (!$Setting->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.assets_path');
+            }
         }
         if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.core_path'))) {
-            $Setting->remove();
+            if (!$Setting->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.core_path');
+            }
         }
         if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.version'))) {
-            $Setting->remove();
+            if (!$Setting->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.version');
+            }
         }
     }
     
@@ -1627,17 +1633,16 @@ class Repoman {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
 
         // uninstall migrations. Global $modx and $object variables used so the 
-        // included files are compat. with the build functionality.
+        // included files are compatible with the build functionality: the same files
+        // get called by MODx (not by Repoman) when a package is being installed.
         global $modx;
         $object = $this->config;
         $migrations_path = $this->get_core_path($pkg_root_dir).$this->get('migrations_path');
 
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
-            return;
         }
-
-        if (file_exists($migrations_path.'/uninstall.php')) {
+        elseif (file_exists($migrations_path.'/uninstall.php')) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
             include $migrations_path.'/uninstall.php';
         }

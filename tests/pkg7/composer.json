@@ -14,10 +14,10 @@
     ],
     "support": {
         "email": "donotreply@craftsmancoding.org",
-        "issues": "github.com/craftsmancoding/repoman/issues",
-        "forum": "forums.modx.com/",
-        "wiki": "github.com/craftsmancoding/repoman/wiki",
-        "source": "github.com/craftsmancoding/repoman"
+        "issues": "http://github.com/craftsmancoding/repoman/issues",
+        "forum": "http://forums.modx.com/",
+        "wiki": "http://github.com/craftsmancoding/repoman/wiki",
+        "source": "http://github.com/craftsmancoding/repoman"
     },    
     "require": {
         "php": ">=5.3"
@@ -25,7 +25,7 @@
     "autoload": {
         "classmap":["model/repoman/"]
     },
-    "repoman": {
+    "extra": {
         "name": "repoman",
         "namespace": "repoman",
         "version": "0.0.9",
@@ -34,8 +34,7 @@
         "core_path": "",
         "assets_path" : "assets/",
         "docs_path" : "docs/",
-        "seeds_path": "",
-        "seed": [],
+        "seeds_path": ["seeddata/"],
         "packages":[],
         "build_attributes":{}
     }

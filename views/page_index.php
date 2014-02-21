@@ -8,12 +8,19 @@
     	<input type="submit" class="repoman_button" value="Update Setting" />	
     </div>
 		
-
 </form>
-<div class="repo-wrapper">
-	<h2 style="margin-top:20px;">Your Repositories</h2>
-	<a class="green-btn" href="<?php print $this->getUrl('create'); ?>" class="repoman_button">Create New Repo</a>
-</div>
 
 
-<?php print $repos; ?>
+<?php if ($error): ?>
+
+    <p style="width:80%;">Define a directory within your MODx web root which contains your Git repositories for the packages you are working on. Common locations might be <code>packages/</code> or <code>assets/mycomponents/</code></p>
+
+<?php else: ?>
+    <div class="repo-wrapper">
+    	<h2 style="margin-top:20px;">Your Repositories</h2>
+    	<a class="green-btn" href="<?php print $this->getUrl('create'); ?>" class="repoman_button create-btn">Create New Repo</a>
+    </div>
+    
+    <?php print $repos; ?>
+
+<?php endif; ?>

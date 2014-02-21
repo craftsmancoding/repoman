@@ -4,7 +4,7 @@
     "type": "library",
     "keywords": ["modx","composer","repository","manager","autoload","git"],
     "homepage": "https://github.com/craftsmancoding/repoman",
-    "license": "GPL2",
+    "license": "GPL-2.0+",
     "authors": [
         {
             "name": "Everett Griffiths",
@@ -21,12 +21,13 @@
     },    
     "require": {
         "php": ">=5.3",
-        "michelf/php-markdown": "1.4.0"
+        "michelf/php-markdown": "1.4.0",
+        "composer/composer": "1.0.*@dev"
     },
     "autoload": {
         "classmap":["model/repoman/"]
     },
-    "repoman": {
+    "extra": {
         "package_name": "Repoman",
         "namespace": "repoman",
         "version": "0.9.1",
@@ -34,6 +35,7 @@
         "category":"repoman",
         "core_path": "",
         "assets_path" : "assets/",
-        "docs_path" : "docs/"
+        "docs_path" : "docs/",
+	"seeds_dir" : ["model/seed/"]
     }
 }

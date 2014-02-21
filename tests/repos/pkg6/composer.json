@@ -22,7 +22,7 @@
     "require": {
         "php": ">=5.3"
     },
-    "repoman": {
+    "extra": {
         "chunks_path": "chunks/",
         "snippets_path": "snippets/",
         "templates_path": "templates/",

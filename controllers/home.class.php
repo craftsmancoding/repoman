@@ -21,7 +21,7 @@ class RepomanHomeManagerController extends RepomanManagerController {
     public function process(array $scriptProperties = array()) {
 
 		$this->props['pagetitle'] = 'Overview';
-		$pagedata = array('repo_dir_settings'=>'', 'cache_settings'=>'','repos'=>'');
+		$pagedata = array('repo_dir_settings'=>'', 'cache_settings'=>'','repos'=>'','error'=>false);
 		$props = array();		
 		if (!empty($_POST)) {
 
@@ -46,48 +46,63 @@ class RepomanHomeManagerController extends RepomanManagerController {
         $repo_dir = $this->modx->getOption('repoman.dir');
         if (empty($repo_dir)) {
             $this->props['class'] = 'repoman_error';
-			$this->props['msg'] = $this->_get_msg('Set your Repoman directory (relative to your MODx base path) so Repoman will know where to find your local repositories.','error');        
+			$this->props['msg'] = $this->_get_msg('Set your Repoman directory (relative to your MODx base path) so Repoman will know where to find your local repositories.','error'); 
+			$pagedata['error'] = true;      
         }        
 		elseif (!file_exists(MODX_BASE_PATH.$repo_dir)) {
             $this->props['class'] = 'repoman_error';
 			$this->props['msg'] = $this->_get_msg($repo_dir .' does not exist!','error');
+			$pagedata['error'] = true;			
 		}
 		elseif (!is_dir(MODX_BASE_PATH.$repo_dir)) {
             $this->props['class'] = 'repoman_error';
 			$this->props['msg'] = $this->_get_msg($repo_dir .' must be a directory!','error');
+			$pagedata['error'] = true;			
 		}
 		elseif ($repo_dir == MODX_CONNECTORS_URL || $repo_dir == MODX_MANAGER_URL || $repo_dir == 'core/') {
             $this->props['class'] = 'repoman_error';
 			$this->props['msg'] = $this->_get_msg($repo_dir .' cannot be one of the built-in MODX directories.','error');
+			$pagedata['error'] = true;			
         }
         else {		
 			$repos = '';
 			$i = 0;
 			foreach (new RecursiveDirectoryIterator(MODX_BASE_PATH.$repo_dir) as $filename) {
-				if (is_dir($filename)) {
-					$shortname = basename($filename);
-					if ($shortname != '.' && $shortname != '..') {
-						$i++;
-						$class = 'repoman_odd';
-						if ($i % 2 == 0) {
-							$class = 'repoman_even';	
-						}
-						
-						$config = Repoman::load_config($filename);
+				if (!is_dir($filename)) continue;
+				
+				$shortname = basename($filename);
+				if ($shortname == '.' || $shortname == '..') continue;
+				$i++;
+				$class = 'repoman_odd';
+				if ($i % 2 == 0) {
+					$class = 'repoman_even';	
+				}
+				
+                try {
+                    $config = Repoman::load_config($filename);
+                    $repos .= $this->_load('tr_repo'
+                    	, array(
+                    		'install_link'=>$this->getUrl('install', array('repo'=>$shortname)),
+                    		'view_link'=>$this->getUrl('view',array('repo'=>$shortname)),
+                    		'package_name'=>$config['package_name'],
+                    		'description'=>$config['description'],
+                    		'class'=>$class,
+                    		'namespace' => $config['namespace']
+                    	)
+                    );
+                }  
+                catch (Exception $e) {
+                    $repos .= $this->_load('tr_repo_error'
+                    	, array(
+                    		'package_name'=>$config['package_name'],
+                    		'class'=>$class,
+                    		'package_name' => $shortname,
+                    		'error' => '<code>'.$e->getMessage().'</code>'
+                    	)
+                    );
+                }
+			}	
 
-						$repos .= $this->_load('tr_repo'
-							, array(
-								'install_link'=>$this->getUrl('install', array('repo'=>$shortname)),
-								'view_link'=>$this->getUrl('view',array('repo'=>$shortname)),
-								'package_name'=>$config['package_name'],
-								'description'=>$config['description'],
-								'class'=>$class,
-								'namespace' => $config['namespace']
-							)
-						);
-					}
-				}	
-			}
 		}
 		
 		

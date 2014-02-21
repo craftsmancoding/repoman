@@ -1,5 +1,3 @@
-<h2>Package Info</h2>
-
 <ul>
     <li><strong>Package:</strong> <?php print $package_name; ?></li>
     <li><strong>Description:</strong> <?php print $description; ?></li>

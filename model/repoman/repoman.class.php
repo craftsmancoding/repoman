@@ -26,8 +26,7 @@ class Repoman {
     public $build_assets_path;
     
     const CACHE_DIR = 'repoman';
-    const CONFIG_FILE = 'config.php';
-        
+
 	/**
 	 *
 	 * @param object MODX reference
@@ -162,58 +161,6 @@ class Repoman {
             }
         }
 	}
-
-    /**
-     * Set up the local MODX instance for normal repoman action: 
-     * create namespace and expected System Settings for the package.
-     *
-     */
-    private function _prep($pkg_root_dir) {
-        if ($this->prepped) {
-            return;
-        }
-        
-        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Prep: creating namespace and system settings.");
-        
-        $this->_create_namespace($pkg_root_dir);
-       
-        // Settings
-        $rel_path = preg_replace('/^'.preg_quote(MODX_BASE_PATH,'/').'/','', $pkg_root_dir); // convert path to url
-        $assets_url = MODX_BASE_URL.$rel_path. trim($this->get('assets_path'),'/').'/'; // ensure trailing slash
-        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
-        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', rtrim($pkg_root_dir,'/').'/'.trim($this->get('assets_path'),'/').'/');
-        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', rtrim($pkg_root_dir,'/').trim($this->get('core_path'),'/').'/');
-        $this->prepped = true;
-    }
-
-    /**
-     * Clean up for dismount
-     *
-     */
-    private function _dismount() {
-        if ($this->prepped) {
-            return;
-        }
-        
-        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Dismount: removing namespace and system settings.");
-        
-		if ($N = $this->modx->getObject('modNamespace',$this->get('namespace'))) {
-            $N->remove();
-		}
-
-        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.assets_url'))) {
-            $Setting->remove();
-        }
-        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.assets_path'))) {
-            $Setting->remove();
-        }
-        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.core_path'))) {
-            $Setting->remove();
-        }
-        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.version'))) {
-            $Setting->remove();
-        }
-    }
     
 	/**
 	 * Get an array of element objects for the given $objecttype
@@ -338,35 +285,31 @@ class Repoman {
         $config = array();
         if (file_exists($pkg_root_dir.'composer.json')) {
             $str = file_get_contents($pkg_root_dir.'composer.json');
-
-            $composer = json_decode($str,true);
-            if (is_array($composer)) {
-                if (isset($composer['repoman']) && is_array($composer['repoman'])) {
-                    $config = $composer['repoman'];
-                    if (isset($composer['support'])) {
-                        $config['support'] = $composer['support'];
-                    }
-                    if (isset($composer['authors'])) {
-                        $config['authors'] = $composer['authors'];
-                    }
-                    if (isset($composer['license'])) {
-                        $config['license'] = $composer['license'];
-                    }
-                    if (isset($composer['homepage'])) {
-                        $config['homepage'] = $composer['homepage'];
-                    }
+            
+            $composer = \Composer\Json\JsonFile::parseJson($str,$pkg_root_dir.'composer.json');
+        
+            if (isset($composer['extra']) && is_array($composer['extra'])) {
+                $config = $composer['extra'];
+                if (isset($composer['support'])) {
+                    $config['support'] = $composer['support'];
                 }
-                if (!isset($config['namespace']) && $composer['name']) {
-                    $config['namespace'] = substr($composer['name'],strpos($composer['name'],'/') + 1);
+                if (isset($composer['authors'])) {
+                    $config['authors'] = $composer['authors'];
                 }
-                if (!isset($config['description']) && isset($composer['description'])) {
-                    $config['description'] = $composer['description'];
+                if (isset($composer['license'])) {
+                    $config['license'] = $composer['license'];
+                }
+                if (isset($composer['homepage'])) {
+                    $config['homepage'] = $composer['homepage'];
                 }
             }
-            else {
-                throw new Exception('Invalid JSON in '.$pkg_root_dir.'composer.json');
+            if (!isset($config['namespace']) && $composer['name']) {
+                $config['namespace'] = substr($composer['name'],strpos($composer['name'],'/') + 1);
             }
-        }        
+            if (!isset($config['description']) && isset($composer['description'])) {
+                $config['description'] = $composer['description'];
+            }
+        }
         
         if (preg_match('/[^a-z0-9_\-]/', $config['namespace'])) {
             throw new Exception('Invalid namespace: '.$config['namespace']);
@@ -419,6 +362,29 @@ class Repoman {
         return $overrides;
 	}
 
+    /**
+     * Set up the local MODX instance for normal repoman action: 
+     * create namespace and expected System Settings for the package.
+     *
+     */
+    public function prep_modx($pkg_root_dir) {
+        if ($this->prepped) {
+            return;
+        }
+        
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, "Prep: creating namespace and system settings.");
+        
+        $this->_create_namespace($pkg_root_dir);
+       
+        // Settings
+        $rel_path = preg_replace('/^'.preg_quote(MODX_BASE_PATH,'/').'/','', $pkg_root_dir); // convert path to url
+        $assets_url = MODX_BASE_URL.$rel_path. trim($this->get('assets_path'),'/').'/'; // ensure trailing slash
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_url', $assets_url);
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', rtrim($pkg_root_dir,'/').'/'.trim($this->get('assets_path'),'/').'/');
+        $this->_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', rtrim($pkg_root_dir,'/').trim($this->get('core_path'),'/').'/');
+        $this->prepped = true;
+    }
+    
     /**
      * Recursively copy files and directories.
      *
@@ -664,6 +630,9 @@ class Repoman {
 
         $zip = strtolower($this->get('package_name')).'-'.$this->get('version').'-'.$this->get('release').'.transport.zip';
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Build complete: '. MODX_CORE_PATH.'packages/'.$zip);
+        if (!file_exists(MODX_CORE_PATH.'packages/'.$zip)) {
+            throw new Exception('Transport package not created: '.$zip. ' Please review the logs.');
+        }
     }
     
     /**
@@ -738,6 +707,7 @@ class Repoman {
         $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling directory for objects '.$dir);
 
         $objects = array();
+        $dir = rtrim($dir,'/');
         $files = glob($dir.'/*{.php,.json}',GLOB_BRACE);
 
         foreach($files as $f) {
@@ -749,7 +719,7 @@ class Repoman {
             $ext = $matches[3];            
             $this->modx->log(modX::LOG_LEVEL_INFO,'Processing object(s) in '.basename($f));
             $fields = $this->modx->getFields($classname);
-            if (empty($fields)) throw new Exception('Unrecognized object classname: '.$classname);
+            if (empty($fields)) throw new Exception('Unrecognized object classname '.$classname.' in file '.$f);
 
             $is_json = (strtolower($ext) == 'php')? false : true;
             
@@ -1210,8 +1180,13 @@ class Repoman {
      */
     public function import($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-        
-     
+
+        // Is installed?
+        $namespace = $this->get('namespace');
+        if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace.'.version'))) {
+            throw new Exception('Package is not installed. Run "install" instead.');
+        }
+                
         // The gratis Category
         $Category = $this->modx->getObject('modCategory', array('category'=>$this->get('category')));
         if (!$Category) {
@@ -1269,11 +1244,11 @@ class Repoman {
         if ($Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace.'.version'))) {
             throw new Exception('Package is already installed. Run "update" instead.');
         }
-        $this->_prep($pkg_root_dir);
+        $this->prep_modx($pkg_root_dir);
         $this->_create_setting($this->get('namespace'), $this->get('namespace').'.version', trim($this->get('version')));
-        self::import($pkg_root_dir);
-        self::migrate($pkg_root_dir);
-        self::seed($pkg_root_dir);
+        $this->import($pkg_root_dir);
+        $this->migrate($pkg_root_dir,'install');
+        $this->seed($pkg_root_dir);
         $this->modx->cacheManager->refresh();
     }
 
@@ -1323,11 +1298,12 @@ class Repoman {
      *      - create/remove custom database tables.
      *      - create objects from any seed data
      *
-     * @param string $pkg_root_dir path to local package root (w trailing slash)    
+     * @param string $pkg_root_dir path to local package root (w trailing slash)
+     * @param string $mode install | uninstall | update | refresh (default) 
      */
-    public function migrate($pkg_root_dir) {
+    public function migrate($pkg_root_dir, $mode='refresh') {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-        $this->_prep($pkg_root_dir);
+        $this->prep_modx($pkg_root_dir);
         
         global $modx;
         // For compatibility
@@ -1341,15 +1317,18 @@ class Repoman {
             return;
         }
 
-        if (file_exists($migrations_path.'/uninstall.php')) {
+        if (in_array($mode,array('refresh','uninstall')) && file_exists($migrations_path.'/uninstall.php')) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations uninstall.php");
             include $migrations_path.'/uninstall.php';
         }
 
-        if (file_exists($migrations_path.'/install.php')) {
+        if (in_array($mode,array('refresh','install')) && file_exists($migrations_path.'/install.php')) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations install.php");
             include $migrations_path.'/install.php';
         }
+        
+        if ($mode != 'update') return; // nothing more to do unless we are updating the package.
+        
         // Loop over remaining migrations
         $files = glob($migrations_path.'/*.php');
         foreach($files as $f) {
@@ -1409,7 +1388,7 @@ class Repoman {
     public function schema($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);   
         $this->_addPkgs($this->config,$pkg_root_dir);
-        // $this->_prep($pkg_root_dir); // populate the system settings not req'd
+        // $this->prep_modx($pkg_root_dir); // populate the system settings not req'd
         
         $action = strtolower($this->get('action')); // write|parse|both
         $model = trim(strtolower($this->get('model')),'/'); // name of the schema and the subdir
@@ -1593,6 +1572,42 @@ class Repoman {
     }
 
     /**
+     * Clean up for dismount: opposite of prep_modx
+     *
+     */
+    public function tidy_modx() {
+        
+        $this->modx->log(modX::LOG_LEVEL_INFO, "Removing ".$this->get('namespace')." namespace and system settings.");
+        
+		if ($N = $this->modx->getObject('modNamespace',$this->get('namespace'))) {
+            if (!$N->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing Namespace'.$this->get('namespace'));
+            }
+		}
+
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.assets_url'))) {
+            if (!$Setting->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.assets_url');
+            }
+        }
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.assets_path'))) {
+            if (!$Setting->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.assets_path');
+            }
+        }
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.core_path'))) {
+            if (!$Setting->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.core_path');
+            }
+        }
+        if ($Setting = $this->modx->getObject('modSystemSetting', array('key'=>$this->get('namespace').'.version'))) {
+            if (!$Setting->remove()) {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.version');
+            }
+        }
+    }
+
+    /**
      * Update a package's elements and run outstanding migrations
      *
      * @param string $pkg_root_dir path to local package root (w trailing slash)
@@ -1605,11 +1620,11 @@ class Repoman {
         if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace.'.version'))) {
             throw new Exception('Package is not installed. Run "install" instead.');
         }
-        $this->_prep($pkg_root_dir);
+        $this->prep_modx($pkg_root_dir);
         
-        self::import($pkg_root_dir);
-        self::migrate($pkg_root_dir);
-        self::seed($pkg_root_dir);
+        $this->import($pkg_root_dir);
+        $this->migrate($pkg_root_dir,'update');
+        $this->seed($pkg_root_dir);
         $this->_create_setting($this->get('namespace'), $this->get('namespace').'.version', trim($this->get('version')));
         $this->modx->cacheManager->refresh();
     }
@@ -1627,20 +1642,7 @@ class Repoman {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
 
         // uninstall migrations. Global $modx and $object variables used so the 
-        // included files are compat. with the build functionality.
-        global $modx;
-        $object = $this->config;
-        $migrations_path = $this->get_core_path($pkg_root_dir).$this->get('migrations_path');
-
-        if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at ".$migrations_path);
-            return;
-        }
-
-        if (file_exists($migrations_path.'/uninstall.php')) {
-            $this->modx->log(modX::LOG_LEVEL_INFO, "Running migrations/uninstall.php");
-            include $migrations_path.'/uninstall.php';
-        }
+        $this->migrate($pkg_root_dir,'uninstall');
         
         // Remove installed objects
         $cache_dir = MODX_CORE_PATH.'cache/repoman/'.$this->get('namespace');
@@ -1673,7 +1675,7 @@ class Repoman {
             $this->modx->log(modX::LOG_LEVEL_WARN, 'No cached import data at '.$cache_dir);
         }
         
-        $this->_dismount(); 
+        $this->tidy_modx(); 
     }
 	
 }

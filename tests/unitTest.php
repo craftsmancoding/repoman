@@ -41,7 +41,7 @@ class unitTest extends PHPUnit_Framework_TestCase {
         if (!defined('MODX_API_MODE')) {
             define('MODX_API_MODE', false);
         }
-        
+        require_once dirname(dirname(__FILE__)).'/vendor/autoload.php';
         include_once MODX_CORE_PATH . 'model/modx/modx.class.php';
         require_once dirname(dirname(__FILE__)).'/model/repoman/repoman.class.php';         
         
@@ -98,7 +98,7 @@ class unitTest extends PHPUnit_Framework_TestCase {
         self::$modx->setLogLevel(modX::LOG_LEVEL_FATAL);
         self::$modx->setLogTarget('ECHO'); 
         $Repoman = new Repoman(self::$modx,$config);
-        $Repoman->import(dirname(__FILE__).'/pkg4/');
+        $Repoman->prep_modx(dirname(__FILE__).'/pkg4/');
 
         $assets_url = MODX_BASE_URL .preg_replace('#'.MODX_BASE_PATH.'#', '', dirname(__FILE__).'/pkg4/').$config['assets_path'];
         $assets_path = dirname(__FILE__).'/pkg4/'.$config['assets_path'];
@@ -147,7 +147,8 @@ class unitTest extends PHPUnit_Framework_TestCase {
         $pkg_root = dirname(__FILE__).'/repos/pkg6/';
         $config = Repoman::load_config($pkg_root);
         $Repoman = new Repoman(self::$modx,$config);
-        $Repoman->import($pkg_root);
+        //$Repoman->prep_modx($pkg_root);
+        $Repoman->install($pkg_root);
 
         $Chunk = self::$modx->getObject('modChunk', array('name'=>'test_pkg6'));
         $this->assertTrue(is_object($Chunk), 'Chunk should have been imported.');
@@ -203,6 +204,7 @@ class unitTest extends PHPUnit_Framework_TestCase {
         if ($TV) {
             $TV->remove();
         }
+        $Repoman->tidy_modx();
     }
     
     /**

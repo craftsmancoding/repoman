@@ -707,7 +707,8 @@ class Repoman {
         $this->modx->log(modX::LOG_LEVEL_INFO,'Crawling directory for objects '.$dir);
 
         $objects = array();
-        $files = glob($dir.'*{.php,.json}',GLOB_BRACE);
+        $dir = rtrim($dir,'/');
+        $files = glob($dir.'/*{.php,.json}',GLOB_BRACE);
 
         foreach($files as $f) {
             

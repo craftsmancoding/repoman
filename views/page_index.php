@@ -50,7 +50,7 @@
 <?php else: ?>
     <div class="repo-wrapper">
     	<h2 style="margin-top:20px;">Your Repositories</h2>
-    	<a class="create-btn" href="<?php print $this->getUrl('create'); ?>" class="repoman_button">Create New Repo</a>
+    	<a href="<?php print $this->getUrl('create'); ?>" class="repoman_button create-btn">Create New Repo</a>
     </div>
     
     <?php print $repos; ?>

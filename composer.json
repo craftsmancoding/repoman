@@ -4,7 +4,7 @@
     "type": "library",
     "keywords": ["modx","composer","repository","manager","autoload","git"],
     "homepage": "https://github.com/craftsmancoding/repoman",
-    "license": "GPL2",
+    "license": "GPL-2.0+",
     "authors": [
         {
             "name": "Everett Griffiths",

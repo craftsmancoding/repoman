@@ -26,7 +26,7 @@
     "autoload": {
         "classmap":["model/pkg8/"]
     },
-    "repoman": {
+    "extra": {
         "package_name": "Package 8",
         "namespace": "pkg8",
         "version": "1.0.0",

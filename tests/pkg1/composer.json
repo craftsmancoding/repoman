@@ -22,7 +22,7 @@
     "require": {
         "php": ">=5.3"
     },
-    "repoman": {
+    "extra": {
         "package_name": "Package Name",
         "version": "123.456.789",
         "release": "",

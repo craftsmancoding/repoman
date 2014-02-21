@@ -1,3 +1,5 @@
+<h2 style="margin-top:10px;">Package Info</h2>
+<a href="<?php print $this->getUrl('home'); ?>" class="repoman_button">&larr; Back</a>
 <div id="repo_info">
     <?php print $info; ?>
 </div>
@@ -8,5 +10,5 @@
 </div>
 
 <div style="margin-top:20px;">
-	<a href="<?php print $this->getUrl('home'); ?>" class="repoman_button">Back</a>
+	<a href="<?php print $this->getUrl('home'); ?>" class="repoman_button">&larr; Back</a>
 </div>

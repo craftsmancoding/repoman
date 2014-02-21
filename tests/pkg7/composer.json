@@ -25,7 +25,7 @@
     "autoload": {
         "classmap":["model/repoman/"]
     },
-    "repoman": {
+    "extra": {
         "name": "repoman",
         "namespace": "repoman",
         "version": "0.0.9",

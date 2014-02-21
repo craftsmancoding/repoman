@@ -288,8 +288,8 @@ class Repoman {
 
             $composer = json_decode($str,true);
             if (is_array($composer)) {
-                if (isset($composer['repoman']) && is_array($composer['repoman'])) {
-                    $config = $composer['repoman'];
+                if (isset($composer['extra']) && is_array($composer['extra'])) {
+                    $config = $composer['extra'];
                     if (isset($composer['support'])) {
                         $config['support'] = $composer['support'];
                     }
@@ -311,7 +311,7 @@ class Repoman {
                 }
             }
             else {
-                throw new Exception('Invalid JSON in '.$pkg_root_dir.'composer.json');
+                throw new Exception('Invalid JSON in '.$pkg_root_dir.'composer.json  Use "composer validate" to get more detailed information.');
             }
         }        
         

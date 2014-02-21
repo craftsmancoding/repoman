@@ -64,30 +64,41 @@ class RepomanHomeManagerController extends RepomanManagerController {
 			$repos = '';
 			$i = 0;
 			foreach (new RecursiveDirectoryIterator(MODX_BASE_PATH.$repo_dir) as $filename) {
-				if (is_dir($filename)) {
-					$shortname = basename($filename);
-					if ($shortname != '.' && $shortname != '..') {
-						$i++;
-						$class = 'repoman_odd';
-						if ($i % 2 == 0) {
-							$class = 'repoman_even';	
-						}
-						
-						$config = Repoman::load_config($filename);
+				if (!is_dir($filename)) continue;
+				
+				$shortname = basename($filename);
+				if ($shortname == '.' || $shortname == '..') continue;
+				$i++;
+				$class = 'repoman_odd';
+				if ($i % 2 == 0) {
+					$class = 'repoman_even';	
+				}
+				
+                try {
+                    $config = Repoman::load_config($filename);
+                    $repos .= $this->_load('tr_repo'
+                    	, array(
+                    		'install_link'=>$this->getUrl('install', array('repo'=>$shortname)),
+                    		'view_link'=>$this->getUrl('view',array('repo'=>$shortname)),
+                    		'package_name'=>$config['package_name'],
+                    		'description'=>$config['description'],
+                    		'class'=>$class,
+                    		'namespace' => $config['namespace']
+                    	)
+                    );
+                }  
+                catch (Exception $e) {
+                    $repos .= $this->_load('tr_repo_error'
+                    	, array(
+                    		'package_name'=>$config['package_name'],
+                    		'class'=>$class,
+                    		'package_name' => $shortname,
+                    		'error' => $e->getMessage()
+                    	)
+                    );
+                }
+			}	
 
-						$repos .= $this->_load('tr_repo'
-							, array(
-								'install_link'=>$this->getUrl('install', array('repo'=>$shortname)),
-								'view_link'=>$this->getUrl('view',array('repo'=>$shortname)),
-								'package_name'=>$config['package_name'],
-								'description'=>$config['description'],
-								'class'=>$class,
-								'namespace' => $config['namespace']
-							)
-						);
-					}
-				}	
-			}
 		}
 		
 		

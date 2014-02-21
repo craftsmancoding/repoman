@@ -154,6 +154,62 @@
 		border: 1px solid #ddd;
 		padding: 5px;
 	}
+
+	.create-repo {
+        background: #fff;
+        padding: 20px;
+    }
+    .create-repo label {
+        width: 110px;
+        float: left;
+        font-weight: bold;
+        margin-top: 4px;
+    }
+
+    .create-repo input[type="text"] {
+        border: 1px solid #ddd;
+        padding: 4px;
+    }
+    .repoman_note {
+        color: #909090;
+        font-size: 11px;
+        font-style: italic;
+        margin-bottom: 10px;
+    }
+
+    .green-btn {
+      background-color: hsl(80, 46%, 33%) !important;
+      background-repeat: repeat-x;
+      filter: progid:DXImageTransform.Microsoft.gradient(startColorstr="#90b643", endColorstr="#617a2d");
+      background-image: -khtml-gradient(linear, left top, left bottom, from(#90b643), to(#617a2d));
+      background-image: -moz-linear-gradient(top, #90b643, #617a2d);
+      background-image: -ms-linear-gradient(top, #90b643, #617a2d);
+      background-image: -webkit-gradient(linear, left top, left bottom, color-stop(0%, #90b643), color-stop(100%, #617a2d));
+      background-image: -webkit-linear-gradient(top, #90b643, #617a2d);
+      background-image: -o-linear-gradient(top, #90b643, #617a2d);
+      background-image: linear-gradient(#90b643, #617a2d);
+      border-color: #617a2d #617a2d hsl(80, 46%, 29%);
+      color: #fff !important;
+      text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.26);
+      -webkit-font-smoothing: antialiased;
+      border: none;
+      font-size: 12px;
+      padding: 4px 10px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .repo-wrapper a,
+	.repo-wrapper h2 {
+		float: left;
+	}
+	.repo-wrapper h2 {
+		margin-right: 20px;
+	}
+	.repo-wrapper a {
+		margin-top: 23px;
+	}
+
 </style>
 
 <script>

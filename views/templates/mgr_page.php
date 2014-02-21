@@ -4,6 +4,10 @@
 		margin-top:20px;
 	}
 
+	#repoman_content form {
+		margin-bottom: 20px;
+	}
+
 	#repoman_mgr_page ol,
 	#repoman_mgr_page ul {
 		margin: 1em !important;

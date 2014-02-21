@@ -149,6 +149,11 @@
 		margin-top: 15px;
 		text-decoration: none;
 	}
+
+	input[type="text"] {
+		border: 1px solid #ddd;
+		padding: 5px;
+	}
 </style>
 
 <script>

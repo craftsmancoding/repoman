@@ -160,18 +160,18 @@
 		padding: 5px;
 	}
 
-	.create-repo {
+	form.createrepo {
         background: #fff;
         padding: 20px;
     }
-    .create-repo label {
+    .createrepo label {
         width: 110px;
         float: left;
         font-weight: bold;
         margin-top: 4px;
     }
 
-    .create-repo input[type="text"] {
+    .createrepo input[type="text"] {
         border: 1px solid #ddd;
         padding: 4px;
     }

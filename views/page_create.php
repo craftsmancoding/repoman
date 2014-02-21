@@ -1,10 +1,20 @@
-<form class="create-repo" action="<?php print $this->getUrl('create'); ?>" method="post">
+<script>
+function repo_validate() {
+  var ns = document.getElementById("namespace").value;
+  var ns_ex=/^[a-z][a-z0-9_]*$/ //regular expression defined fro namespace
+  if (!ns_ex.test(ns)) {
+    alert('Please check your namespace value.'); 
+    return false;
+  }
+}
+</script>
+<form class="createrepo" action="<?php print $this->getUrl('create'); ?>" method="post">
     
     <h2>General</h2>
     
     <label for="namespace">Namespace: </label>
     <input type="text" name="namespace" id="namespace" value="" size="20"/>
-    <p class="repoman_note">The namespace should be all one word, lowercase, letters and numbers only.</p>
+    <p class="repoman_note">The namespace is required, it should be all one word (underscore accepted), lowercase, letters and numbers only. Numbers are not allowed as first Character</p>
 
     <label for="package_name">Package Name:</label>
     <input type="text" name="package_name" id="package_name" value="" size="60"/>
@@ -51,7 +61,7 @@
     <p class="repoman_note">URL where users can read the documentation for this package.</p>    
 
 	
-	<input type="submit" class="green-btn" value="Create New Repository" />		
+	<input type="submit" onclick="return repo_validate();" class="green-btn" value="Create New Repository" />		
 
 
     <a href="<?php print $this->getUrl('home'); ?>" class="">&larr; Back</a>

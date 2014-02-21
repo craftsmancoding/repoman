@@ -1,4 +1,3 @@
 .DS_Store
-_build/build.config.php
-config.core.php
 .idea
+vendor/

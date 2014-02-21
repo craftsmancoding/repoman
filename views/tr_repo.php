@@ -3,7 +3,7 @@
 		<h4><?php print $package_name; ?></h4>
 		<p><?php print $description; ?></p>
 	</td>
-	<td class="repoman_view_cell">
+	<td align="right" class="repoman_view_cell">
 	   
         <?php print $this->get_repo_links($namespace); ?>
         

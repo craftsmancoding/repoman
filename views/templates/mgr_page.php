@@ -64,15 +64,22 @@
 	table.repoman_table td {
 		padding: 10px;
 	}
+
+	td.repoman_view_cell {
+		padding-right: 20px !important;
+	}
+
+	td.repoman_view_cell a,
+	td.repoman_view_cell span  {
+		margin-right: 5px;
+	}
 	tr.repoman_row {
 		height: 30px;
 	}
 	td.repoman_name_cell {
 		width:400px;
 	}
-	td.repoman_view_cell {
-		width:250px;
-	}
+
 	tr.repoman_even {
 		background-color: #F8F8F8;
 	}

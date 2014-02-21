@@ -21,7 +21,7 @@ class RepomanHomeManagerController extends RepomanManagerController {
     public function process(array $scriptProperties = array()) {
 
 		$this->props['pagetitle'] = 'Overview';
-		$pagedata = array('repo_dir_settings'=>'', 'cache_settings'=>'','repos'=>'');
+		$pagedata = array('repo_dir_settings'=>'', 'cache_settings'=>'','repos'=>'','error'=>false);
 		$props = array();		
 		if (!empty($_POST)) {
 
@@ -46,19 +46,23 @@ class RepomanHomeManagerController extends RepomanManagerController {
         $repo_dir = $this->modx->getOption('repoman.dir');
         if (empty($repo_dir)) {
             $this->props['class'] = 'repoman_error';
-			$this->props['msg'] = $this->_get_msg('Set your Repoman directory (relative to your MODx base path) so Repoman will know where to find your local repositories.','error');        
+			$this->props['msg'] = $this->_get_msg('Set your Repoman directory (relative to your MODx base path) so Repoman will know where to find your local repositories.','error'); 
+			$pagedata['error'] = true;      
         }        
 		elseif (!file_exists(MODX_BASE_PATH.$repo_dir)) {
             $this->props['class'] = 'repoman_error';
 			$this->props['msg'] = $this->_get_msg($repo_dir .' does not exist!','error');
+			$pagedata['error'] = true;			
 		}
 		elseif (!is_dir(MODX_BASE_PATH.$repo_dir)) {
             $this->props['class'] = 'repoman_error';
 			$this->props['msg'] = $this->_get_msg($repo_dir .' must be a directory!','error');
+			$pagedata['error'] = true;			
 		}
 		elseif ($repo_dir == MODX_CONNECTORS_URL || $repo_dir == MODX_MANAGER_URL || $repo_dir == 'core/') {
             $this->props['class'] = 'repoman_error';
 			$this->props['msg'] = $this->_get_msg($repo_dir .' cannot be one of the built-in MODX directories.','error');
+			$pagedata['error'] = true;			
         }
         else {		
 			$repos = '';

@@ -60,6 +60,6 @@ endif;
 //! Build
 //------------------------------------------------------------------------------
 ?>
-<span class="repoman_button build-btn" title="Build a MODx transport package" onclick="javascript:build_package('<?php print $namespace; ?>');">Build</span>
+<span class="repoman_button build-btn" title="Build a MODx transport package" onclick="javascript:build_package('<?php print $namespace; ?>');">Build &darr;</span>
 
 

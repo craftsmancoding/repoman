@@ -3,32 +3,11 @@ Repoman
 
 Repoman is a package for MODX Revolution that makes it easier for developers to 
 develop their own MODX packages or contribute to existing MODX projects.  Its 
-goal is to simplify MODX AddOn development and maintenance: no more headaches 
+goal is to simplify MODX package development and maintenance: no more headaches 
 and steep learning curves writing custom build scripts or laborious click-work 
 adding objects to the manager in preparation for development. 
 
 Repoman is taking back the simplicity!
-
-
-Why is it Needed?
------------------
-
-1. All MODX code is referenced in the database (!!!), so adding and updating templates, 
-chunks, snippets etc. requires much patience and click-work in the manager GUI.  
-Repoman's "import" and "install" functionality streamlines development by detecting 
-files in your package's directory and creating the necessary MODX records.
-
-2. Unlike some systems (e.g. Wordpress), MODX installs AddOn files in TWO locations 
-(primarily for security): web-accessible files (images, css, js) belong in the "assets" 
-folder, while PHP and any non-public files belong inside the "core" directory.  This 
-makes it difficult to keep your project files under version control: Git brings ONE 
-directory under version control.  Repoman codifies the work-arounds into a consistent 
-pattern so you can easily keep your package's files in one place while developing.
-
-3. Although extremely useful, MODX's transport packages are a pain to create.  Repoman 
-eliminates the need for developers to create customized build scripts: just run Repoman's 
-"build" utility on your project, and a MODX package will be created from your project's 
-files, including any/all MODX objects and custom database tables.
 
 
 Who Should Download this?
@@ -43,6 +22,16 @@ Repoman should only be installed in MODX development environments.  It is not in
 be used on production sites.
 
 If you are not a MODX developer or you are not using versioning software, then you have no need of Repoman.
+
+
+Installation
+------------
+
+You can install Repoman via the standard MODx package manager, or you can install Repoman via Repoman (yes, some bootstrapping/dog-fooding here).
+
+1. Clone the Repoman repository from https://github.com/craftsmancoding/repoman to a dedicated directory inside your MODx web root.
+2. Run "composer install" on your new repository to pull in the package dependencies.
+3. Run the command-line repoman tool on the repoman/ directory, e.g. "php repoman install ."
 
 
 Conventions

@@ -48,8 +48,11 @@ class RepomanAjaxManagerController extends RepomanManagerController {
                     $Repoman->uninstall($pkg_root_dir);
                     $response['msg'] = $config['package_name'].' uninstalled successfully!';
                     break;
-                // Get HTML for the repo-list
-                case 'repos':
+                case 'build':
+                    $Repoman->build($pkg_root_dir);
+                    $response['msg'] = $config['package_name'].' should have been built successfully.  Look inside the core/packages/ directory for the file. Please use the command line tool if you need to monitor the error log troubleshoot this process.';
+                    break;
+
                     break;
                 default:
                     $response['success'] = false;

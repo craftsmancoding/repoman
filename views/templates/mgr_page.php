@@ -70,6 +70,7 @@
 	}
 
 	td.repoman_view_cell {
+        width: 300px;
 		padding-right: 20px !important;
 	}
 
@@ -140,6 +141,10 @@
 	.update-btn {
 		background: #ff8000;
 	}
+	
+	.refresh-btn {
+        cursor: progress;
+	}
 
 	.copyright {
 		float: none;
@@ -172,7 +177,7 @@ function confirm_uninstall(namespace) {
                     var data;
                     data = Ext.decode(resp.responseText);
                     if (data.success === true) {
-                        Ext.MessageBox.alert('Success', data.msg);
+                        Ext.MessageBox.alert('Package Uninstalled', data.msg);
                         setTimeout(function () {
                             location.reload(); // will reload newly installed data
                         }, 1000);
@@ -192,10 +197,11 @@ function confirm_uninstall(namespace) {
 /**
  * Update a given package identified by its namespace (i.e. by its sub-folder)
  * @param string namespace
+ * @param string msg used for masking
  */
-function repo_update(namespace) {
+function repo_update(namespace,msg) {
 
-    var loadMask = new Ext.LoadMask(Ext.get('repoman_content'), {msg:'Installing '+namespace});
+    var loadMask = new Ext.LoadMask(Ext.get('repoman_content'), {msg:msg});
     loadMask.show();
     
 	Ext.Ajax.request({
@@ -205,7 +211,7 @@ function repo_update(namespace) {
             var data;
             data = Ext.decode(resp.responseText);
             if (data.success === true) {
-                Ext.MessageBox.alert('Success', data.msg);
+                Ext.MessageBox.alert('Package Updated', data.msg);
                 setTimeout(function () {
                     location.reload(); // will reload newly installed data
                 }, 1000);
@@ -240,7 +246,7 @@ function repo_install(namespace) {
                     var data;
                     data = Ext.decode(resp.responseText);
                     if (data.success === true) {
-                        Ext.MessageBox.alert('Success', data.msg);
+                        Ext.MessageBox.alert('Package Installed', data.msg);
                         setTimeout(function () {
                             location.reload(); // will reload newly installed data
                         }, 1000);
@@ -256,6 +262,34 @@ function repo_install(namespace) {
             });
     	}
     });    
+}
+
+/**
+ * Build a MODx transport package from the repo identified by its namespace (i.e. by its sub-folder)
+ * @param string namespace
+ */
+function build_package(namespace) {
+
+    var loadMask = new Ext.LoadMask(Ext.get('repoman_content'), {msg:'Building package '+namespace});
+    loadMask.show();
+    
+    Ext.Ajax.request({
+        params: {namespace: namespace},
+        url: "<?php print $this->getUrl('ajax', array('f'=>'build')); ?>", 
+        success: function (resp) {
+            var data;
+            data = Ext.decode(resp.responseText);
+            if (data.success === true) {
+                Ext.MessageBox.alert('Package Built', data.msg);
+            } else {
+                Ext.MessageBox.alert('Error', data.msg);
+            }
+        },
+        failure: function () {
+            Ext.MessageBox.alert('Error', 'A problem occurred.');
+        }
+    });
+    loadMask.hide();    
 }
 
 </script>

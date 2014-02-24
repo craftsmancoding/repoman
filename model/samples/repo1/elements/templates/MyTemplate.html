@@ -1,7 +1,23 @@
 <!--
 @templatename MyTemplate
 @description An example template.
+@TVs myTV
 
 Note that the attribute is "templatename", and not simply "name".  
 Blame backwards compatibility.
+The TVs listed must match the file names *exactly* (minus .php).
 -->
+<html>
+<head>
+    <title>[[*pagetitle]]</title>
+</head>
+<body>
+<h1>[[*longtitle]]</h1>
+
+[[*content]]
+
+<blockquote>The life of a repo man is always intense.</blockquote>
+
+[[*myTV]]
+</body>
+</html>

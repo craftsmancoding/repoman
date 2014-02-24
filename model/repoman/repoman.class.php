@@ -280,7 +280,7 @@ class Repoman {
 	 * @return array combined config
 	 */
 	public static function load_config($pkg_root_dir, $overrides=array(),$file='global') {
-
+        global $modx; // we needs us some modx vars
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         $global = include dirname(__FILE__).'/'.$file.'.config.php';
         $config = array();
@@ -758,10 +758,12 @@ class Repoman {
      */
     public function create($namespace,$data) {
         // Get the config stuff...
-        $data['namespace'] = $namespace;
+        global $modx;
+        
         $global = include dirname(__FILE__).'/global.config.php';
         $config = array_merge($global, $data);
-
+        $config['namespace'] = $namespace;
+        
         if (preg_match('/[^a-z0-9_\-]/', $config['namespace'])) {
             throw new Exception('Invalid namespace: '.$config['namespace']);
         }        
@@ -777,15 +779,15 @@ class Repoman {
         include dirname(dirname(dirname(__FILE__))).'/views/composer.php';
         $composer = ob_get_clean();
         
-        print $composer; exit;
+//        print $composer; exit;
 
-        $dir = $pkg_root_dir.$config['namespace'];
-        
+        $dir = MODX_BASE_PATH.$this->modx->getOption('repoman.dir').$config['namespace'];
+        print '....'.$dir; exit;
         if (file_exists($dir) && !$config['force']) {
             throw new Exception('Directory already exists: '.$dir. ' Will not continue unless forced');
         }
         else {
-            if (false === mkdir($dir, $this->get('dir_mode'), true)) {
+            if (false === @mkdir($dir, $this->get('dir_mode'), true)) {
                 throw new Exception('Could not create directory '.$dir);
             }
             else {
@@ -795,6 +797,15 @@ class Repoman {
         if (file_put_contents($pkg_root_dir.'composer.json', $composer) === false) {
             throw new Exception('Failed to create '.$pkg_root_dir.'composer.json');
         }
+        
+        $omissions = array();
+        $elements = array('chunks','plugins','snippets','templates','tvs');
+        foreach ($elements as $e) {
+            if (!isset($data[$e]) || !$data[$e]){
+                $omissions[] = dirname(dirname(__FILE__)).'/samples/repo1/elements/'.$e;
+            }
+        }
+        self::rcopy(dirname(dirname(__FILE__)).'/samples/repo1',$pkg_root_dir,$omissions);
     }
     
     /**

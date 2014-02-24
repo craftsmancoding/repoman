@@ -36,7 +36,7 @@ return array(
     
     // Author stuff (better when the mgr is used)...
     'author_name' => '', 
-    'author_email' => $this->modx->getOption('emailsender'),
+    'author_email' => $modx->getOption('emailsender'),
     'author_homepage' => MODX_SITE_URL,
     
     // Paths

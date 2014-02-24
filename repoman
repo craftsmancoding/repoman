@@ -166,7 +166,6 @@ switch ($function) {
     case 'update':
         if (!isset($argv[2]) || substr ($argv[2],0,2) == '--') {
             print message('Missing <repo_path> parameter.','ERROR');
-            //print Repoman::rtfm($function);
             exit(2);
         }
         try {
@@ -178,6 +177,29 @@ switch ($function) {
         }
 
         break;
+
+    // Create is different because the directory doesn't exist yet
+    case 'create':
+        if (!isset($argv[2]) || substr ($argv[2],0,2) == '--') {
+            print message('Missing <namespace> parameter.','ERROR');
+            exit(2);
+        }
+
+        $namespace = $argv[2];
+        unset($argv[0]);
+        unset($argv[1]);
+        unset($argv[2]);
+        $args = Repoman::parse_args($argv);    
+        try {
+            $Repoman = new Repoman($modx,array());
+            print $Repoman->create($namespace,$args);
+        }  
+        catch (Exception $e) {
+            print message($e->getMessage(),'ERROR');
+            exit(4);
+        }
+        print message(ucfirst(strtolower('create')) .' complete '.date('Y-m-d H:i:s'),'SUCCESS');
+        break;    
     case 'help':
         if (isset($argv[2])) {
             print message($argv[2],'HELP');

@@ -24,7 +24,8 @@ return array(
     'package_name' => basename($pkg_root_dir),
     'namespace' => strtolower(basename($pkg_root_dir)),
     'description' => 'This package was built with Repoman (https://github.com/craftsmancoding/repoman)',
-    'version' => '1.0.0',
+    'version' => '0.0.0',
+    'release' => 'dev',
     'copyright' => date('Y'),
     'category' => basename($pkg_root_dir), // Default category for elements
     
@@ -32,6 +33,11 @@ return array(
     'build_docs' => '*', // you may include an array specifying basenames of specific files in the build
     'overwrite' => false, // if true, will overwrite repo files during extract operations
     'log_level' => modX::LOG_LEVEL_INFO,
+    
+    // Author stuff (better when the mgr is used)...
+    'author_name' => '', 
+    'author_email' => $this->modx->getOption('emailsender'),
+    'author_homepage' => MODX_SITE_URL,
     
     // Paths
     'core_path' => '',

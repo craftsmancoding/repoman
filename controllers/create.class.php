@@ -18,19 +18,29 @@ class RepomanCreateManagerController extends RepomanManagerController {
     public function process(array $scriptProperties = array()) {
 		$this->props['pagetitle'] = 'Create New Repo';	
 
+        // Defaults
         $data = array(
             'namespace' => '',
             'package_name' => '',
             'description' => '',
+            'author_name' => $this->modx->user->Profile->get('fullname'),
+            'author_email' => $this->modx->user->Profile->get('email'),
+            'author_homepage' => MODX_SITE_URL,
         );
         
 		if (!empty($_POST)) {
             $data['namespace'] = preg_replace('/[^a-z0-9\_]/','',$this->modx->getOption('namespace', $_POST));
             $data['package_name'] = strip_tags($this->modx->getOption('package_name', $_POST));
-            $data['description'] = strip_tags($this->modx->getOption('description', $_POST));   
+            $data['description'] = strip_tags($this->modx->getOption('description', $_POST));
+            $data['author_name'] = strip_tags($this->modx->getOption('author_name', $_POST));
+            $data['author_email'] = strip_tags($this->modx->getOption('author_email', $_POST));
+            $data['author_homepage'] = strip_tags($this->modx->getOption('author_homepage', $_POST));
+            
+            print '<pre>'.print_r($data,true).'</pre>'; exit;
+            
 		}
 		
-		$this->props['content'] = $this->_load('page_create', array());
+		$this->props['content'] = $this->_load('page_create', $data);
 		
 		return $this->_render();
 

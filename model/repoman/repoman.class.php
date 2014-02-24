@@ -276,12 +276,13 @@ class Repoman {
 	 *
      * @param string $pkg_root_dir path to local package root (w trailing slash)
      * @param array $overrides any run-time overrides
+     * @param string $file to specify config file
 	 * @return array combined config
 	 */
-	public static function load_config($pkg_root_dir, $overrides=array()) {
+	public static function load_config($pkg_root_dir, $overrides=array(),$file='global') {
 
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-        $global = include dirname(__FILE__).'/global.config.php';
+        $global = include dirname(__FILE__).'/'.$file.'.config.php';
         $config = array();
         if (file_exists($pkg_root_dir.'composer.json')) {
             $str = file_get_contents($pkg_root_dir.'composer.json');
@@ -311,14 +312,15 @@ class Repoman {
             }
         }
         
-        if (preg_match('/[^a-z0-9_\-]/', $config['namespace'])) {
-            throw new Exception('Invalid namespace: '.$config['namespace']);
-        }        
-        if (isset($config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $config['version'])) {
-            throw new Exception('Invalid version.');       
-        }
 
         $out = array_merge($global, $config, $overrides);
+
+        if (preg_match('/[^a-z0-9_\-]/', $out['namespace'])) {
+            throw new Exception('Invalid namespace: '.$out['namespace']);
+        }        
+        if (isset($out['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $out['version'])) {
+            throw new Exception('Invalid version.');       
+        }
 
         if ($out['core_path'] == $out['assets_path']) {
             throw new Exception('core_path cannot match assets_path in '.$pkg_root_dir);       
@@ -748,6 +750,52 @@ class Repoman {
 	   }
 	   return $objects;
 	}
+    
+    /**
+     *
+     * @param string $pkg_root_dir path to local package root (w trailing slash)
+     * @param array $data
+     */
+    public function create($namespace,$data) {
+        // Get the config stuff...
+        $data['namespace'] = $namespace;
+        $global = include dirname(__FILE__).'/global.config.php';
+        $config = array_merge($global, $data);
+
+        if (preg_match('/[^a-z0-9_\-]/', $config['namespace'])) {
+            throw new Exception('Invalid namespace: '.$config['namespace']);
+        }        
+        if (isset($config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $config['version'])) {
+            throw new Exception('Invalid version.');       
+        }        
+        if (empty($config['category'])) {
+            $config['category'] = ucfirst($namespace);
+        }
+        
+        // Create the file stuff
+        ob_start();
+        include dirname(dirname(dirname(__FILE__))).'/views/composer.php';
+        $composer = ob_get_clean();
+        
+        print $composer; exit;
+
+        $dir = $pkg_root_dir.$config['namespace'];
+        
+        if (file_exists($dir) && !$config['force']) {
+            throw new Exception('Directory already exists: '.$dir. ' Will not continue unless forced');
+        }
+        else {
+            if (false === mkdir($dir, $this->get('dir_mode'), true)) {
+                throw new Exception('Could not create directory '.$dir);
+            }
+            else {
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$dir);
+            }
+        }
+        if (file_put_contents($pkg_root_dir.'composer.json', $composer) === false) {
+            throw new Exception('Failed to create '.$pkg_root_dir.'composer.json');
+        }
+    }
     
     /**
      * Extract objects (Settings, Snippets, Pages et al) from MODX and store them in the

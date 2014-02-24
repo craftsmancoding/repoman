@@ -13,15 +13,18 @@ function repo_validate() {
     <h2>General</h2>
     
     <label for="namespace">Namespace: </label>
-    <input type="text" name="namespace" id="namespace" value="" size="20"/>
+    <input type="text" name="namespace" id="namespace" value="<?php print htmlentities($namespace); ?>" size="20"/>
     <p class="repoman_note">The namespace is required, it should be all one word (underscore accepted), lowercase, letters and numbers only. Numbers are not allowed as first Character</p>
 
     <label for="package_name">Package Name:</label>
-    <input type="text" name="package_name" id="package_name" value="" size="60"/>
+    <input type="text" name="package_name" id="package_name" 
+        value="<?php print htmlentities($package_name); ?>" 
+        size="60"/>
     <p class="repoman_note">Human readable name of the package.</p>
 
     <label for="description">Description:</label>
-    <input type="text" name="description" id="description" value="" size="80"/>
+    <input type="text" name="description" id="description" value="<?php print htmlentities($description); ?>" size="80"
+        placeholder="Tell us what this thing does..."/>
     <p class="repoman_note">What does the package do? (Keep it short)</p>
 
     <hr/>
@@ -29,39 +32,48 @@ function repo_validate() {
     <h2>Author</h2>
 
     <label for="author_name">Author:</label>
-    <input type="text" name="author_name" id="author_name" value="" size="40"/>
+    <input type="text" name="author_name" id="author_name" value="<?php print htmlentities($author_name); ?>" size="40"/>
     <p class="repoman_note">Your name.</p>
 
     <label for="author_email">Email:</label>
-    <input type="text" name="author_email" id="author_email" value="" size="40"/>
+    <input type="text" name="author_email" id="author_email" value="<?php print htmlentities($author_email); ?>" size="40"/>
     <p class="repoman_note">Your email address.</p>
 
     <label for="author_homepage">Homepage:</label>
-    <input type="text" name="author_homepage" id="author_homepage" value="" size="40"/>
+    <input type="text" name="author_homepage" id="author_homepage" value="<?php print htmlentities($author_homepage); ?>" size="40"/>
     <p class="repoman_note">URL of your homepage.</p>
 
     <hr/>
-    
+
+<?php
+/*    
     <h2>Support</h2>
     
     <label for="support_email">Support Email:</label>
-    <input type="text" name="support[email]" id="support_email" value="" size="40"/>
+    <input type="text" name="support_email" id="support_email" value="" size="40"/>
     <p class="repoman_note">Email address for support requests.</p>
 
     <label for="support_issues">Bug Tracker:</label>
-    <input type="text" name="support[issues]" id="support_issues" value="" size="60"/>
+    <input type="text" name="support_issues" id="support_issues" value="" size="60"/>
     <p class="repoman_note">URL where users can file bug reports.</p>
 
     <label for="support_forum">Forum:</label>
-    <input type="text" name="support[forum]" id="support_forum" value="" size="60"/>
+    <input type="text" name="support_forum" id="support_forum" value="" size="60"/>
     <p class="repoman_note">URL for a forum where users can discuss this package.</p>
 
     <label for="support_wiki">Wiki:</label>
-    <input type="text" name="support[wiki]" id="support_wiki" value="" size="60"/>
+    <input type="text" name="support_wiki" id="support_wiki" value="" size="60"/>
     <p class="repoman_note">URL where users can read the documentation for this package.</p>    
+*/
+?>
+
+    <h2>Data</h2>
+    <p class="repoman_note">You can export existing data into your repository folder, or you can start off 
+    with some sample data.  You can always elements and objects to your repository later, you just need to follow
+    Repoman's conventions.</p>
 
 	
-	<input type="submit" onclick="return repo_validate();" class="green-btn" value="Create New Repository" />		
+	<input type="submit" onclick="javascript:repo_validate();" class="green-btn" value="Create New Repository" />		
 
 
     <a href="<?php print $this->getUrl('home'); ?>" class="">&larr; Back</a>

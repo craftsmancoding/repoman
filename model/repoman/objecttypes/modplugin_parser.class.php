@@ -17,7 +17,7 @@ class modPlugin_parser extends Repoman_parser {
      */
     public function extend_docblock(&$Obj) {
         $out = '';
-        if (isset($Obj->PluginEvents)) {
+        if (isset($Obj->PluginEvents) && is_array($Obj->PluginEvents)) {
             $out = ' * @PluginEvents ';
             foreach ($Obj->PluginEvents as $e) {
                 $out .= $e->get('event').',';

@@ -50,20 +50,31 @@ abstract class Repoman_parser {
 	/**
 	 * Create an element from attributes, including a DocBlock
 	 *
+	 * @param string $pkg_dir
 	 * @param object $Obj
+	 * @param boolean $graph whether to include related data
 	 * 
 	 */
     public function create($pkg_dir, $Obj, $graph) {
 
         $array = $Obj->toArray('',false,false,$graph);
         $content = $Obj->getContent();
+        $attributes = self::repossess($content,$this->dox_start,$this->dox_end);
+        if (!isset($attributes[$this->objectname])) {
+            $name_attribute = $this->objectname;
+            $name = $Obj->get($name_attribute);
+        }   
+        else {
+            $name = $attributes[$this->objectname]; 
+        }     
+        
         $dir = $this->Repoman->get_core_path($pkg_dir).$this->Repoman->get($this->dir_key).'/';
-        $filename = $dir.'/'.$attributes[$this->objectname].$this->write_ext;
+        $filename = $dir.'/'.$name.$this->write_ext;
         if (file_exists($filename) && !$this->Repoman->get('overwrite')) {
             throw new Exception('Element already exists. Overwrite not allowed. '.$filename);
         }
         
-        $attributes = self::repossess($content,$this->dox_start,$this->dox_end);        
+
         // Create DocBlock if it doesn't already exist
         if (empty($attributes)) {
             $docblock = $this->dox_start."\n";
@@ -76,7 +87,7 @@ abstract class Repoman_parser {
         }
 
         // Create dir if doesn't exist
-        if (false === mkdir($dir, $this->Repoman->get('dir_mode'), true)) {
+        if (!file_exists($dir) && false === mkdir($dir, $this->Repoman->get('dir_mode'), true)) {
             throw new Exception('Could not create directory '.$dir);
         }
         
@@ -252,7 +263,7 @@ abstract class Repoman_parser {
         
         // Loop over each line in the comment block
         $a = array(); // attributes
-        foreach(preg_split('/((\r?\n)|(\r\n?))/', $dox) as $line){
+        foreach (preg_split('/((\r?\n)|(\r\n?))/', $dox) as $line) {
             preg_match('/^\s*\**\s*@(\w+)(.*)$/',$line,$m);
             if (isset($m[1]) && isset($m[2]) && !in_array($m[1], self::$skip_tags)) {
                     $a[$m[1]] = trim($m[2]);

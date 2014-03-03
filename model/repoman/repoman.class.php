@@ -276,13 +276,12 @@ class Repoman {
 	 *
      * @param string $pkg_root_dir path to local package root (w trailing slash)
      * @param array $overrides any run-time overrides
-     * @param string $file to specify config file
 	 * @return array combined config
 	 */
-	public static function load_config($pkg_root_dir, $overrides=array(),$file='global') {
-        global $modx; // we needs us some modx vars
+	public static function load_config($pkg_root_dir, $overrides=array()) {
+        global $modx; // global b/c this is a static function
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-        $global = include dirname(__FILE__).'/'.$file.'.config.php';
+        $global = include dirname(__FILE__).'/global.config.php';
         $config = array();
         if (file_exists($pkg_root_dir.'composer.json')) {
             $str = file_get_contents($pkg_root_dir.'composer.json');
@@ -391,33 +390,43 @@ class Repoman {
      * Recursively copy files and directories.
      *
      * @param string $source dir
-     * @param string $dest dir
+     * @param string $destination dir
      * @param array $omissions full path to any files to omit (optional)
      */
     static public function rcopy($source, $destination, $omissions=array()) {
+        $source = rtrim($source,'/');
+        $destination = rtrim($destination,'/');        
+        if (is_dir($source) ) {
         
-       if ( is_dir($source) ) {
-            @mkdir($destination);
+            if (!file_exists($destination)) {
+                if (mkdir($destination,0777) === false) {
+                    throw new Exception('Could not create directory '.$destination);
+                }
+            }
+            
             $directory = dir( $source );
             while ( false !== ( $readdirectory = $directory->read() ) ) {
                 if ( $readdirectory == '.' || $readdirectory == '..' ) {
                     continue;
                 }
                 $PathDir = $source . '/' . $readdirectory; 
-                if ( is_dir( $PathDir ) ) {
-                    return Repoman::rcopy( $PathDir, $destination.'/'.$readdirectory, $omissions);
+                if (in_array($PathDir,$omissions)) {
                     continue;
                 }
-                
-                if (!in_array($PathDir,$omissions)) {
-                    copy( $PathDir, $destination . '/' . $readdirectory );
+                if (is_dir( $PathDir )) {
+                    Repoman::rcopy( $PathDir, $destination.'/'.$readdirectory, $omissions);
+                    continue;
+                }
+                else {
+                    copy($PathDir, $destination.'/'.$readdirectory);
                 }
             }
             
             $directory->close();
         }
         else {
-            return copy( $source, $destination );
+            print "$source is a file\n";
+            return copy($source,$destination);
         }
     }
 
@@ -752,76 +761,95 @@ class Repoman {
 	}
     
     /**
+     * Create a new repository.
      *
-     * @param string $pkg_root_dir path to local package root (w trailing slash)
-     * @param array $data
+     * @param string $namespace (sub-dir relative to $pkg_root_dir)
+     * @param array $data including sample data
      */
     public function create($namespace,$data) {
         // Get the config stuff...
         global $modx;
         
         $global = include dirname(__FILE__).'/global.config.php';
-        $config = array_merge($global, $data);
-        $config['namespace'] = $namespace;
+        $this->config = array_merge($global, $data);
+        $this->config['namespace'] = $namespace;
         
-        if (preg_match('/[^a-z0-9_\-]/', $config['namespace'])) {
-            throw new Exception('Invalid namespace: '.$config['namespace']);
+        if (preg_match('/[^a-z0-9_\-]/', $this->config['namespace'])) {
+            throw new Exception('Invalid namespace: '.$this->config['namespace']);
         }        
-        if (isset($config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $config['version'])) {
+        if (isset($this->config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $this->config['version'])) {
             throw new Exception('Invalid version.');       
         }        
-        if (empty($config['category'])) {
-            $config['category'] = ucfirst($namespace);
+        if (empty($this->config['category'])) {
+            $this->config['category'] = ucfirst($namespace);
         }
         
         // Create the file stuff
         ob_start();
+        $config = $this->config; // for easier use in the template file
         include dirname(dirname(dirname(__FILE__))).'/views/composer.php';
         $composer = ob_get_clean();
         
-//        print $composer; exit;
+        $pkg_root_dir = MODX_BASE_PATH.$this->modx->getOption('repoman.dir').$this->config['namespace'];
 
-        $dir = MODX_BASE_PATH.$this->modx->getOption('repoman.dir').$config['namespace'];
-        print '....'.$dir; exit;
-        if (file_exists($dir) && !$config['force']) {
-            throw new Exception('Directory already exists: '.$dir. ' Will not continue unless forced');
+        if (file_exists($pkg_root_dir) && !$this->config['force']) {
+            throw new Exception('Directory already exists: '.$pkg_root_dir. ' Will not continue unless forced');
         }
         else {
-            if (false === @mkdir($dir, $this->get('dir_mode'), true)) {
-                throw new Exception('Could not create directory '.$dir);
+            if (false === @mkdir($pkg_root_dir, $this->config['dir_mode'], true)) {
+                throw new Exception('Could not create directory '.$pkg_root_dir.' Check the permissions and try again.');
             }
             else {
-                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$dir);
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$pkg_root_dir);
             }
         }
-        if (file_put_contents($pkg_root_dir.'composer.json', $composer) === false) {
-            throw new Exception('Failed to create '.$pkg_root_dir.'composer.json');
+        if (file_put_contents($pkg_root_dir.'/composer.json', $composer) === false) {
+            throw new Exception('Failed to create '.$pkg_root_dir.'/composer.json');
         }
         
         $omissions = array();
         $elements = array('chunks','plugins','snippets','templates','tvs');
         foreach ($elements as $e) {
-            if (!isset($data[$e]) || !$data[$e]){
+            if (!isset($data['sample_'.$e]) || !$data['sample_'.$e]){
                 $omissions[] = dirname(dirname(__FILE__)).'/samples/repo1/elements/'.$e;
             }
         }
+
         self::rcopy(dirname(dirname(__FILE__)).'/samples/repo1',$pkg_root_dir,$omissions);
+        
+        // Export stuff
+        if ($data['category_id']) {
+            $data['where'] = array('category' => $data['category_id']);
+            $data['classname'] = 'modChunk';
+            $this->export($pkg_root_dir, $data);
+            $data['classname'] = 'modPlugin';
+            $this->export($pkg_root_dir, $data);
+            $data['classname'] = 'modSnippet';
+            $this->export($pkg_root_dir, $data);
+            $data['classname'] = 'modTemplate';
+            $this->export($pkg_root_dir, $data);
+            $data['classname'] = 'modTemplateVar';
+            $this->export($pkg_root_dir, $data);
+        }
     }
     
     /**
      * Extract objects (Settings, Snippets, Pages et al) from MODX and store them in the
      * repository as either object or seed data.
      *
-     * --classname 
-     * --where
+     * --classname string valid classname for a defined object
+     * --where JSON string or PHP array defining criteria
+     * --target dir rel to pkg_root_dir where non-element objects are saved as seed data
      * --overwrite
      * --package : package_name, model_path, and optionally table_prefix  
      *      e.g. `tiles:[[++core_path]]components/tiles/model/:tiles_` or 
      *      If only the package name is supplied, the path is assumed to be "[[++core_path]]components/$package_name/model/"
      *
      * @param string $pkg_root_dir path to local package root (w trailing slash)     
+     * @param array $data additional 
      */
-    public function export($pkg_root_dir) {
+    public function export($pkg_root_dir,$data=array()) {
+        $this->config = array_merge($this->config,$data);
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         $classname = $this->get('classname');
         $where = $this->get('where');
@@ -846,7 +874,9 @@ class Repoman {
             $Parser = new $element_class($this);
         }
 
-        $where = json_decode($where, true);
+        if (is_scalar($where)) {
+            $where = json_decode($where, true);
+        }
 
         $this->_addPkgs($this->config, $pkg_root_dir);
         
@@ -889,7 +919,7 @@ class Repoman {
             elseif (preg_match('/[^a-zA-Z0-9_\-]/', $target)) {
                 throw new Exception('Name of target directory can contain only letters and numbers.');
             }            
-            $dir = $this->get_core_path($pkg_root_dir).$this->get('seeds_path').'/'.$this->get('target');
+            $dir = $this->get_core_path($pkg_root_dir).$this->get('target');
             
             if (!file_exists($dir)) {
                 if (false === mkdir($dir, $this->get('dir_mode'), true)) {

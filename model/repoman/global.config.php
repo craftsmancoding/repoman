@@ -36,7 +36,7 @@ return array(
     
     // Author stuff (better when the mgr is used)...
     'author_name' => '', 
-    'author_email' => $modx->getOption('emailsender'),
+    'author_email' => '',
     'author_homepage' => MODX_SITE_URL,
     
     // Paths
@@ -53,7 +53,7 @@ return array(
     
     // Relative to core/components/<namespace/  (do not start these with a slash!)
     'migrations_path' => 'model/migrations',
-    'seeds_path' => 'model/seeds',
+    'seeds_path' => array(),
     'validators_path' => 'tests',
 
     // Directories or files omit from packaging to core/components/$namespace/
@@ -68,8 +68,7 @@ return array(
     'dry_run' => false, // use runtime setting: --dry_run to see which objects will be created.
     'dir_mode' => 0777, // mask used when creating new directories
     
-    'seed' => null, // mixed: sub-dir(s) inside seeds_dir to crawl during migrate|build ops.     
-    'target' => null, // string: sub-dir inside seeds_dir where export op should save data
+    'target' => 'model/seeds', // dir relative to package root where where export op should save data. Usually corresponds with one of the seeds_path entries
 
     'abort_install_on_fail' => true, // if true, your validation tests can halt pkg install by returning "false"
 

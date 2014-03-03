@@ -23,12 +23,11 @@ class modTemplate_parser extends Repoman_parser {
      */
     public function extend_docblock(&$Obj) {
         $out = '';
-        // 2 tiers here to get to the TVs TODO
-        if (isset($Obj->TemplateVarTemplates)) {
-            $TVs = $Obj->TemplateVarTemplates->getMany();
-            $out = ' * @TVs ';
-            foreach ($Obj->PluginEvents as $e) {
-                $out .= $e->get('event').',';
+        // 2 tiers here to get to the TVs.
+        if (isset($Obj->TemplateVarTemplates) && is_array($Obj->TemplateVarTemplates)) {
+            $out = '@TVs ';
+            foreach ($Obj->TemplateVarTemplates as $tvt) {
+                $out .= $tvt->TemplateVar->get('name').',';
             }
         }
         return rtrim($out,',') ."\n";

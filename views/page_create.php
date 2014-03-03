@@ -8,13 +8,15 @@ function repo_validate() {
   }
 }
 </script>
+
+
 <form class="createrepo" action="<?php print $this->getUrl('create'); ?>" method="post">
     
     <h2>General</h2>
     
     <label for="namespace">Namespace: </label>
     <input type="text" name="namespace" id="namespace" value="<?php print htmlentities($namespace); ?>" size="20"/>
-    <p class="repoman_note">The namespace is required, it should be all one word (underscore accepted), lowercase, letters and numbers only. Numbers are not allowed as first Character</p>
+    <p class="repoman_note">The namespace is required, it should be all one word (underscore accepted), lowercase, letters and numbers only. Numbers are not allowed as the first character</p>
 
     <label for="package_name">Package Name:</label>
     <input type="text" name="package_name" id="package_name" 
@@ -86,24 +88,24 @@ function repo_validate() {
         You can always add other elements and objects to your repository later, you just need to follow
         Repoman's conventions.</p>
     
-        <label for="chunks">Chunks</label>
-        <input type="checkbox" name="chunks" id="chunks" value="1" <?php print (isset($_POST['chunks']) && $_POST['chunks']) ? ' checked="checked"' : '' ?>/>
+        <label for="sample_chunks">Chunks</label>
+        <input type="checkbox" name="sample_chunks" id="sample_chunks" value="1" <?php print (isset($_POST['sample_chunks']) && $_POST['sample_chunks']) ? ' checked="checked"' : '' ?>/>
         <p class="repoman_note">Check this to include sample chunks.</p>
     
-        <label for="plugins">Plugins</label>
-        <input type="checkbox" name="plugins" id="plugins" value="1" <?php print (isset($_POST['plugins']) && $_POST['plugins']) ? ' checked="checked"' : '' ?>/>
+        <label for="sample_plugins">Plugins</label>
+        <input type="checkbox" name="sample_plugins" id="sample_plugins" value="1" <?php print (isset($_POST['sample_plugins']) && $_POST['sample_plugins']) ? ' checked="checked"' : '' ?>/>
         <p class="repoman_note">Check this to include sample plugins.</p>
     
-        <label for="snippets">Snippets</label>
-        <input type="checkbox" name="snippets" id="snippets" value="1" <?php print (isset($_POST['snippets']) && $_POST['snippets']) ? ' checked="checked"' : '' ?>/>
+        <label for="sample_snippets">Snippets</label>
+        <input type="checkbox" name="sample_snippets" id="sample_snippets" value="1" <?php print (isset($_POST['sample_snippets']) && $_POST['sample_snippets']) ? ' checked="checked"' : '' ?>/>
         <p class="repoman_note">Check this to include sample snippets.</p>
     
-        <label for="templates">Templates</label>
-        <input type="checkbox" name="templates" id="templates" value="1" <?php print (isset($_POST['templates']) && $_POST['templates']) ? ' checked="checked"' : '' ?>/>
+        <label for="sample_templates">Templates</label>
+        <input type="checkbox" name="sample_templates" id="sample_templates" value="1" <?php print (isset($_POST['sample_templates']) && $_POST['sample_templates']) ? ' checked="checked"' : '' ?>/>
         <p class="repoman_note">Check this to include sample templates.</p>
     
-        <label for="tvs">TVs</label>
-        <input type="checkbox" name="tvs" id="tvs" value="1" <?php print (isset($_POST['tvs']) && $_POST['tvs']) ? ' checked="checked"' : '' ?>/>
+        <label for="sample_tvs">TVs</label>
+        <input type="checkbox" name="sample_tvs" id="sample_tvs" value="1" <?php print (isset($_POST['sample_tvs']) && $_POST['sample_tvs']) ? ' checked="checked"' : '' ?>/>
         <p class="repoman_note">Check this to include sample TVs.</p>
     
     	

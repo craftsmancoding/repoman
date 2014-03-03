@@ -53,6 +53,21 @@ class unitTest extends PHPUnit_Framework_TestCase {
     }
 
     /**
+     * Get a randome name
+     *
+     */
+    private function _get_rand_name($length=8) {
+        // Generate a random namespace for the package to ensure that the proper folder structure is generated.
+        $charset='abcdefghijklmnopqrstuvwxyz';
+        $str = '';
+        $count = strlen($charset);
+        while ($length--) {
+            $str .= $charset[mt_rand(0, $count-1)];
+        }
+        return $str;
+    }
+
+    /**
      *
      */
     public function testMODX() {
@@ -274,23 +289,15 @@ class unitTest extends PHPUnit_Framework_TestCase {
 
         $pkg_root_dir = dirname(__FILE__).'/repos/pkg8/';
         $config = Repoman::load_config($pkg_root_dir);
-        // Generate a random namespace for the package to ensure that the proper folder structure is generated.
-        $charset='abcdefghijklmnopqrstuvwxyz';
-        $str = '';
-        $length = 8;
-        $count = strlen($charset);
-        while ($length--) {
-            $str .= $charset[mt_rand(0, $count-1)];
-        }
 
-        $config['namespace'] = $str;
+        $config['namespace'] = $this->_get_rand_name();
 
         $Repoman = new Repoman(self::$modx,$config);
         $core_path = $Repoman->get_core_path($pkg_root_dir);
 
         $Repoman->build_prep($pkg_root_dir);
     
-        $core_dir = MODX_CORE_PATH.'cache/repoman/_build/core/components/'.$str;
+        $core_dir = MODX_CORE_PATH.'cache/repoman/_build/core/components/'.$config['namespace'];
         $this->assertTrue(file_exists($core_dir), 'Build prep should have created a valid directory structure.');
         $this->assertTrue(is_dir($core_dir), 'Build prep should have created a valid directory structure.');
     }
@@ -299,14 +306,9 @@ class unitTest extends PHPUnit_Framework_TestCase {
      *
      */
     public function testBuild() {
-        // Generate a random namespace for the package to ensure that the proper folder structure is generated.
-        $charset='abcdefghijklmnopqrstuvwxyz';
-        $namespace = '';
-        $length = 8;
-        $count = strlen($charset);
-        while ($length--) {
-            $namespace .= $charset[mt_rand(0, $count-1)];
-        }
+        
+        $namespace = $this->_get_rand_name();
+        
         // Generate random version number
         $ver = rand(0,100).'.'.rand(0,100).'.'.rand(0,100);
         $release = 'beta';
@@ -384,5 +386,31 @@ class unitTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue($parsed['x'] == 'y', 'Value should be set.');   
         $this->assertTrue(count($parsed) == 2, 'Two arguments should come through.');   
         $this->assertFalse(isset($parsed['skip']), 'Value should not be set.');   
+    }
+    
+    /**
+     * Test recursive copying of directories
+     *
+     *
+     */
+    public function testRCopy() {
+        $name = $this->_get_rand_name();
+        $source_dir = dirname(dirname(__FILE__)).'/model/samples/repo1';
+        $target_dir = MODX_CORE_PATH.'cache/repoman/'.$name;
+        Repoman::rcopy($source_dir,$target_dir,array());
+ 
+        $this->assertTrue(file_exists($target_dir.'/elements') && is_dir($target_dir.'/elements'), 'elements directory must exist');   
+        $this->assertTrue(file_exists($target_dir.'/elements/plugins') && is_dir($target_dir.'/elements/plugins'), 'elements/plugins directory must exist');
+        $this->assertTrue(file_exists($target_dir.'/elements/snippets') && is_dir($target_dir.'/elements/snippets'), 'elements/snippets directory must exist');
+        $this->assertTrue(file_exists($target_dir.'/elements/templates') && is_dir($target_dir.'/elements/templates'), 'elements/templates directory must exist');
+        $this->assertTrue(file_exists($target_dir.'/elements/tvs') && is_dir($target_dir.'/elements/tvs'), 'elements/tvs directory must exist');
+
+        $this->assertTrue(file_exists($target_dir.'/elements/chunks/MyChunk.html'), 'elements/chunks/MyChunk.html file must exist');
+        $this->assertTrue(file_exists($target_dir.'/elements/plugins/MyPlugin.php'), 'elements/plugins/MyPlugin.php file must exist');
+        $this->assertTrue(file_exists($target_dir.'/elements/snippets/MySnippet.php'), 'elements/snippets/MySnippet.php file must exist');
+        $this->assertTrue(file_exists($target_dir.'/elements/templates/MyTemplate.html'), 'elements/templates/MyTemplate.html file must exist');
+        $this->assertTrue(file_exists($target_dir.'/elements/tvs/myTV.php'), 'elements/tvs/myTV.php file must exist');
+                                 
+        Repoman::rrmdir($target_dir);       
     }
 }

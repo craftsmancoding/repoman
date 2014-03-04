@@ -26,16 +26,13 @@ incompatible value snuck past our validation.
     ],
     "support": {
         "email": <?php print str_replace('\/','/',json_encode($config['author_email'])); ?>,
-        "issues": "",
+        "issues": "http://xkcd.com/258/",
         "forum": "http://forums.modx.com/",
         "wiki": "https://raw2.github.com/craftsmancoding/repoman/master/screenshots/lack_of_docs.jpg",
-        "source": ""
+        "source": "http://xkcd.com/1296/"
     },    
     "require": {
         "php": ">=5.3"
-    },
-    "autoload": {
-        "classmap":[<?php print str_replace('\/','/',json_encode('model/'.$config['namespace'].'/')); ?>]
     },
     "extra": {
         "package_name": <?php print str_replace('\/','/',json_encode($config['package_name'])); ?>,

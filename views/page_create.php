@@ -90,23 +90,23 @@ function repo_validate() {
     
         <label for="sample_chunks">Chunks</label>
         <input type="checkbox" name="sample_chunks" id="sample_chunks" value="1" <?php print (isset($_POST['sample_chunks']) && $_POST['sample_chunks']) ? ' checked="checked"' : '' ?>/>
-        <p class="repoman_note">Check this to include sample chunks.</p>
+        <p class="repoman_note">Include sample chunks.</p>
     
         <label for="sample_plugins">Plugins</label>
         <input type="checkbox" name="sample_plugins" id="sample_plugins" value="1" <?php print (isset($_POST['sample_plugins']) && $_POST['sample_plugins']) ? ' checked="checked"' : '' ?>/>
-        <p class="repoman_note">Check this to include sample plugins.</p>
+        <p class="repoman_note">Include sample plugins.</p>
     
         <label for="sample_snippets">Snippets</label>
         <input type="checkbox" name="sample_snippets" id="sample_snippets" value="1" <?php print (isset($_POST['sample_snippets']) && $_POST['sample_snippets']) ? ' checked="checked"' : '' ?>/>
-        <p class="repoman_note">Check this to include sample snippets.</p>
+        <p class="repoman_note">Include sample snippets.</p>
     
         <label for="sample_templates">Templates</label>
         <input type="checkbox" name="sample_templates" id="sample_templates" value="1" <?php print (isset($_POST['sample_templates']) && $_POST['sample_templates']) ? ' checked="checked"' : '' ?>/>
-        <p class="repoman_note">Check this to include sample templates.</p>
+        <p class="repoman_note">Include sample templates.</p>
     
         <label for="sample_tvs">TVs</label>
         <input type="checkbox" name="sample_tvs" id="sample_tvs" value="1" <?php print (isset($_POST['sample_tvs']) && $_POST['sample_tvs']) ? ' checked="checked"' : '' ?>/>
-        <p class="repoman_note">Check this to include sample TVs.</p>
+        <p class="repoman_note">Include sample TVs.</p>
     
     	
     	<input type="submit" onclick="return javascript:repo_validate();" class="green-btn" value="Create New Repository" />		

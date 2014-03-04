@@ -1,8 +1,8 @@
-# Repoman for MODX Revolution
+# Repoman for MODx Revolution
 
-Repoman is a package for [MODX Revolution](http://modx.com/) that makes it easier for developers to develop their own MODX packages or contribute to existing MODX projects.  Its goal is to simplify MODX AddOn development and maintainance: no more headaches and steep learning curves writing custom build scripts or laborious click-work adding objects to the manager in preparation for development. Repoman is taking back the simplicity!
+Repoman is a package for [MODx Revolution](http://modx.com/) that makes it easier for developers to develop their own MODx packages or contribute to existing MODx projects.  Its goal is to simplify MODx AddOn development and maintainance: no more headaches and steep learning curves writing custom build scripts or laborious click-work adding objects to the manager in preparation for development. Repoman is taking back simplicity!
 
-![](https://raw2.github.com/craftsmancoding/repoman/master/screenshots/cmp.jpg)
+[![Repoman Demo Video](https://raw2.github.com/craftsmancoding/repoman/master/screenshots/video_intro.jpg)](https://www.youtube.com/watch?v=byCNjy4Txfo)
 
 -------------------------------
 
@@ -23,15 +23,38 @@ Repoman is useful to MODX developers who version their packages with Git (or any
 
 ## Installation
 
-You can install Repoman via the standard MODx package manager, or you can install Repoman via Repoman (yes, some bootstrapping/dog-fooding here).
+You can install Repoman via the standard MODx package manager, or you can install Repoman via Repoman (yes, some dog-fooding is possible here).
 
-1. Clone the Repoman repository from https://github.com/craftsmancoding/repoman to a dedicated directory inside your MODx web root.
+1. Clone the Repoman repository from https://github.com/craftsmancoding/repoman to a dedicated directory inside your MODx web root, e.g. "mypackages"
 2. Run "composer install" on your new repository to pull in the package dependencies.
-3. Run the command-line repoman tool on the repoman/ directory, e.g. "php repoman install ."
+3. Run the command-line repoman tool on the repoman/ directory, e.g. "php repoman install /home/myuser/public_html/mypackages/"
 
 ---------------------------------
 ## Conventions
 
-Repman works when you (the developer) follow a few simple [Conventions](https://github.com/craftsmancoding/repoman/wiki/Conventions) in your code. (Examples coming...)
+Repman works when you (the developer) follow a few simple conventions in your code.  First, you should add 
+[DocBlocks](https://github.com/craftsmancoding/repoman/wiki/DocBlocks) to your elements to identify their attributes.  
+For example, a Snippet should begin with a comment like this:
+
+    <?php
+    /**
+     * @name MySnippet
+     * @description This is my description
+     */
+
+Next, you should make sure that any include or require statements defer to paths in the development environment (managed by Repoman).  This ensures that the 
+paths will work both in your local dev environment, and inside a production environment when your package is installed via a MODx transport package.  
+For example, look at this require statement for a PHP file in the "mypackage" package:
+
+    $core_path = $modx->getOption('mypackage.core_path','', MODX_CORE_PATH.'components/mypackage/');
+    require_once $core_path.'model/mypackage/mypackage.class.php';
+
+Repoman will set the "mypackage.core_path" System Setting, and on a production site, that setting won't exist, so getOption will fall back to the produciton
+location inside of core/components.  
+
+The path in dev might be: /Users/myuser/Sites/modx/public_html/repos/mypackage/
+The path in prod might be: /var/www/html/core/components/mypackage/
+
+See the Wiki for more discussion and examples of Repoman's [Conventions](https://github.com/craftsmancoding/repoman/wiki/Conventions).
 
 See some of the [Wiki Pages](https://github.com/craftsmancoding/repoman/wiki/_pages) to learn more about using Repoman!

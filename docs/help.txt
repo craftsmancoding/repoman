@@ -16,7 +16,8 @@ Available Functions:
     install     
     migrate     
     schema       
-    uninstall   
+    uninstall
+    update   
 
 
 See also the formal documentation at https://github.com/craftsmancoding/repoman/wiki

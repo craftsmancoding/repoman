@@ -94,16 +94,17 @@ abstract class RepomanManagerController extends modExtraManagerController {
 	}
 	
 	/**
-	 * Generate a series of links for the repo
-	 *
+	 * Generate a series of links for the repo contained in the given $subdir
+	 * @param string $subdir
 	 */
-	public function get_repo_links($repo) {
+	public function get_repo_links($subdir) {
         $data = array();	
         $data['update_available'] = false;
-        $data['repo'] = $repo;
+//        $data['repo'] = $subdir;
+        $data['subdir'] = $subdir;
         try {
             $dir = Repoman::get_dir(MODX_BASE_PATH.$this->modx->getOption('repoman.dir'));
-            $config = Repoman::load_config($dir.'/'.$repo);
+            $config = Repoman::load_config($dir.'/'.$subdir);
             $namespace = $config['namespace'].'.version';
             $data['namespace'] = $config['namespace'];
 			if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace))) {

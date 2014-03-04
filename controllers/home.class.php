@@ -77,7 +77,7 @@ class RepomanHomeManagerController extends RepomanManagerController {
 				if ($i % 2 == 0) {
 					$class = 'repoman_even';	
 				}
-				
+
                 try {
                     $config = Repoman::load_config($filename);
                     $repos .= $this->_load('tr_repo'
@@ -87,7 +87,8 @@ class RepomanHomeManagerController extends RepomanManagerController {
                     		'package_name'=>$config['package_name'],
                     		'description'=>$config['description'],
                     		'class'=>$class,
-                    		'namespace' => $config['namespace']
+                    		'namespace' => $config['namespace'],
+                    		'subdir' => $shortname,
                     	)
                     );
                 }  
@@ -97,7 +98,8 @@ class RepomanHomeManagerController extends RepomanManagerController {
                     		'package_name'=>$config['package_name'],
                     		'class'=>$class,
                     		'package_name' => $shortname,
-                    		'error' => '<code>'.$e->getMessage().'</code>'
+                    		'error' => '<code>'.$e->getMessage().'</code>',
+                            'subdir' => $shortname,
                     	)
                     );
                 }

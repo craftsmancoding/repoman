@@ -5,7 +5,7 @@
 	</td>
 	<td align="right" class="repoman_view_cell">
 	   
-        <?php print $this->get_repo_links($namespace); ?>
+        <?php print $this->get_repo_links($subdir); ?>
             
 	</td>
 </tr>

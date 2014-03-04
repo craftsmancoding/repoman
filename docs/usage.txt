@@ -13,6 +13,7 @@ migrate     - Manipulate database structure
 schema      - Write or parse an XML schema file to get the ORM PHP classes generated.
 seed        - Install seed data into your database
 uninstall   - Remove all installed elements and migrations
+update      - Run any outstanding migrations, load new seed data, update permitted seed data.
 
 To get help on a function, you can run:
 

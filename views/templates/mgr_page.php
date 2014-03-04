@@ -66,7 +66,7 @@ function repo_update(namespace,msg) {
 
 /**
  * Install a given package identified by its namespace (i.e. by its sub-folder)
- * @param string namespace
+ * @param string namespace (sub-dir)
  */
 function repo_install(namespace) {
     Ext.Msg.confirm('Confirm Install', "You should only install packages from providers you trust: the installation process executes code on your site and has access to your local database.  Are you sure you want to install this package?", function(buttonText) {

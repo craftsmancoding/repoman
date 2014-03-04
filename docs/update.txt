@@ -1,10 +1,14 @@
 Update
 
 Update the specified package and its elements.  This will re-import all the package elements,
-seed data, and run outstanding migrations. 
+seed data, and run outstanding migrations.  If your seed data has "build_attributes" that permit
+updates ("update_object":true), then seed data will be updated.
 
 Usage:
 
     php repoman update <pkg_root_dir>
     
 
+To reference dev-specific seed data, you can use the --seeds_path argument:
+
+        php repoman update <pkg_root_dir> --seeds_path=model/seeds/dev

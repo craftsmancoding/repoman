@@ -1193,6 +1193,9 @@ class Repoman {
             if (file_exists($d) && is_dir($d)) {
                 $dirs[] = $d;
             }
+            else {
+                $this->modx->log(modX::LOG_LEVEL_ERROR, 'Invalid path in seeds_path. Directory does not exist: '.$s);
+            }
         }
 
         if (empty($dirs)) {
@@ -1683,6 +1686,8 @@ class Repoman {
                 $this->modx->log(modX::LOG_LEVEL_ERROR, 'Error removing System Setting '.$this->get('namespace').'.version');
             }
         }
+        
+        $this->modx->cacheManager->refresh();
     }
 
     /**

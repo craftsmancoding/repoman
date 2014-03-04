@@ -18,8 +18,32 @@
 #repoman_mgr_page ol {
 	list-style : decimal !important;
 }
-ul.repoman_list {}
-li.repoman_item {}
+
+.repoman_button {
+  border: 1px solid #606060;
+  cursor:pointer;
+  text-decoration: none; 
+  font: menu; 
+  color: ButtonText;
+  display: inline; 
+  padding: 4px 8px;
+  color: black;
+  background-color: #dadada; 
+}
+
+.repoman_button_disabled {
+    text-decoration: none; 
+    font: menu; 
+    color: ButtonText;
+    display: inline; 
+    padding: 4px 8px;
+    color: #C8C8C8;
+    background-color: grey;
+    cursor: not-allowed;
+    border: 1px solid #606060;
+}
+
+
 div.repoman_error{
 	border: 2px dotted red;
 	padding: 10px;
@@ -66,10 +90,6 @@ td.repoman_view_cell {
 	padding-right: 20px !important;
 }
 
-td.repoman_view_cell a,
-td.repoman_view_cell span  {
-	margin-right: 5px;
-}
 tr.repoman_row {
 	height: 30px;
 }
@@ -83,35 +103,6 @@ tr.repoman_even {
 tr.repoman_odd {
 	background-color: #C8C8C8;	
 }
-
-.repoman_button {
-    cursor:pointer;
-    appearance: button;
-    -moz-appearance: button;
-    -webkit-appearance: button;
-    text-decoration: none; 
-    font: menu; 
-    color: ButtonText;
-    display: inline; 
-    padding: 4px 8px;
-    color: black;
-    background-color: #dadada;
-}
-
-.repoman_button_disabled {
-    appearance: button;
-    -moz-appearance: button;
-    -webkit-appearance: button;
-    text-decoration: none; 
-    font: menu; 
-    color: ButtonText;
-    display: inline; 
-    padding: 4px 8px;
-    color: #C8C8C8;
-    background-color: grey;
-    cursor: not-allowed;
-}
-
 
 a.repoman_discrete {
    text-decoration: none;
@@ -151,10 +142,7 @@ input[type="text"] {
 	border: 1px solid #ddd;
 	padding: 5px;
 }
-.repoman_content {
-    background: #fff;
-    padding: 20px;    
-}
+
 form.createrepo {
     background: #fff;
     padding: 20px;
@@ -166,10 +154,6 @@ form.createrepo {
     margin-top: 4px;
 }
 
-.createrepo input[type="text"] {
-    border: 1px solid #ddd;
-    padding: 4px;
-}
 .repoman_note {
     color: #909090;
     font-size: 11px;
@@ -203,10 +187,9 @@ form.createrepo {
 .repo-wrapper h2 {
 	float: left;
 }
-.repo-wrapper h2 {
-	margin-right: 20px;
-}
+
 .repo-wrapper a {
+  margin-left: 20px;
 	margin-top: 23px;
 }
 

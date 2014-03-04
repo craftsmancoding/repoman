@@ -774,6 +774,9 @@ class Repoman {
         $this->config = array_merge($global, $data);
         $this->config['namespace'] = $namespace;
         
+        if (empty($this->config['namespace'])) {
+            throw new Exception('Namespace is required.');
+        }
         if (preg_match('/[^a-z0-9_\-]/', $this->config['namespace'])) {
             throw new Exception('Invalid namespace: '.$this->config['namespace']);
         }        
@@ -817,20 +820,6 @@ class Repoman {
 
         self::rcopy(dirname(dirname(__FILE__)).'/samples/repo1',$pkg_root_dir,$omissions);
         
-        // Export stuff
-        if ($data['category_id']) {
-            $data['where'] = array('category' => $data['category_id']);
-            $data['classname'] = 'modChunk';
-            $this->export($pkg_root_dir, $data);
-            $data['classname'] = 'modPlugin';
-            $this->export($pkg_root_dir, $data);
-            $data['classname'] = 'modSnippet';
-            $this->export($pkg_root_dir, $data);
-            $data['classname'] = 'modTemplate';
-            $this->export($pkg_root_dir, $data);
-            $data['classname'] = 'modTemplateVar';
-            $this->export($pkg_root_dir, $data);
-        }
     }
     
     /**
@@ -916,8 +905,8 @@ class Repoman {
             elseif(!is_scalar($target)) {
                 throw new Exception('Target directory cannot be an array.');
             }
-            elseif (preg_match('/[^a-zA-Z0-9_\-]/', $target)) {
-                throw new Exception('Name of target directory can contain only letters and numbers.');
+            elseif (preg_match('/\.\./', $target)) {
+                throw new Exception('Target directory must be within your repo directory.');
             }            
             $dir = $this->get_core_path($pkg_root_dir).$this->get('target');
             

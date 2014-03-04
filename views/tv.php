@@ -1,3 +1,10 @@
+<?php
+/*------------------------------------------------------------------------------
+This file is used as a template for TV definitions.  We need it to generate a 
+PHP file.  We could store data as JSON, but PHP is nicer because you can check
+for syntax errors and add comments (like this one!)
+------------------------------------------------------------------------------*/
+?>
 return array(
     'type' => '<?php print $array['type']; ?>',
     'name' => '<?php print $array['name']; ?>',

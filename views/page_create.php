@@ -76,7 +76,7 @@ function repo_validate() {
             <option value=""></option>    
             <?php print $category_options; ?>
         </select>
-        <br/>
+        <br style="clear:both;"/>
         <label for="settings">System Settings</label>
         <input type="text" name="settings" id="settings" value="<?php print htmlentities($settings); ?>" size="60"/>
         <p class="repoman_note">To export System Settings, list them by name here, comma separated.</p>

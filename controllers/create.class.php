@@ -36,6 +36,7 @@ class RepomanCreateManagerController extends RepomanManagerController {
             'sample_tvs' => ''
 
 /*
+            // TODO: export some items by name
             'chunks' => '',
             'plugins' => '',
             'snippets' => '',
@@ -63,7 +64,7 @@ class RepomanCreateManagerController extends RepomanManagerController {
             
             // Export Data?
             $data['category_id'] = (int) $this->modx->getOption('category_id', $_POST);
-            $data['settings'] = $this->modx->getOption('settings', $_POST);
+            $data['settings'] = trim($this->modx->getOption('settings', $_POST));
             
             // Sample Data?
             $data['sample_chunks'] = (int) $this->modx->getOption('sample_chunks', $_POST);
@@ -71,15 +72,43 @@ class RepomanCreateManagerController extends RepomanManagerController {
             $data['sample_snippets'] = (int) $this->modx->getOption('sample_snippets', $_POST);
             $data['sample_templates'] = (int) $this->modx->getOption('sample_templates', $_POST);
             $data['sample_tvs'] = (int) $this->modx->getOption('sample_tvs', $_POST);
-            //print '<pre>'.print_r($data,true).'</pre>'; exit;
+                    
             try {
                 $Repoman = new Repoman($this->modx, $data);
                 $Repoman->create($data['namespace'], $data);
+                $pkg_root_dir = MODX_BASE_PATH.$this->modx->getOption('repoman.dir').$data['namespace'];
+            
+                // Export some sample data
+                if ($data['category_id']) {
+                    $data['where'] = array('category' => $data['category_id']);
+                    $data['classname'] = 'modChunk';
+                    $Repoman->export($pkg_root_dir, $data);
+                    $data['classname'] = 'modPlugin';
+                    $Repoman->export($pkg_root_dir, $data);
+                    $data['classname'] = 'modSnippet';
+                    $Repoman->export($pkg_root_dir, $data);
+                    $data['classname'] = 'modTemplate';
+                    $Repoman->export($pkg_root_dir, $data);
+                    $data['classname'] = 'modTemplateVar';
+                    $Repoman->export($pkg_root_dir, $data);
+                }
+                
+                if (!empty($data['settings'])) {
+                    $keys = explode(',',$data['settings']);
+                    $data['where'] = array('key:IN' => $keys);
+                    $data['classname'] = 'modSystemSetting';            
+                    $Repoman->export($pkg_root_dir, $data);                
+                }
+                
+                header('Location: '.$this->getUrl('home') ) ;
+                exit;
+
             }  
             catch (Exception $e) {
     			$this->props['msg'] = $this->_get_msg($e->getMessage(),'error');                
             }
-		}
+            
+		} // end submitted form
 		
 		$this->props['content'] = $this->_load('page_create', $data);
 		

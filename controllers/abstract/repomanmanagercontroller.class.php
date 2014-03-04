@@ -39,7 +39,8 @@ abstract class RepomanManagerController extends modExtraManagerController {
         if (!in_array($controller, $this->valid_controllers)) {
             $_REQUEST['action'] = '404';
         }
-
+        $assets_url = $modx->getOption('repoman.assets_url','',MODX_ASSETS_URL.'components/repoman/');
+		$modx->regClientCSS($assets_url.'style.css');
         parent::__construct($modx,$config);
     }
         

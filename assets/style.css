@@ -8,8 +8,8 @@
 
 #repoman_mgr_page ol,
 #repoman_mgr_page ul {
-	margin: 1em !important;
-	padding: 1em !important;
+	margin: 0 1em !important;
+	padding: 0 1em !important;
 }
 
 #repoman_mgr_page ul {
@@ -44,21 +44,6 @@
 }
 
 
-div.repoman_error{
-	border: 2px dotted red;
-	padding: 10px;
-	background-color: #ff9999;
-}
-div.repoman_success{
-	border: 2px dotted green;
-	padding: 10px;
-	background-color: #99FF99;
-}
-div.repoman_warning {
-	border: 2px dotted #ffcc00;
-	padding: 10px;
-	background-color: #FFFF99;
-}
 
 .repoman_table {
 	border-collapse: collapse;
@@ -138,7 +123,8 @@ a.repoman_discrete:visited {
 	text-decoration: none;
 }
 
-input[type="text"] {
+input[type="text"],
+select {
 	border: 1px solid #ddd;
 	padding: 5px;
 }
@@ -178,7 +164,7 @@ form.createrepo {
   -webkit-font-smoothing: antialiased;
   border: none;
   font-size: 12px;
-  padding: 4px 10px;
+  padding: 5px 10px;
   text-decoration: none;
   cursor: pointer;
 }
@@ -193,3 +179,125 @@ form.createrepo {
 	margin-top: 23px;
 }
 
+
+/***CHECKBOX***/
+input[type="checkbox"]:checked + label {
+ 
+}
+
+input[type="checkbox"] {
+    display:none;
+}
+
+input[type="checkbox"] + label span {
+    display:inline-block;
+    width:19px;
+    height:19px;
+    margin:-1px 4px 0 0;
+    vertical-align:middle;
+    background:url(check_radio_sheet.png) left top no-repeat;
+    cursor:pointer;
+}
+input[type="checkbox"]:checked + label span {
+    background:url(check_radio_sheet.png) -19px top no-repeat;
+}
+
+.cb-label {
+  width: auto !important; 
+  margin: 0 10px !important; 
+}
+
+/**messagesbox***/
+.alert-box {
+  padding: 5px;
+  margin: 10px;
+  border-radius: 5px;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+}
+
+.repoman_success { 
+    background: #d9edf7;
+    border: 1px solid #bce8f1;
+    color: #60708f;
+    
+}
+
+.repoman_warning { 
+    background: #fcf8e3;
+    border: 1px solid #faebcc;
+    color: #8a6d6a;
+}
+
+.repoman_error { 
+    background: #f2dede;
+    border: 1px solid #ebccd1;
+    color: #a94442;
+}
+
+#repo_readme,
+#repo_info {
+  background: #fff;
+  padding: 20px;
+  margin-bottom: 10px;
+}
+
+#repo_readme p {
+  margin-bottom: 15px;
+}
+
+#repo_readme pre {
+ white-space: pre-wrap;
+ white-space: -moz-pre-wrap;
+ white-space: -o-pre-wrap;
+ background: #faf8f0;
+ margin-bottom: 15px;
+}
+ #repo_readme code {
+ display: block;
+ padding: 0.5em 1em;
+ border: 1px solid #bebab0;
+}
+
+
+.readme {
+  background: url(readme.png) no-repeat;
+  padding-left: 35px;
+}
+
+#repo_info {
+  display: none;
+  background: #dffcff;
+  border: 1px dotted #00b0c4;
+  position: absolute;
+  right: 0px;
+  width: 350px;
+}
+
+#repo_info a,
+#repo_readme a {
+  color: #2b8aae;
+  font-weight: bold;
+  text-decoration: none;
+}
+#repo_info h3 {
+  margin-top: 15px;
+}
+
+#toggle-repo_info {
+    position: absolute;
+    top: 100px;
+    right: 10px;
+    z-index: 1000;
+    text-indent: -9999px;
+    padding: 4px 4px 0px !important;
+    cursor: pointer;
+}
+
+.line {
+      border-top: 3px solid #000;
+      display: block;
+      height: 2px;
+      width: 20px;
+      margin-bottom: 1px;
+  }

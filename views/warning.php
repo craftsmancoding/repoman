@@ -1,3 +1,3 @@
-<div class="repoman_warning">
+<div class="alert-box repoman_warning">
 	<?php print $msg; ?>
 </div>

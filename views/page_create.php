@@ -68,15 +68,15 @@ function repo_validate() {
     <p class="repoman_note">URL where users can read the documentation for this package.</p>    
 */
 ?>
+
     <h2>Export Existing Data</h2>
         <p class="repoman_note">You can move existing objects into your repository by specifying them here.</p>
         
         <label style="width:200px;" for="category_id">Export all Elements in Category</label>
-        <select name="category_id">
+        <select style="margin-bottom: 10px;" name="category_id">
             <option value=""></option>    
             <?php print $category_options; ?>
-        </select>
-        <br style="clear:both;"/>
+        </select><br>
         <label for="settings">System Settings</label>
         <input type="text" name="settings" id="settings" value="<?php print htmlentities($settings); ?>" size="60"/>
         <p class="repoman_note">To export System Settings, list them by name here, comma separated.</p>
@@ -88,29 +88,34 @@ function repo_validate() {
         You can always add other elements and objects to your repository later, you just need to follow
         Repoman's conventions.</p>
     
-        <label for="sample_chunks">Chunks</label>
         <input type="checkbox" name="sample_chunks" id="sample_chunks" value="1" <?php print (isset($_POST['sample_chunks']) && $_POST['sample_chunks']) ? ' checked="checked"' : '' ?>/>
+        <label class="cb-label" for="sample_chunks"><span></span>Chunks</label>
         <p class="repoman_note">Check this to include sample chunks.</p>
     
-        <label for="sample_plugins">Plugins</label>
+        
         <input type="checkbox" name="sample_plugins" id="sample_plugins" value="1" <?php print (isset($_POST['sample_plugins']) && $_POST['sample_plugins']) ? ' checked="checked"' : '' ?>/>
+        <label class="cb-label" for="sample_plugins"><span></span>Plugins</label>
         <p class="repoman_note">Check this to include sample plugins.</p>
     
-        <label for="sample_snippets">Snippets</label>
+       
         <input type="checkbox" name="sample_snippets" id="sample_snippets" value="1" <?php print (isset($_POST['sample_snippets']) && $_POST['sample_snippets']) ? ' checked="checked"' : '' ?>/>
+         <label class="cb-label" for="sample_snippets"><span></span>Snippets</label>
         <p class="repoman_note">Check this to include sample snippets.</p>
     
-        <label for="sample_templates">Templates</label>
+
         <input type="checkbox" name="sample_templates" id="sample_templates" value="1" <?php print (isset($_POST['sample_templates']) && $_POST['sample_templates']) ? ' checked="checked"' : '' ?>/>
+        <label class="cb-label" for="sample_templates"><span></span>Templates</label>
         <p class="repoman_note">Check this to include sample templates.</p>
     
-        <label for="sample_tvs">TVs</label>
+        
         <input type="checkbox" name="sample_tvs" id="sample_tvs" value="1" <?php print (isset($_POST['sample_tvs']) && $_POST['sample_tvs']) ? ' checked="checked"' : '' ?>/>
+        <label class="cb-label" for="sample_tvs"><span></span>TVs</label>
         <p class="repoman_note">Check this to include sample TVs.</p>
     
-    	
+
+
     	<input type="submit" onclick="return javascript:repo_validate();" class="green-btn" value="Create New Repository" />		
     
 
-    <a href="<?php print $this->getUrl('home'); ?>" class="">&larr; Back</a>
+    <a class="repoman_button" href="<?php print $this->getUrl('home'); ?>" class="">&larr; Back</a>
 </form>

@@ -89,13 +89,17 @@ function repo_validate() {
         Repoman's conventions.</p>
     
         <input type="checkbox" name="sample_chunks" id="sample_chunks" value="1" <?php print (isset($_POST['sample_chunks']) && $_POST['sample_chunks']) ? ' checked="checked"' : '' ?>/>
+
         <label class="cb-label" for="sample_chunks"><span></span>Chunks</label>
         <p class="repoman_note">Check this to include sample chunks.</p>
+
     
         
         <input type="checkbox" name="sample_plugins" id="sample_plugins" value="1" <?php print (isset($_POST['sample_plugins']) && $_POST['sample_plugins']) ? ' checked="checked"' : '' ?>/>
+
         <label class="cb-label" for="sample_plugins"><span></span>Plugins</label>
         <p class="repoman_note">Check this to include sample plugins.</p>
+
     
        
         <input type="checkbox" name="sample_snippets" id="sample_snippets" value="1" <?php print (isset($_POST['sample_snippets']) && $_POST['sample_snippets']) ? ' checked="checked"' : '' ?>/>
@@ -104,6 +108,7 @@ function repo_validate() {
     
 
         <input type="checkbox" name="sample_templates" id="sample_templates" value="1" <?php print (isset($_POST['sample_templates']) && $_POST['sample_templates']) ? ' checked="checked"' : '' ?>/>
+
         <label class="cb-label" for="sample_templates"><span></span>Templates</label>
         <p class="repoman_note">Check this to include sample templates.</p>
     

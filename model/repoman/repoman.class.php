@@ -160,6 +160,7 @@ class Repoman {
             	$this->modx->log(modX::LOG_LEVEL_ERROR, "Error saving System Setting: $key");
             }
         }
+        $this->modx->setOption($key,$value); // for cache
 	}
     
 	/**
@@ -384,6 +385,8 @@ class Repoman {
         $this->_create_setting($this->get('namespace'), $this->get('namespace').'.assets_path', rtrim($pkg_root_dir,'/').'/'.trim($this->get('assets_path'),'/').'/');
         $this->_create_setting($this->get('namespace'), $this->get('namespace').'.core_path', rtrim($pkg_root_dir,'/').trim($this->get('core_path'),'/').'/');
         $this->prepped = true;
+        
+        $this->modx->cacheManager->refresh(array('system_settings'=>array()));
     }
     
     /**
@@ -461,6 +464,7 @@ class Repoman {
 	 * @return string
 	 */
 	public static function rtfm($function) {
+        $function = str_replace(':','_', $function);
         $doc = dirname(dirname(dirname(__FILE__))).'/docs/'.basename($function).'.txt';
         if (file_exists($doc)) {
             return file_get_contents($doc);
@@ -1461,32 +1465,26 @@ class Repoman {
      *
      * Configuration options:
      *
-     *  --action write|parse
      *  --model 
      *  --table_prefix
      *  --overwrite
      */
-    public function schema($pkg_root_dir) {
+    public function schema_parse($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);   
         $this->_addPkgs($this->config,$pkg_root_dir);
         // $this->prep_modx($pkg_root_dir); // populate the system settings not req'd
         
-        $action = strtolower($this->get('action')); // write|parse|both
         $model = trim(strtolower($this->get('model')),'/'); // name of the schema and the subdir
         $table_prefix = $this->get('table_prefix');
         $restrict_prefix = $this->get('restrict_prefix');
         $overwrite = strtolower($this->get('overwrite'));
         $dir_mode = $this->get('dir_mode');
+        if ($overwrite && $overwrite!='force') $overwrite = 'polite';
 
-        if ($overwrite && $overwrite!='force') {
-            $overwrite = 'polite';
-        }
-        
-        if ($action != 'write' && $action != 'parse') throw new Exception('Invalid action. Action must be either "write" or "parse"');
         if (empty($model)) {
-            $model = $this->get->config('namespace');
+            $model = $this->get('namespace');
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Model parameter not set. Falling back to namespace as model name.');
-        }
+        }        
         if (preg_match('/^[^a-z0-9_\-]/i',$model)) {
             throw new Exception('Invalid model. Model name can only contain alphanumeric characters.');
         }
@@ -1499,88 +1497,53 @@ class Repoman {
         $generator = $manager->getGenerator();
         
         $renamed_files = array();
-        // Generate XML schema by reverse-engineering from existing database tables.
-        if ($action == 'write') {
-            if (file_exists($schema_file)) {
-                if ($overwrite == 'polite') {
-                    $schema_file_new = $this->get_core_path($pkg_root_dir).'model/schema/'.$model.'.'.$now.'.mysql.schema.xml';
-                    if (!rename($schema_file, $schema_file_new)) {
-                        throw new Exception('Could not rename schema file '.$schema_file);
-                    }
-                    $renamed_files[$schema_file] = $schema_file_new;
-                }
-                elseif ($overwrite == 'force') {
-                    if (!unlink($schema_file)) {
-                        throw new Exception('Could not delete schema file '.$schema_file);
-                    }
-                    $this->modx->log(modX::LOG_LEVEL_INFO,'Deleted file '.$schema_file);
-                }
-                else {
-                    throw new Exception('Schema already exists: '.$schema_file . ' Refusing to overwrite unless forced.');
-                }
+
+        $this->modx->setPackage($this->get('namespace'), $pkg_root_dir, $table_prefix);
+        if (!file_exists($schema_file)) throw new Exception('Schema file does not exist: '.$schema_file);
+        $class_dir = $model_dir.$model.'/';
+        
+        if ( !file_exists($class_dir) ) {
+            if (!mkdir($class_dir, $dir_mode, true) ) {
+                throw new Exception('Could not create directory '.$class_dir);
             }
-            $schema_dir = $model_dir.'schema/';
-            $dirs = array($schema_dir);  
-            foreach ($dirs as $d) {
-                if ( !file_exists($d) ) {
-                    if (!mkdir($d, $dir_mode, true) ) {
-                        throw new Exception('Could not create directory '.$d);
-                    }
-                }
-                if (!is_writable($d) ) {
-                    throw new Exception('Directory is not writeable '.$d);
-                }
-            }             
-            $generator->writeSchema($schema_file, $this->get('namespace'), 'xPDOObject', $table_prefix, $restrict_prefix);  
+            $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$class_dir);
         }
-        // Parse XML schema to create corresponding PHP classes -----------------------------------
-        elseif ($action == 'parse') {
-            $this->modx->setPackage($this->get('namespace'), $pkg_root_dir, $table_prefix);
-            if (!file_exists($schema_file)) throw new Exception('Schema file does not exist: '.$schema_file);
-            $class_dir = $model_dir.$model.'/';
-            
-            if ( !file_exists($class_dir) ) {
-                if (!mkdir($class_dir, $dir_mode, true) ) {
-                    throw new Exception('Could not create directory '.$class_dir);
+        if (!is_writable($class_dir) ) {
+            throw new Exception('Directory is not writeable '.$class_dir);
+        }
+
+        $xml = file_get_contents($schema_file);
+        if ($xml === false) {
+            throw new Exception('Could not read XML schema file: '.$schema_file);
+        }
+        // Check class files by reading the XML file
+        preg_match_all('/<object class="(\w+)"/U',$xml,$matches);
+        $class_files = array();
+        if (isset($matches[1])) {
+            foreach ($matches[1] as $f) {
+                $class_file = $class_dir.strtolower($f).'.class.php';
+                $class_files[] = $class_file;
+                if (file_exists($class_file)) {
+                    if ($overwrite == 'polite') {
+                        $class_file_new = $class_dir.strtolower($f).'.'.$now.'.class.php';
+                        if (!rename($class_file, $class_file_new)) {
+                            throw new Exception('Could not rename class file '.$class_file);
+                        }
+                        $renamed_files[$class_file] = $class_file_new;
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Renamed file '.$class_file);
+                    }
+                    elseif ($overwrite == 'force') {
+                        if (!unlink($class_file)) {
+                            throw new Exception('Could not delete class file '.$class_file);
+                        }
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Deleted file '.$class_file);
+                    }
+                    else {
+                        throw new Exception('Class file exists: '.$class_file.' Refusing to overwrite unless forced.');
+                    }
                 }
-                $this->modx->log(modX::LOG_LEVEL_INFO,'Created directory '.$class_dir);
-            }
-            if (!is_writable($class_dir) ) {
-                throw new Exception('Directory is not writeable '.$class_dir);
             }
 
-            $xml = file_get_contents($schema_file);
-            if ($xml === false) {
-                throw new Exception('Could not read XML schema file: '.$schema_file);
-            }
-            // Check class files
-            preg_match_all('/<object class="(\w+)"/U',$xml,$matches);
-            $class_files = array();
-            if (isset($matches[1])) {
-                foreach ($matches[1] as $f) {
-                    $class_file = $class_dir.strtolower($f).'.class.php';
-                    $class_files[] = $class_file;
-                    if (file_exists($class_file)) {
-                        if ($overwrite == 'polite') {
-                            $class_file_new = $class_dir.strtolower($f).'.'.$now.'.class.php';
-                            if (!rename($class_file, $class_file_new)) {
-                                throw new Exception('Could not rename class file '.$class_file);
-                            }
-                            $renamed_files[$class_file] = $class_file_new;
-                            $this->modx->log(modX::LOG_LEVEL_INFO,'Renamed file '.$class_file);
-                        }
-                        elseif ($overwrite == 'force') {
-                            if (!unlink($class_file)) {
-                                throw new Exception('Could not delete class file '.$class_file);
-                            }
-                            $this->modx->log(modX::LOG_LEVEL_INFO,'Deleted file '.$class_file);
-                        }
-                        else {
-                            throw new Exception('Class file exists: '.$class_file.' Refusing to overwrite unless forced.');
-                        }
-                    }
-                }
-            }
             // Check for metadata.mysql.php
             $metadata_file = $class_dir.'metadata.mysql.php';
             if (file_exists($metadata_file)) {
@@ -1651,6 +1614,96 @@ class Repoman {
         }
     
     }
+
+    /**
+     * Dev tool for parsing XML schema.  xyz.mysql.schema.xml maps to the model/xyz/ directory.
+     *
+     * Configuration options:
+     *
+     *  --action write|parse
+     *  --model 
+     *  --table_prefix
+     *  --overwrite
+     */
+    public function schema_write($pkg_root_dir) {
+        $pkg_root_dir = self::get_dir($pkg_root_dir);   
+        $this->_addPkgs($this->config,$pkg_root_dir);
+        // $this->prep_modx($pkg_root_dir); // populate the system settings not req'd
+        
+        $action = strtolower($this->get('action')); // write|parse|both
+        $model = trim(strtolower($this->get('model')),'/'); // name of the schema and the subdir
+        $table_prefix = $this->get('table_prefix');
+        $restrict_prefix = $this->get('restrict_prefix');
+        $overwrite = strtolower($this->get('overwrite'));
+        $dir_mode = $this->get('dir_mode');
+
+        if ($overwrite && $overwrite!='force') $overwrite = 'polite';
+        
+        if (empty($model)) {
+            $model = $this->get->config('namespace');
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Model parameter not set. Falling back to namespace as model name.');
+        }
+        if (preg_match('/^[^a-z0-9_\-]/i',$model)) {
+            throw new Exception('Invalid model. Model name can only contain alphanumeric characters.');
+        }
+        
+        $now = time();
+        $schema_file = $this->get_core_path($pkg_root_dir).'model/schema/'.$model.'.mysql.schema.xml';
+        $model_dir = $this->get_core_path($pkg_root_dir).'model/';
+        
+        $manager = $this->modx->getManager();
+        $generator = $manager->getGenerator();
+        
+        $renamed_files = array();
+        // Generate XML schema by reverse-engineering from existing database tables.
+        if (file_exists($schema_file)) {
+            if ($overwrite == 'polite') {
+                $schema_file_new = $this->get_core_path($pkg_root_dir).'model/schema/'.$model.'.'.$now.'.mysql.schema.xml';
+                if (!rename($schema_file, $schema_file_new)) {
+                    throw new Exception('Could not rename schema file '.$schema_file);
+                }
+                $renamed_files[$schema_file] = $schema_file_new;
+            }
+            elseif ($overwrite == 'force') {
+                if (!unlink($schema_file)) {
+                    throw new Exception('Could not delete schema file '.$schema_file);
+                }
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Deleted file '.$schema_file);
+            }
+            else {
+                throw new Exception('Schema already exists: '.$schema_file . ' Refusing to overwrite unless forced.');
+            }
+        }
+        $schema_dir = $model_dir.'schema/';
+        $dirs = array($schema_dir);  
+        foreach ($dirs as $d) {
+            if ( !file_exists($d) ) {
+                if (!mkdir($d, $dir_mode, true) ) {
+                    throw new Exception('Could not create directory '.$d);
+                }
+            }
+            if (!is_writable($d) ) {
+                throw new Exception('Directory is not writeable '.$d);
+            }
+        }             
+        $generator->writeSchema($schema_file, $this->get('namespace'), 'xPDOObject', $table_prefix, $restrict_prefix);  
+
+    
+        // Polite cleanup
+        if ($overwrite=='polite') {
+                $this->modx->log(modX::LOG_LEVEL_INFO,'Renamed: '.print_r($renamed_files,true));
+            foreach ($renamed_files as $old => $new) {
+                if (self::files_equal($old, $new)) {
+                    if (!unlink($new)) {
+                        throw new Exception('Could not delete file '.$new);
+                    }
+                    $this->modx->log(modX::LOG_LEVEL_INFO,'Cleanup - removing file '.$new);
+                }
+            }
+        }
+    
+    }
+
 
     /**
      * Clean up for dismount: opposite of prep_modx

@@ -15,7 +15,8 @@ Available Functions:
     graph
     install     
     migrate     
-    schema       
+    schema:write
+    schema:parse       
     uninstall
     update   
 

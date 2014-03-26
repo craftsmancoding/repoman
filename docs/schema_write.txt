@@ -1,0 +1,48 @@
+Schema:write
+
+Write an XML schema file based off of existing database tables, usually identified
+by their name prefix. It can be thought of "reverse-engineering" your database.
+This corresponds to the writeSchema() method inside the xPDO generator class.
+
+xPDO does not detect foreign key relationships: you will have 
+to modify your XML file to define the aggregate and composite relationships 
+between your tables.
+
+
+Usage:
+
+    php repoman schema:write <pkg_root_dir> [--model=<model-name>] [options]
+
+
+Options
+
+
+--model : (string, optional) 
+    Provides the base name of the .mysql.schema.xml file to create inside of model/schema/
+    If omitted, the package namespace will be assumed.
+
+--table_prefix : (string, optional)
+    The table name prefix used to identify a sub-set of tables.
+
+--overwrite (mixed, optional) 
+    This controls how conflicting files are handled. If not set (i.e. overwrite is false), then 
+    the script behaves cowardly and will exit if any conflict is detected.
+    overwrite=polite | overwrite=true will attempt to rename any conflicting files with a name
+    corresponding to the Unix timestamp.
+    overwrite=force will delete any conflicting files. Use with extreme caution!
+    Default: false.
+
+--restrict_prefix : (boolean, optional) Normally you want to only write schema corresponding to the 
+    tables with the given table_prefix, but you can ignore this restriction by setting this to false.
+    Default: true.
+
+--dir_perms : (optional) the permissions mask to use if it is necessary to create directories.
+    The global default is 0777, and it should rarely need to be changed: permissions are best
+    left defined by the parent environment not forced by this script.
+
+
+Examples:
+
+Write an XML schema file from all database tables whose names begin with "mypre_":
+
+    php repoman schema:write <pkg_root_dir> --table_prefix=mypre_ --model=mypkg

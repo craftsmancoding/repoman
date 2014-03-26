@@ -161,7 +161,8 @@ switch ($function) {
     case 'import':
     case 'install':
     case 'migrate':
-    case 'schema':
+    case 'schema:parse':
+    case 'schema:write':
     case 'seed':
     case 'update':
         if (!isset($argv[2]) || substr ($argv[2],0,2) == '--') {
@@ -240,6 +241,7 @@ catch (Exception $e) {
 $modx->setLogLevel($config['log_level']);
 
 try {
+    $function = str_replace(':','_', $function);
     $Repoman = new Repoman($modx,$config);
     print $Repoman->$function($pkg_path);
 }  

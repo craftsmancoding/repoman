@@ -4,16 +4,17 @@ Usage:
 
 Available Functions:
 
-build       - Build a MODX transport package
-export      - Export elements and objects from MODX into your repository filesystem
-graph       - View an object's data structure
-import      - Import elements and objects from the filesystem into MODX 
-install     - Installs a dev version of your AddOn from its files in the filesystem
-migrate     - Manipulate database structure
-schema      - Write or parse an XML schema file to get the ORM PHP classes generated.
-seed        - Install seed data into your database
-uninstall   - Remove all installed elements and migrations
-update      - Run any outstanding migrations, load new seed data, update permitted seed data.
+build        - Build a MODX transport package
+export       - Export elements and objects from MODX into your repository filesystem
+graph        - View an object's data structure
+import       - Import elements and objects from the filesystem into MODX 
+install      - Installs a dev version of your AddOn from its files in the filesystem
+migrate      - Manipulate database structure
+schema:write - Write an XML schema based on existing database tables
+schema:parse - Create PHP classes for the ORM layer from an XML schema file
+seed         - Install seed data into your database
+uninstall    - Remove all installed elements and migrations
+update       - Run any outstanding migrations, load new seed data, update permitted seed data.
 
 To get help on a function, you can run:
 

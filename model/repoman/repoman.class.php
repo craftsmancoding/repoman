@@ -106,7 +106,8 @@ class Repoman {
 			$N = $this->modx->newObject('modNamespace');
 			$N->set('name', $this->get('namespace'));
 		}
-		$N->set('path', $this->get_core_path($pkg_root_dir));
+		// Infers where the controllers live
+		$N->set('path', rtrim($this->get_core_path($pkg_root_dir),'/').trim($this->get('controllers_path'),'/').'/' );
 		$N->set('assets_path',$this->get_assets_dir($pkg_root_dir));
 		
 		Repoman::$queue['modNamespace'][$this->get('namespace')] = $N->toArray();
@@ -1220,6 +1221,7 @@ class Repoman {
      * @return string dir with trailing slash
      */
     public function get_core_path($pkg_root_dir) {
+        // Handle any case where shorthand for current working dir has been used
         if (in_array($this->get('core_path'), array(null, '/','.'.'./'))) {
             return $pkg_root_dir;
         }
@@ -1323,7 +1325,7 @@ class Repoman {
      */
     public function install($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
-        
+
         // Is already installed?
         $namespace = $this->get('namespace');
         if ($Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace.'.version'))) {

@@ -45,16 +45,17 @@ return array(
     'docs_path' => 'docs/',
     
     // Dirs relative to core_path/
-    'chunks_path' => 'elements/chunks',
-    'plugins_path' => 'elements/plugins',
-    'snippets_path' => 'elements/snippets',
-    'templates_path' => 'elements/templates',
-    'tvs_path' => 'elements/tvs',
+    'chunks_path' => 'elements/chunks/',
+    'plugins_path' => 'elements/plugins/',
+    'snippets_path' => 'elements/snippets/',
+    'templates_path' => 'elements/templates/',
+    'tvs_path' => 'elements/tvs/',
     
     // Relative to core/components/<namespace/  (do not start these with a slash!)
-    'migrations_path' => 'model/migrations',
+    'migrations_path' => 'model/migrations/',
     'seeds_path' => array(),
-    'validators_path' => 'tests',
+    'validators_path' => 'tests/',
+    'controllers_path' => '', // Default is blank.  MODX hard-codes this patter: {$controllers_path}controllers/{$action}.class.php
 
     // Directories or files omit from packaging to core/components/$namespace/
     'omit' => array('assets','screenshots','tests','composer.json','composer.lock'),

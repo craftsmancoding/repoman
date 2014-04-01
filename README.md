@@ -29,6 +29,15 @@ You can install Repoman via the standard MODx package manager, or you can instal
 2. Run "composer install" on your new repository to pull in the package dependencies.
 3. Run the command-line repoman tool on the repoman/ directory, e.g. "php repoman install /home/myuser/public_html/mypackages/"
 
+NOTE: on MAMP environments, you must link "php" to the MAMP version of PHP, not to the native Mac version.  
+Due to permissions issues, you may also need to run the commands as an admin user using "sudo", e.g.
+
+ su - admin
+ cd /path/to/modx/repos/repoman
+ sudo composer install
+ sudo php repoman install .
+ 
+ 
 ---------------------------------
 ## Conventions
 

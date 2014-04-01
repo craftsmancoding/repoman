@@ -82,7 +82,7 @@ class modTemplate_parser extends Repoman_parser {
         }
         else {
         // Remove all TVs
-            $TVTs = $this->modx->getCollection('modTemplateVarTemplate', array('pluginid'=>$pluginid));
+            $TVTs = $this->modx->getCollection('modTemplateVarTemplate', array('templateid'=>$templateid));
             foreach ($TVTs as $t) {
                 $t->remove();
             }        

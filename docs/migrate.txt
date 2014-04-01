@@ -1,7 +1,8 @@
 Migrate
 
-Run database migrations defined in the project's migrations director (see "migrations_dir"). 
+Run database migrations defined in the project's migrations directory (see "migrations_path"). 
 Migrations are structural changes to your database, e.g. used to create or modify custom tables.
+Be careful when running them: the normal behavior is to flush all data from your table.
 
 Usage:
 

@@ -68,7 +68,8 @@ abstract class Repoman_parser {
             $name = $attributes[$this->objectname]; 
         }     
         
-        $dir = $this->Repoman->get_core_path($pkg_dir).$this->Repoman->get($this->dir_key).'/';
+        $dir = $this->Repoman->get_core_path($pkg_dir).rtrim($this->Repoman->get($this->dir_key),'/');
+
         $filename = $dir.'/'.$name.$this->write_ext;
         if (file_exists($filename) && !$this->Repoman->get('overwrite')) {
             throw new Exception('Element already exists. Overwrite not allowed. '.$filename);
@@ -134,7 +135,7 @@ abstract class Repoman_parser {
         $objects = array();
 
         // Calculate the element's directory given the repo dir...
-        $dir = $this->Repoman->get_core_path($pkg_dir).$this->Repoman->get($this->dir_key).'/';
+        $dir = $this->Repoman->get_core_path($pkg_dir).rtrim($this->Repoman->get($this->dir_key),'/').'/';
         if (!file_exists($dir) || !is_dir($dir)) {
             $this->modx->log(modX::LOG_LEVEL_DEBUG,'Directory does not exist: '. $dir);
             return array();
@@ -146,6 +147,7 @@ abstract class Repoman_parser {
             $content = file_get_contents($f);
             $attributes = self::repossess($content,$this->dox_start,$this->dox_end);
             if ($this->Repoman->get('is_build')) {
+                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'is_build = true: preparing for build.');
                 $content = $this->prepare_for_pkg($content);
             }
             // Skip importing?
@@ -166,7 +168,9 @@ abstract class Repoman_parser {
             }
                         
             $Obj = $this->modx->getObject($this->objecttype, $this->Repoman->get_criteria($this->objecttype,$attributes));
-            if (!$Obj) {
+            // Building should always create a new object.
+            if ($this->Repoman->get('is_build') || !$Obj) {
+                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Creating new object from file '.$f);
                 $Obj = $this->modx->newObject($this->objecttype);
             }
             
@@ -175,19 +179,23 @@ abstract class Repoman_parser {
 
             // Force Static
             if ($this->Repoman->get('force_static')) {
+                $this->modx->log(modX::LOG_LEVEL_DEBUG,'force_static = true');
                 $attributes['source'] = 1;
                 $attributes['static'] = 1;
                 $attributes['static_file'] = self::path_to_rel($f,MODX_BASE_PATH);
             }
             
+            $this->modx->log(modX::LOG_LEVEL_DEBUG, "Gathered object attributes:\n".print_r($attributes,true));
+            
             $Obj->fromArray($attributes);
             if (!$this->Repoman->get('force_static')) {
+                $this->modx->log(modX::LOG_LEVEL_DEBUG, "Setting content for {$this->objecttype} \"". $Obj->get($this->objectname)."\":\n".$content);
                 $Obj->setContent($content);
             }
             
             $this->relate($attributes,$Obj);
               
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Created/updated '.$this->objecttype.': '. $Obj->get($this->objectname));
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Created/updated '.$this->objecttype.': '. $Obj->get($this->objectname).' from file '.$f);
             Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
             
             if (!$this->Repoman->get('dry_run') && !$this->Repoman->get('is_build')) {

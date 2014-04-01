@@ -505,7 +505,7 @@ class Repoman {
         
         // Tests (Validators): this is run BEFORE your package code is in place
         // so you cannot reference/include package files from your validator! They won't exist when the code is run.
-        $validator_file = $this->get_core_path($pkg_root_dir).$this->get('validators_dir').'/install.php';
+        $validator_file = $this->get_core_path($pkg_root_dir).rtrim($this->get('validators_dir'),'/').'/install.php';
         if (file_exists($validator_file)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaging validator '.$validator_file);
             $config = $this->config;

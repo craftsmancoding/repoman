@@ -59,7 +59,7 @@ class Repoman {
                 $this->modx->addPackage($parts[0],$pkg_root_dir.$parts[1]);
             }
             else {
-                $this->modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/model/');
+                $this->modx->addPackage($parts[0],MODX_CORE_PATH.'components/'.$parts[0].'/'.$this->get('orm_path'));
             }
         }
     }
@@ -1467,7 +1467,7 @@ class Repoman {
      *
      * Configuration options:
      *
-     *  --model 
+     *  --model i.e. the name of the subdir identifying a collection of object ORM classes
      *  --table_prefix
      *  --overwrite
      */
@@ -1492,8 +1492,8 @@ class Repoman {
         }
         
         $now = time();
-        $schema_file = $this->get_core_path($pkg_root_dir).'model/schema/'.$model.'.mysql.schema.xml';
-        $model_dir = $this->get_core_path($pkg_root_dir).'model/';
+        $schema_file = $this->get_core_path($pkg_root_dir).$this->get('orm_path').'schema/'.$model.'.mysql.schema.xml';
+        $model_dir = $this->get_core_path($pkg_root_dir).$this->get('orm_path');
         
         $manager = $this->modx->getManager();
         $generator = $manager->getGenerator();
@@ -1650,8 +1650,8 @@ class Repoman {
         }
         
         $now = time();
-        $schema_file = $this->get_core_path($pkg_root_dir).'model/schema/'.$model.'.mysql.schema.xml';
-        $model_dir = $this->get_core_path($pkg_root_dir).'model/';
+        $schema_file = $this->get_core_path($pkg_root_dir).$this->get('orm_path').'schema/'.$model.'.mysql.schema.xml';
+        $model_dir = $this->get_core_path($pkg_root_dir).$this->get('orm_path');
         
         $manager = $this->modx->getManager();
         $generator = $manager->getGenerator();
@@ -1660,7 +1660,7 @@ class Repoman {
         // Generate XML schema by reverse-engineering from existing database tables.
         if (file_exists($schema_file)) {
             if ($overwrite == 'polite') {
-                $schema_file_new = $this->get_core_path($pkg_root_dir).'model/schema/'.$model.'.'.$now.'.mysql.schema.xml';
+                $schema_file_new = $this->get_core_path($pkg_root_dir).$this->get('orm_path').'schema/'.$model.'.'.$now.'.mysql.schema.xml';
                 if (!rename($schema_file, $schema_file_new)) {
                     throw new Exception('Could not rename schema file '.$schema_file);
                 }

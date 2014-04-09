@@ -51,7 +51,8 @@ return array(
     'templates_path' => 'elements/templates/',
     'tvs_path' => 'elements/tvs/',
     
-    // Relative to core/components/<namespace/  (do not start these with a slash!)
+    // Relative to core/components/<namespace>/  (do not start these with a slash!)
+    'orm_path' => 'model/', // <-- xPDO's ORM classes here. MODX convention is "model/"
     'migrations_path' => 'model/migrations/',
     'seeds_path' => array(),
     'validators_path' => 'tests/',

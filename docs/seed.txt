@@ -29,10 +29,11 @@ referenced as files.
 
 Parameters:
 
-    --seed : a sub-dir(s) inside your defined "seeds_dir" (default is model/seeds"). This may
-        be a comma-separated string or an array, e.g. "base,dev".
+    --seeds_path :  dir (or dirs) relative to package root containing seed data. In your 
+        composer.json file, this will be an array.  On the command-line, you may supply a 
+        comma-separated string, e.g. 
         
-            php repoman migrate <pkg_root_dir> --seed=base,dev
+            php repoman seed <pkg_root_dir> --seeds_path=model/seeds/base/,model/seeds/test1/
 
     --overwrite : if set, existing objects will be rewritten regardless of their build attribute
         settings.
@@ -45,21 +46,15 @@ involved.  This is important so that some records do not get overwritten after t
 created: use the overwrite option to force updates during repeated seed operations.
 
 When migrating custom data for custom tables you must define a node in the "build_attributes" array
-in your package's config.php file, e.g. 
+in your package's composer.json file, e.g. 
 
-    <?php 
-    
-    return array(
-        'package_name' => 'MyPackage',
-        // ... etc ...
-        'build_attributes' => array(
-            'Currency' => array(
-                xPDOTransport::PRESERVE_KEYS => true,
-                xPDOTransport::UPDATE_OBJECT => true, 
-                xPDOTransport::UNIQUE_KEY => array('code'),
-            ),
-        ),
-    );
+    "extra": {
+        "build_attributes":{
+            "Currency": {
+                "preserve_keys":true,
+                "update_object":true,
+                "unique_key":true
+            }
+    }
  
-Your install.php file should include the necessary addPackage() calls so that custom data classes can
-be used.
+You should list any custom packages in the "packages" section of your composer.json.

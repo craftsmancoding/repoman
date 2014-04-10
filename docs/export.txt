@@ -6,8 +6,6 @@ exists so you can grab existing MODX data and make it a part of your package.  F
 Element with the source content in your local repository.  For other objects (e.g. System
 Settings), this will save a copy of the object as an array in your local repository. 
 
-Once the  data is stored inside your local repository, you can version control it or build
-packages from it using Repoman.
 
 Usage:
 
@@ -33,8 +31,9 @@ Options:
         
     --package (string)
         Syntax is a colon-sparated string:
-            <model>:/path/to/core/components/<namespace>/model/:<tableprefix>
+            <model>:model/:<tableprefix>
         It's recommended that you instead set the "packages" array in your config.php. See example below.
+        If you have customized the "orm_path" setting, make sure the paths here reflect that!
 
     --limit (integer)
         Because recordsets may be large, seed files are limited to a given number of records.  If you find
@@ -48,17 +47,15 @@ Options:
 
 
 Because its laborious to pass the package parameter via the command-line, it's recommended that you set the 
-"packages" array in your package config.php, e.g.
+"packages" array in your composer.json, e.g. 
 
-    return array(
-        // ... etc ...
-        'packages' => array(
-            array('model1', $pkg_root_dir.'/core/components/mynamespace/model/','pre1_'),
-            array('model2', $pkg_root_dir.'/core/components/mynamespace/model/','pre2_'),
-        ),
-
-    );
-
+    "packages":[
+        {
+            "pkg":"moxycart",
+            "path":"model/",
+            "table_prefix": "moxy_"
+        }
+    ]
 
 
 Examples:

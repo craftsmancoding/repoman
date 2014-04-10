@@ -81,8 +81,11 @@ return array(
     /**
      * Define any packages to be loaded during various operations (graph, export)
      * This lets you easily see the format your objects need to be in.
-     * Syntax is:
-     *
+     * Syntax of :
+     * 'packages = array(
+     *      array( 'pkg'=> <model_name>, 'path'=> 'model/', 'table_prefix' => <table_prefix>)
+     *  ),
+     * translates to:
      * 'packages = array(
      *      array( 'pkg'=> <model_name>, 'path'=> $pkg_root_dir.'/core/components/<namespace>/model/', 'table_prefix' => <table_prefix>)
      *  ),

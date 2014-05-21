@@ -54,3 +54,11 @@ Parse the XML file located at model/schema/mypre.mysql.schema.xml into classfile
 Attempt to rename files during the operation:
 
     php repoman.php schema:parse <pkg_root_dir> --action=parse --table_prefix=mypre_ --model=mypkg    
+    
+Errors:
+
+It's not uncommon for a warning to be generated when running this:
+
+    (WARN @ repoman) Could not load package metadata for package ____
+    
+This can be safely ignored.

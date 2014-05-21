@@ -1570,7 +1570,8 @@ class Repoman {
             $mysql_dir = $class_dir.'mysql';            
             if (file_exists($mysql_dir)) {
                 if ($overwrite == 'polite') {
-                    if (!rename($mysql_dir, $now.'.'.$mysql_dir)) {
+                    $new_mysql_dir = dirname($mysql_dir).'/'.$now.'.mysql';
+                    if (!rename($mysql_dir, $new_mysql_dir)) {
                         throw new Exception('Could not rename mysql directory '.$mysql_dir);
                     }
                     if (!mkdir($mysql_dir, $dir_mode, true) ) {

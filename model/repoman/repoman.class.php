@@ -43,7 +43,6 @@ class Repoman {
      * @param array $args
      */
     private function _addPkgs($args,$pkg_root_dir) {
-        
         $pkg = (isset($args['packages'])) ? $args['packages'] : false;
         if ($pkg && is_array($pkg)) {
             foreach ($pkg as $p) {
@@ -1468,15 +1467,15 @@ class Repoman {
      * Configuration options:
      *
      *  --model i.e. the name of the subdir identifying a collection of object ORM classes
+     *  --orm_path
      *  --table_prefix
      *  --overwrite
      */
     public function schema_parse($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);   
         $this->_addPkgs($this->config,$pkg_root_dir);
-        // $this->prep_modx($pkg_root_dir); // populate the system settings not req'd
-        
-        $model = trim(strtolower($this->get('model')),'/'); // name of the schema and the subdir
+
+        $model = trim(strtolower($this->get('model')),'/'); // stub-name of XML schema file
         $table_prefix = $this->get('table_prefix');
         $restrict_prefix = $this->get('restrict_prefix');
         $overwrite = strtolower($this->get('overwrite'));
@@ -1527,12 +1526,12 @@ class Repoman {
                 $class_files[] = $class_file;
                 if (file_exists($class_file)) {
                     if ($overwrite == 'polite') {
-                        $class_file_new = $class_dir.strtolower($f).'.'.$now.'.class.php';
+                        $class_file_new = $class_dir.$now.'.'.strtolower($f).'.class.php';
                         if (!rename($class_file, $class_file_new)) {
                             throw new Exception('Could not rename class file '.$class_file);
                         }
                         $renamed_files[$class_file] = $class_file_new;
-                        $this->modx->log(modX::LOG_LEVEL_INFO,'Renamed file '.$class_file);
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Renamed file '.basename($class_file) .' to '.basename($class_file_new));
                     }
                     elseif ($overwrite == 'force') {
                         if (!unlink($class_file)) {
@@ -1550,7 +1549,7 @@ class Repoman {
             $metadata_file = $class_dir.'metadata.mysql.php';
             if (file_exists($metadata_file)) {
                 if ($overwrite == 'polite') {
-                    $metadata_file_new = $class_dir.'metadata.'.$now.'.mysql.php';
+                    $metadata_file_new = $class_dir.$now.'.metadata.mysql.php';
                     if (!rename($metadata_file, $metadata_file_new)) {
                         throw new Exception('Could not rename metadata file  '.$metadata_file);
                     }
@@ -1571,7 +1570,7 @@ class Repoman {
             $mysql_dir = $class_dir.'mysql';            
             if (file_exists($mysql_dir)) {
                 if ($overwrite == 'polite') {
-                    if (!rename($mysql_dir, $mysql_dir.'.'.$now)) {
+                    if (!rename($mysql_dir, $now.'.'.$mysql_dir)) {
                         throw new Exception('Could not rename mysql directory '.$mysql_dir);
                     }
                     if (!mkdir($mysql_dir, $dir_mode, true) ) {
@@ -1604,13 +1603,13 @@ class Repoman {
     
         // Polite cleanup
         if ($overwrite=='polite') {
-                $this->modx->log(modX::LOG_LEVEL_INFO,'Renamed: '.print_r($renamed_files,true));
+                //$this->modx->log(modX::LOG_LEVEL_INFO,'Renamed: '.print_r($renamed_files,true));
             foreach ($renamed_files as $old => $new) {
                 if (self::files_equal($old, $new)) {
                     if (!unlink($new)) {
                         throw new Exception('Could not delete file '.$new);
                     }
-                    $this->modx->log(modX::LOG_LEVEL_INFO,'Cleanup - removing file '.$new);
+                    $this->modx->log(modX::LOG_LEVEL_INFO,'Cleanup - removing unchanged file '.$new);
                 }
             }
         }
@@ -1618,14 +1617,18 @@ class Repoman {
     }
 
     /**
-     * Dev tool for parsing XML schema.  xyz.mysql.schema.xml maps to the model/xyz/ directory.
+     * Dev tool for writing XML schema: sniff existing database tables and write
+     * an xPDO XML schema file which describes the tables.
+     *
+     * There is redundancy in the names here (boo):
+     *  xyz.mysql.schema.xml maps to the model/xyz/ directory.
      *
      * Configuration options:
      *
-     *  --action write|parse
-     *  --model 
+     *  --model -- name of the model, often equal to the namespace
+     *  --orm_path -- usually "model/"
      *  --table_prefix
-     *  --overwrite
+     *  --overwrite true|polite|force
      */
     public function schema_write($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);   
@@ -1779,7 +1782,7 @@ class Repoman {
     public function uninstall($pkg_root_dir) {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
 
-        // uninstall migrations. Global $modx and $object variables used so the 
+        // uninstall migrations. Global $modx and $object variables
         $this->migrate($pkg_root_dir,'uninstall');
         
         // Remove installed objects

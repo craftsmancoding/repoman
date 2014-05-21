@@ -13,18 +13,26 @@ Usage:
 Options
 
 --model : (string, defaults to namespace) 
-    Specifies which schema file inside of model/schema/ to parse and a sub-folder inside of model/ where
-    the PHP files will be written.
+    Specifies 1) which XML schema file is to be parsed by the stub name and 2) the name of the 
+    sub-directory inside $orm_path where the corresponding PHP files will be written.
+    E.g. assuming the default $orm_path, then "--model=foobar" would cause the 
+    model/schema/foobar.mysql.schema.xml to be parsed and the corresponding PHP classes to be
+    generated inside of model/foobar/
+
+--orm_path : (string, defaults to "model/")
+    Identifies the parent folder (relative to package root) where sub-folders for the various models
+    and for "schema/".  Specify a custom value if your project is significantly complex enough to 
+    merit organization that goes beyond the default value.
 
 --table_prefix : (string, optional)
     The table name prefix used to identify a sub-set of tables.
 
---overwrite (mixed, optional) 
-    This controls how conflicting files are handled. If not set (i.e. overwrite is false), then 
-    the script behaves cowardly and will exit if any conflict is detected.
-    overwrite=polite | overwrite=true will attempt to rename any conflicting files with a name
-    corresponding to the Unix timestamp.
-    overwrite=force will delete any conflicting files. Use with extreme caution!
+--overwrite (mixed: true|false|force) 
+    This controls how conflicting files are handled. When false (i.e. not set), the script behaves 
+    cowardly and will exit if any conflict is detected.  When true, the script will attempt to 
+    politely rename any conflicting files with a name corresponding to the Unix timestamp: these 
+    files should be manually reviewed.  Using the "force" option will delete any conflicting files. 
+    Use with extreme caution!
     Default: false.
 
 --restrict_prefix : (boolean, optional) Normally you want to only write schema corresponding to the 

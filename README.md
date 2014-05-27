@@ -9,7 +9,7 @@ Repoman is a package for [MODx Revolution](http://modx.com/) that makes it easie
 ## Why is it Needed?
 
 1. All MODx code is referenced in the database, so adding and updating templates, chunks, snippets etc. requires much patience and click-work in the manager GUI.  Repoman's "import" and "install" functionality streamlines development by detecting files in your package's directory and creating the necessary MODX records.
-2. Even though MODX packages install files into _two_ locations (web accessible "assets" and non-public "core" files), Repoman codifies the workarounds to let you develop and version your code in _one_ directory.  Simply your directory structure!
+2. Even though MODX packages install files into _two_ locations (web accessible "assets" and non-public "core" files), Repoman codifies the workarounds to let you develop and version your code in _one_ directory.  Simplify your directory structure!
 3. Although extremely useful, MODX's transport packages are a pain to create.  Repoman eliminates the need for developers to create customized build scripts. 
 4. Packages created with Repoman are compatible with [Composer](https://getcomposer.org/), so you can sensibly manage PHP dependencies within your MODX packages.  This means you can use [autoloading](https://github.com/craftsmancoding/repoman/wiki/Autoloading) and namespaces too!
 

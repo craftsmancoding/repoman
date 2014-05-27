@@ -1480,6 +1480,8 @@ class Repoman {
         $restrict_prefix = $this->get('restrict_prefix');
         $overwrite = strtolower($this->get('overwrite'));
         $dir_mode = $this->get('dir_mode');
+        $restore = $this->get('restore'); 
+        
         if ($overwrite && $overwrite!='force') $overwrite = 'polite';
 
         if (empty($model)) {
@@ -1610,11 +1612,24 @@ class Repoman {
                     if (!unlink($new)) {
                         throw new Exception('Could not delete file '.$new);
                     }
-                    $this->modx->log(modX::LOG_LEVEL_INFO,'Cleanup - removing unchanged file '.$new);
+                    $this->modx->log(modX::LOG_LEVEL_INFO,'Cleanup - removing unchanged file '.basename($new));
                 }
             }
-        }
-    
+            // Restore files
+            $restore_array = (!is_array($restore)) ? explode(',',$restore) : $restore;
+            $restore_array = array_map('trim',$restore_array);
+            foreach ($renamed_files as $old => $new) {
+                foreach ($restore_array as $r) {
+                    if (preg_match('/^'.preg_quote($r,'/').'/', basename($old))) {
+                        if (!rename($new, $old)) {
+                            throw new Exception('Could not restore file '.$new);
+                        }
+                        $this->modx->log(modX::LOG_LEVEL_INFO,'Restoring original file '.basename($old));
+                    }
+                }
+            }
+        } // end polite cleanup
+
     }
 
     /**

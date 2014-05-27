@@ -31,9 +31,17 @@ Options
     This controls how conflicting files are handled. When false (i.e. not set), the script behaves 
     cowardly and will exit if any conflict is detected.  When true, the script will attempt to 
     politely rename any conflicting files with a name corresponding to the Unix timestamp: these 
-    files should be manually reviewed.  Using the "force" option will delete any conflicting files. 
-    Use with extreme caution!
+    files should be manually reviewed.  If you find yourself frequently restoring a timestamped 
+    version of a file, see the --restore option.  Using the "force" option will delete any conflicting 
+    files: use with extreme caution!
     Default: false.
+
+--restore: (comma-separated string, optional)
+    You can list patterns here for the basenames of class files that should be restored after being politely
+    renamed with a Unix timestamp.  This is useful when you are re-parsing a schema repeatedly to fine-tune
+    validation rules and you want to preserve custom resource classes (perhaps these should live in their own
+    model?) or when you need to regenerate some classes but leave others alone (e.g. those with extensive 
+    customizations). Do not restore "mysql": that's usually the one directory you want xPDO to generate for you.
 
 --restrict_prefix : (boolean, optional) Normally you want to only write schema corresponding to the 
     tables with the given table_prefix, but you can ignore this restriction by setting this to false.

@@ -80,7 +80,7 @@ class Repoman {
                 // Do something?
             }
             else {
-                throw new Exception('Build attributes not set for '.$classname.'-->'.implode('-->',$this->breadcrumb));
+                throw new Exception('build_attributes not set for '.$classname.'-->'.implode('-->',$this->breadcrumb).' in composer.json');
             }
         }
     }
@@ -743,7 +743,7 @@ class Repoman {
             $i = 0;
             $attributes = $this->get('build_attributes');
             if (!isset($attributes[$classname])) {
-                throw new Exception('Build attributes not defined for '.$classname);
+                throw new Exception('build_attributes not defined for classname "'.$classname.'" in composer.json');
             }
             foreach ($data as $objectdata) {
                 // Does the object already exist?

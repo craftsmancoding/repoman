@@ -1621,7 +1621,7 @@ class Repoman {
             foreach ($renamed_files as $old => $new) {
                 foreach ($restore_array as $r) {
                     if (preg_match('/^'.preg_quote($r,'/').'/', basename($old))) {
-                        if (!rename($new, $old)) {
+                        if (file_exists($new) && !rename($new, $old)) {
                             throw new Exception('Could not restore file '.$new);
                         }
                         $this->modx->log(modX::LOG_LEVEL_INFO,'Restoring original file '.basename($old));

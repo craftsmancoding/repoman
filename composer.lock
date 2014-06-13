@@ -1,7 +1,8 @@
 {
     "_readme": [
         "This file locks the dependencies of your project to a known state",
-        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file"
+        "Read more about it at http://getcomposer.org/doc/01-basic-usage.md#composer-lock-the-lock-file",
+        "This file is @generated automatically"
     ],
     "hash": "539a5994f0de4c1595d3ca2ce954a9e1",
     "packages": [
@@ -11,12 +12,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/composer/composer.git",
-                "reference": "1efa02a7ab43b7fc555dccb7d31294acbc62bbeb"
+                "reference": "7131607ad1d251c790ce566119d647e008972aa5"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/composer/composer/zipball/1efa02a7ab43b7fc555dccb7d31294acbc62bbeb",
-                "reference": "1efa02a7ab43b7fc555dccb7d31294acbc62bbeb",
+                "url": "https://api.github.com/repos/composer/composer/zipball/7131607ad1d251c790ce566119d647e008972aa5",
+                "reference": "7131607ad1d251c790ce566119d647e008972aa5",
                 "shasum": ""
             },
             "require": {
@@ -73,7 +74,7 @@
                 "dependency",
                 "package"
             ],
-            "time": "2014-04-07 15:37:10"
+            "time": "2014-05-27 14:26:24"
         },
         {
             "name": "justinrainbow/json-schema",
@@ -243,17 +244,17 @@
         },
         {
             "name": "symfony/console",
-            "version": "v2.4.3",
+            "version": "v2.4.5",
             "target-dir": "Symfony/Component/Console",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Console.git",
-                "reference": "ef20f1f58d7f693ee888353962bd2db336e3bbcb"
+                "reference": "24f723436e62598c9dddee2a8573d6992504dc5d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Console/zipball/ef20f1f58d7f693ee888353962bd2db336e3bbcb",
-                "reference": "ef20f1f58d7f693ee888353962bd2db336e3bbcb",
+                "url": "https://api.github.com/repos/symfony/Console/zipball/24f723436e62598c9dddee2a8573d6992504dc5d",
+                "reference": "24f723436e62598c9dddee2a8573d6992504dc5d",
                 "shasum": ""
             },
             "require": {
@@ -294,21 +295,21 @@
             ],
             "description": "Symfony Console Component",
             "homepage": "http://symfony.com",
-            "time": "2014-03-01 17:35:04"
+            "time": "2014-05-14 21:48:29"
         },
         {
             "name": "symfony/finder",
-            "version": "v2.4.3",
+            "version": "v2.4.5",
             "target-dir": "Symfony/Component/Finder",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Finder.git",
-                "reference": "ab301c7d21f536c34ab6c2c79dba8d465104c518"
+                "reference": "46295af1b1e24304b35d5f20f1bf1ec0c2c4934a"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Finder/zipball/ab301c7d21f536c34ab6c2c79dba8d465104c518",
-                "reference": "ab301c7d21f536c34ab6c2c79dba8d465104c518",
+                "url": "https://api.github.com/repos/symfony/Finder/zipball/46295af1b1e24304b35d5f20f1bf1ec0c2c4934a",
+                "reference": "46295af1b1e24304b35d5f20f1bf1ec0c2c4934a",
                 "shasum": ""
             },
             "require": {
@@ -343,21 +344,21 @@
             ],
             "description": "Symfony Finder Component",
             "homepage": "http://symfony.com",
-            "time": "2014-03-01 17:35:04"
+            "time": "2014-05-22 13:46:01"
         },
         {
             "name": "symfony/process",
-            "version": "v2.4.3",
+            "version": "v2.4.5",
             "target-dir": "Symfony/Component/Process",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/Process.git",
-                "reference": "c09c3b08455c35688eee3e481fdfc85518ef01d7"
+                "reference": "a7118cb290c62068b3c8ecfbf8b2eda8421fb841"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/Process/zipball/c09c3b08455c35688eee3e481fdfc85518ef01d7",
-                "reference": "c09c3b08455c35688eee3e481fdfc85518ef01d7",
+                "url": "https://api.github.com/repos/symfony/Process/zipball/a7118cb290c62068b3c8ecfbf8b2eda8421fb841",
+                "reference": "a7118cb290c62068b3c8ecfbf8b2eda8421fb841",
                 "shasum": ""
             },
             "require": {
@@ -392,7 +393,7 @@
             ],
             "description": "Symfony Process Component",
             "homepage": "http://symfony.com",
-            "time": "2014-03-26 11:35:33"
+            "time": "2014-05-22 13:46:01"
         }
     ],
     "packages-dev": [

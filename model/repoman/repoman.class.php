@@ -80,7 +80,7 @@ class Repoman {
                 // Do something?
             }
             else {
-                throw new Exception('Build attributes not set for '.$classname.'-->'.implode('-->',$this->breadcrumb));
+                throw new Exception('build_attributes not set for '.$classname.'-->'.implode('-->',$this->breadcrumb).' in composer.json. Make sure your definitions include "related_objects" and "related_object_attributes"');
             }
         }
     }
@@ -541,7 +541,7 @@ class Repoman {
         //if (empty($chunks) && empty($plugins) && empty($snippets) && empty($templates) && empty($tvs)) {
         $build_attributes = array();
         $build_attributes = $this->get_build_attributes($Category,'modCategory');
-        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Build attributes for '. $Category->_class. "\n".print_r($build_attributes,true));
+        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'build_attributes for '. $Category->_class. "\n".print_r($build_attributes,true));
         $vehicle = $builder->createVehicle($Category, $build_attributes);
         //}
         //$builder->putVehicle($vehicle);
@@ -743,7 +743,7 @@ class Repoman {
             $i = 0;
             $attributes = $this->get('build_attributes');
             if (!isset($attributes[$classname])) {
-                throw new Exception('Build attributes not defined for '.$classname);
+                throw new Exception('build_attributes not defined for classname "'.$classname.'" in composer.json');
             }
             foreach ($data as $objectdata) {
                 // Does the object already exist?
@@ -1091,7 +1091,7 @@ class Repoman {
 
         $attributes = $this->get('build_attributes');
         if (!isset($attributes[$classname])) {
-            throw new Exception('Build attributes not defined for class '.$classname);
+            throw new Exception('build_attributes not defined for class "'.$classname.'"');
         }
 
         // The attributes for the base

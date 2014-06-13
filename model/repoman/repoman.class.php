@@ -1385,9 +1385,9 @@ class Repoman {
      *      - create objects from any seed data
      *
      * @param string $pkg_root_dir path to local package root (w trailing slash)
-     * @param string $mode install | uninstall | update | refresh (default) 
+     * @param string $mode install (default) | uninstall | update | refresh 
      */
-    public function migrate($pkg_root_dir, $mode='refresh') {
+    public function migrate($pkg_root_dir, $mode='install') {
         $pkg_root_dir = self::get_dir($pkg_root_dir);
         $this->prep_modx($pkg_root_dir);
         

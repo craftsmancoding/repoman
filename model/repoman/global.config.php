@@ -56,7 +56,7 @@ return array(
     'migrations_path' => 'model/migrations/',
     'seeds_path' => array(),
     'validators_path' => 'tests/',
-    'controllers_path' => '', // Default is blank.  MODX hard-codes this patter: {$controllers_path}controllers/{$action}.class.php
+    'controllers_path' => '', // Default is blank.  MODX hard-codes this pattern: {$controllers_path}controllers/{$action}.class.php
 
     // Directories or files omit from packaging to core/components/$namespace/
     'omit' => array('assets','screenshots','tests','composer.json','composer.lock'),

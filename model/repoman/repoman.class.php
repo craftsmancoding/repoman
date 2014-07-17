@@ -177,7 +177,7 @@ class Repoman {
         $Parser = new $classname($this);
         return $Parser->gather($pkg_root_dir);
 	}
-		
+
     //------------------------------------------------------------------------------
     //! Static
     //------------------------------------------------------------------------------
@@ -199,6 +199,33 @@ class Repoman {
         return preg_replace('#/+$#','',$realpath) . '/';
 	}
 
+    /**
+     * Convert a string (e.g. package name) to a string "safe" for filenames and URLs: 
+     * no spaces or weird character hanky-panky.
+     * See http://stackoverflow.com/questions/2668854/sanitizing-strings-to-make-them-url-and-filename-safe
+     *
+     * Parameters:
+     *     $string - The string to sanitize.
+     *     $force_lowercase - Force the string to lowercase?
+     *     $anal - If set to *true*, will remove all non-alphanumeric characters.
+     */
+    function sanitize($string, $force_lowercase = true, $anal = false) {
+        $strip = array("~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "=", "+", "[", "{", "]",
+                       "}", "\\", "|", ";", ":", "\"", "'", "&#8216;", "&#8217;", "&#8220;", "&#8221;", "&#8211;", "&#8212;",
+                       "â€”", "â€“", ",", "<", ".", ">", "/", "?");
+        $clean = trim(str_replace($strip, "", strip_tags($string)));
+        $clean = preg_replace('/\s+/', "-", $clean);
+        $clean = ($anal) ? preg_replace("/[^a-zA-Z0-9]/", "", $clean) : $clean ;
+        return ($force_lowercase) ?
+            (function_exists('mb_strtolower')) ?
+                mb_strtolower($clean, 'UTF-8') :
+                strtolower($clean) :
+            $clean;
+    }    
+    
+    //------------------------------------------------------------------------------
+    //! Public
+    //------------------------------------------------------------------------------
 	/**
 	 * Assistence function for examining MODX objects and their relations.
 	 * _pkg (string) colon-separated string defining the arguments for addPackage() -- 
@@ -499,7 +526,8 @@ class Repoman {
         
         $this->modx->loadClass('transport.modPackageBuilder', '', false, true);
         $builder = new modPackageBuilder($this->modx);
-        $builder->createPackage($this->get('package_name'), $this->get('version'), $this->get('release'));
+        $sanitized_package_name = self::sanitize($this->get('package_name'),true,true);
+        $builder->createPackage($sanitized_package_name, $this->get('version'), $this->get('release'));
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace').'/');
         
         // Tests (Validators): this is run BEFORE your package code is in place
@@ -643,7 +671,7 @@ class Repoman {
         // Zip up the package
         $builder->pack();
 
-        $zip = strtolower($this->get('package_name')).'-'.$this->get('version').'-'.$this->get('release').'.transport.zip';
+        $zip = strtolower($sanitized_package_name).'-'.$this->get('version').'-'.$this->get('release').'.transport.zip';
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Build complete: '. MODX_CORE_PATH.'packages/'.$zip);
         if (!file_exists(MODX_CORE_PATH.'packages/'.$zip)) {
             throw new Exception('Transport package not created: '.$zip. ' Please review the logs.');

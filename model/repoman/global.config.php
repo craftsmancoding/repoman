@@ -59,7 +59,7 @@ return array(
     'controllers_path' => '', // Default is blank.  MODX hard-codes this pattern: {$controllers_path}controllers/{$action}.class.php
 
     // Directories or files omit from packaging to core/components/$namespace/
-    'omit' => array('assets','screenshots','tests','composer.json','composer.lock'),
+    'omit' => array('assets','screenshots','tests','composer.json','composer.lock','phpunit.xml','.git'),
     
     // When exporting, this determines how many records are packed into each seed file
     'limit' => 50,

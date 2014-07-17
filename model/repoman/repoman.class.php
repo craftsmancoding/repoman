@@ -424,6 +424,8 @@ class Repoman {
      * @param array $omissions full path to any files to omit (optional)
      */
     static public function rcopy($source, $destination, $omissions=array()) {
+        global $modx; // for logging
+        
         $source = rtrim($source,'/');
         $destination = rtrim($destination,'/');        
         if (is_dir($source) ) {
@@ -441,7 +443,8 @@ class Repoman {
                 }
                 $PathDir = $source . '/' . $readdirectory; 
                 if (in_array($PathDir,$omissions)) {
-                    continue;
+                    $modx->log(modX::LOG_LEVEL_INFO, "Omitting path: ".$PathDir);
+                    continue; // skip
                 }
                 if (is_dir( $PathDir )) {
                     Repoman::rcopy( $PathDir, $destination.'/'.$readdirectory, $omissions);
@@ -705,9 +708,10 @@ class Repoman {
         $omissions = array();
         $omit = $this->get('omit');
         foreach ($omit as $o) {
-            $omissions[] = $pkg_root_dir.'/'.$o;
+            $omissions[] = rtrim($pkg_root_dir.$o,'/');
         }
-        
+        $this->modx->log(modX::LOG_LEVEL_DEBUG,"Defined omissions from package build: \n".print_r($omissions,true));
+
         if (file_exists($assets_src)) {
             if (false === mkdir($this->build_assets_path, $this->get('dir_mode'), true)) {
                 throw new Exception('Could not create directory '.$this->build_assets_path);

@@ -27,21 +27,28 @@
     "autoload": {
         "classmap":["model/repoman/"]
     },
+
     "extra": {
+        "repoman": "0.9.1",
         "package_name": "Repoman",
         "namespace": "repoman",
-        "version": "0.9.1",
-        "release": "dev",
+        "version": "1.1.0",
+        "release": "pl",
         "category":"repoman",
         "core_path": "",
         "assets_path" : "assets/",
-        "docs_path" : "docs/",
-        "seeds_path" : ["model/seeds/"],
+        "seeds_path": ["model/seeds/"],
         "build_attributes":{
             "modSystemSetting": {
+<<<<<<< HEAD
         	   "unique_key": "key",
         	   "preserve_keys": true,
         	   "update_object": true
+=======
+                "unique_key": true,
+                "preserve_keys": true,
+                "update_object": true
+>>>>>>> 95aec2fa08da7aae0ad914a81fc07f2376fee170
             }
         }
     }

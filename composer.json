@@ -38,7 +38,7 @@
         "docs_path" : "docs/",
         "seeds_path" : ["model/seeds/"],
         "build_attributes":{
-            "modSystemSetting: {
+            "modSystemSetting": {
         	   "unique_key": "key",
         	   "preserve_keys": true,
         	   "update_object": true

@@ -28,7 +28,7 @@
         "psr-4": {
             "Repoman\\":"model/"
         },
-        "class":"Composer\\ModxInstallerPlugin"
+        "class":"Repoman\\Composer\\ModxInstallerPlugin"
     },
 
     "extra": {

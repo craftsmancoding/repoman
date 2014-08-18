@@ -1,5 +1,5 @@
 <?php
-
+//namespace Composer;
 namespace Repoman\Composer;
 
 use Composer\Composer;

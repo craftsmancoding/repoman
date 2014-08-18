@@ -21,8 +21,7 @@
     },    
     "require": {
         "php": ">=5.3",
-        "michelf/php-markdown": "1.4.0",
-        "composer/composer": "1.0.*@dev"
+        "michelf/php-markdown": "1.4.0"
     },
     "autoload": {
         "classmap":["model/repoman/"],

@@ -47,7 +47,7 @@ class ModxInstaller extends LibraryInstaller
     /**
      * {@inheritDoc}
      */
-    public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
+    public function install($repo, $package)
     {
         error_log(__CLASS__.'::'.__FUNCTION__);
         error_log('Repo: '.print_r($repo,true));
@@ -68,7 +68,7 @@ class ModxInstaller extends LibraryInstaller
     /**
      * {@inheritDoc}
      */
-    public function update(InstalledRepositoryInterface $repo, PackageInterface $initial, PackageInterface $target)
+    public function update($repo, $initial, $target)
     {
         error_log(print_r($repo,true));
         error_log(print_r($initial,true));
@@ -88,7 +88,7 @@ class ModxInstaller extends LibraryInstaller
     /**
      * {@inheritDoc}
      */
-    public function uninstall(InstalledRepositoryInterface $repo, PackageInterface $package)
+    public function uninstall($repo, $package)
     {
         return parent::uninstall($repo, $package);
 /*

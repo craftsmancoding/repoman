@@ -27,12 +27,12 @@
         "classmap":["model/repoman/"],
         "psr-4": {
             "Repoman\\":"model/"
-        },
-        "class":"Repoman\\Composer\\ModxInstallerPlugin"
+        }
     },
 
     "extra": {
-        "repoman": "0.9.1",
+        "class":"Repoman\\Composer\\ModxInstallerPlugin",
+        "repoman": "0.9.2",
         "package_name": "Repoman",
         "namespace": "repoman",
         "version": "1.1.0",

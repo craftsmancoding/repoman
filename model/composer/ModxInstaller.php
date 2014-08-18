@@ -47,7 +47,7 @@ class ModxInstaller extends LibraryInstaller
     /**
      * {@inheritDoc}
      */
-    public function install($repo, $package)
+    public function install(\Composer\Repository\InstalledRepositoryInterface $repo, \Composer\Package\PackageInterface$package)
     {
         error_log(__CLASS__.'::'.__FUNCTION__);
         error_log('Repo: '.print_r($repo,true));

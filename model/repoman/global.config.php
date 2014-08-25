@@ -56,10 +56,10 @@ return array(
     'migrations_path' => 'model/migrations/',
     'seeds_path' => array(),
     'validators_path' => 'tests/',
-    'controllers_path' => '', // Default is blank.  MODX hard-codes this patter: {$controllers_path}controllers/{$action}.class.php
+    'controllers_path' => '', // Default is blank.  MODX hard-codes this pattern: {$controllers_path}controllers/{$action}.class.php
 
     // Directories or files omit from packaging to core/components/$namespace/
-    'omit' => array('assets','screenshots','tests','composer.json','composer.lock'),
+    'omit' => array('assets','screenshots','tests','composer.json','composer.lock','phpunit.xml','.git','.gitignore'),
     
     // When exporting, this determines how many records are packed into each seed file
     'limit' => 50,
@@ -148,7 +148,7 @@ return array(
         'modSystemSetting' => array(
         	xPDOTransport::UNIQUE_KEY => 'key',
         	xPDOTransport::PRESERVE_KEYS => true,
-        	xPDOTransport::UPDATE_OBJECT => false, // <-- critical! We don't want to overwrite user's values	
+        	xPDOTransport::UPDATE_OBJECT => true, // <-- critical! We don't want to overwrite user's values	
         ),
         'modMenu' => array(
             xPDOTransport::PRESERVE_KEYS => true,

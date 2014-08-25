@@ -1,7 +1,7 @@
 {
     "name": "craftsmancoding/repoman",
     "description": "Repository manager for MODX Revolution.",
-    "type": "library",
+    "type": "modx-package",
     "keywords": ["modx","composer","repository","manager","autoload","git"],
     "homepage": "https://github.com/craftsmancoding/repoman",
     "license": "GPL-2.0+",
@@ -21,21 +21,31 @@
     },    
     "require": {
         "php": ">=5.3",
-        "michelf/php-markdown": "1.4.0",
-        "composer/composer": "1.0.*@dev"
+        "composer-plugin-api": "1.0.0"
     },
     "autoload": {
-        "classmap":["model/repoman/"]
+        "classmap":["model/repoman/"],
+        "psr-4": {
+            "Repoman\\":"model/"
+        }
     },
+
     "extra": {
+        "repoman": "0.9.2",
         "package_name": "Repoman",
         "namespace": "repoman",
-        "version": "0.9.1",
-        "release": "dev",
+        "version": "1.1.0",
+        "release": "pl",
         "category":"repoman",
         "core_path": "",
         "assets_path" : "assets/",
-        "docs_path" : "docs/",
-        "seeds_path" : ["model/seeds/"]
+        "seeds_path": ["model/seeds/"],
+        "build_attributes":{
+            "modSystemSetting": {
+        	   "unique_key": "key",
+        	   "preserve_keys": true,
+        	   "update_object": true
+            }
+        }
     }
 }

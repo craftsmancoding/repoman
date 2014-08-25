@@ -58,6 +58,7 @@ class Installer extends LibraryInstaller
      */
     public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
+
         error_log(__CLASS__.'::'.__FUNCTION__);
 
 //        $vars = get_object_vars($repo);
@@ -105,6 +106,7 @@ class Installer extends LibraryInstaller
      */
     public function update(InstalledRepositoryInterface $repo, PackageInterface $initial, PackageInterface $target)
     {
+        error_log('DORrkkk!----------------------------------------');
         error_log(__CLASS__.'::'.__FUNCTION__);
 
         $vars = get_object_vars($repo);

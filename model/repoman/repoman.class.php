@@ -677,8 +677,9 @@ class Repoman {
         $omissions = array();
         $omit = $this->get('omit');
         foreach ($omit as $o) {
-            $omissions[] = $pkg_root_dir.'/'.$o;
+            $omissions[] = $pkg_root_dir.$o;
         }
+        $this->modx->log(modX::LOG_LEVEL_INFO,"Omitting the following files/paths from the transport package: \n".print_r($omissions,true));
         
         if (file_exists($assets_src)) {
             if (false === mkdir($this->build_assets_path, $this->get('dir_mode'), true)) {

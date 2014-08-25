@@ -158,7 +158,8 @@ class Bridge
         // fire up MODX
         require_once MODX_CORE_PATH . 'config/' . MODX_CONFIG_KEY . '.inc.php';
         require_once MODX_CORE_PATH . 'model/modx/modx.class.php';
-
+        require_once MODX_CORE_PATH . 'xpdo/transport/xpdotransport.class.php';
+        
         $modx = new modx();
         $modx->initialize('mgr');
         $modx->setLogLevel(\modX::LOG_LEVEL_INFO);

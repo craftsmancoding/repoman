@@ -58,6 +58,7 @@ class Installer extends LibraryInstaller
      */
     public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
     {
+        error_log('FUdddGE=================');
 
         error_log(__CLASS__.'::'.__FUNCTION__);
 

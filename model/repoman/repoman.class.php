@@ -395,7 +395,7 @@ class Repoman
     }
 
     /**
-     * Set up the local MODX instance for normal repoman action:
+     * Add package settings to the local MODX instance:
      * create namespace and expected System Settings for the package.
      *
      */
@@ -1362,7 +1362,8 @@ class Repoman
         // Is already installed?
         $namespace = $this->get('namespace');
         if ($Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace . '.version'))) {
-            throw new Exception('Package is already installed. Run "update" instead.');
+            return $this->update($pkg_root_dir);
+            //throw new Exception('Package is already installed. Run "update" instead.');
         }
         $this->prep_modx($pkg_root_dir);
         $this->_create_setting($this->get('namespace'), $this->get('namespace') . '.version', trim($this->get('version')));
@@ -1388,7 +1389,8 @@ class Repoman
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Processing object(s) in ' . $file . ' (json: ' . $json);
 
         if ($json) {
-            $data = json_decode(file_get_contents($file), true);
+            $data = \Composer\Json\JsonFile::parseJson(file_get_contents($file),$file);
+            //$data = json_decode(file_get_contents($file), true);
             if (!is_array($data)) {
                 throw new Exception('Bad JSON in ' . $file);
             }
@@ -1804,7 +1806,8 @@ class Repoman
         // Is already installed?
         $namespace = $this->get('namespace');
         if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace . '.version'))) {
-            throw new Exception('Package is not installed. Run "install" instead.');
+            return $this->install($pkg_root_dir);
+            //throw new Exception('Package is not installed. Run "install" instead.');
         }
         $this->prep_modx($pkg_root_dir);
 

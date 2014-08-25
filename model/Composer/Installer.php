@@ -14,6 +14,7 @@
  */
 namespace Repoman\Composer;
 
+use Repoman\Bridge;
 use Composer\Package\PackageInterface;
 use Composer\Installer\LibraryInstaller;
 use Composer\Repository\InstalledRepositoryInterface;
@@ -54,6 +55,9 @@ class Installer extends LibraryInstaller
     }
 
     /**
+     * This gets run when a package's vendor/ dir gets written for the first time.  This can happen
+     * by executing 'composer update' or by 'composer install'
+     *
      * {@inheritDoc}
      */
     public function install(InstalledRepositoryInterface $repo, PackageInterface $package)
@@ -75,21 +79,31 @@ class Installer extends LibraryInstaller
 //        foreach ($methods as $m) {
 //            error_log($m.': '.print_r($package->$m(), true));
 //        }
-        error_log('getRepositories: '. print_r($package->getRepositories(),true));
-        error_log('getTargetDir: '. print_r($package->getTargetDir(),true));
-        error_log('getInstallationSource: '. print_r($package->getInstallationSource(),true));
-        error_log('getSourceType: '. print_r($package->getSourceType(),true));
-        error_log('getName: '. print_r($package->getName(),true));
-        error_log('getPrettyName: '. print_r($package->getPrettyName(),true));
-        error_log('getNames: '. print_r($package->getNames(),true));
-        $downloadPath = $this->getInstallPath($package); // eg. /path/to/vendor/xyz/abc
-        error_log('installPath: '. print_r($downloadPath,true));
+//        error_log('getRepositories: '. print_r($package->getRepositories(),true));
+//        error_log('getTargetDir: '. print_r($package->getTargetDir(),true));
+//        error_log('getInstallationSource: '. print_r($package->getInstallationSource(),true));
+//        error_log('getSourceType: '. print_r($package->getSourceType(),true));
+//        error_log('getName: '. print_r($package->getName(),true));
+//        error_log('getPrettyName: '. print_r($package->getPrettyName(),true));
+//        error_log('getNames: '. print_r($package->getNames(),true));
+//        $downloadPath = $this->getInstallPath($package); // eg. /path/to/vendor/xyz/abc
+//        error_log('installPath: '. print_r($downloadPath,true));
+//        $basePath = $this->getPackageBasePath($package);
+//        error_log('PackageBasePath: '. $basePath);
+//        error_log('vendorDir: '. $this->vendorDir);
+//        error_log('binDir:' . $this->binDir);
+
+
+
+        $result = parent::install($repo, $package);
         $basePath = $this->getPackageBasePath($package);
-        error_log('PackageBasePath: '. $basePath);
-        error_log('vendorDir: '. $this->vendorDir);
-        error_log('binDir:' . $this->binDir);
-        
-        return parent::install($repo, $package);
+
+        $modx = Bridge::getMODX();
+        $config = Bridge::loadConfig($basePath);
+        $Repoman = new Repoman($modx,$config);
+        $Repoman->install($basePath);
+
+        return $result;
         /*
                 $extra = $package->getExtra();
                 if (empty($extra['class'])) {
@@ -107,30 +121,40 @@ class Installer extends LibraryInstaller
      */
     public function update(InstalledRepositoryInterface $repo, PackageInterface $initial, PackageInterface $target)
     {
-        error_log('DORrkkk!----------------------------------------');
-        error_log(__CLASS__.'::'.__FUNCTION__);
+//        error_log('DORrkkk!----------------------------------------');
+//        error_log(__CLASS__.'::'.__FUNCTION__);
+//
+//        $vars = get_object_vars($repo);
+//        error_log('Repo vars: '. print_r($vars,true));
+//        $methods = get_class_methods($repo);
+//        error_log('Repo methods: '.print_r($methods,true));
+//
+//
+//        $vars = get_object_vars($initial);
+//        error_log('Initial vars: '. print_r($vars,true));
+//        $methods = get_class_methods($initial);
+//        error_log('Initial methods: '.print_r($methods,true));
+//
+//
+//
+//        $vars = get_object_vars($target);
+//        error_log('Target vars: '. print_r($vars,true));
+//        $methods = get_class_methods($target);
+//        error_log('Target methods: '.print_r($methods,true));
 
-        $vars = get_object_vars($repo);
-        error_log('Repo vars: '. print_r($vars,true));
-        $methods = get_class_methods($repo);
-        error_log('Repo methods: '.print_r($methods,true));
 
 
-        $vars = get_object_vars($initial);
-        error_log('Initial vars: '. print_r($vars,true));
-        $methods = get_class_methods($initial);
-        error_log('Initial methods: '.print_r($methods,true));
+        $result = parent::update($repo, $initial, $target);
 
 
+        $basePath = $this->getPackageBasePath($package);
 
-        $vars = get_object_vars($target);
-        error_log('Target vars: '. print_r($vars,true));
-        $methods = get_class_methods($target);
-        error_log('Target methods: '.print_r($methods,true));
+        $modx = Bridge::getMODX();
+        $config = Bridge::loadConfig($basePath);
+        $Repoman = new Repoman($modx,$config);
+        $Repoman->update($basePath);
 
-
-
-        return parent::update($repo, $initial, $target);
+        return $result;
         /*
                 $extra = $target->getExtra();
                 if (empty($extra['class'])) {
@@ -149,7 +173,16 @@ class Installer extends LibraryInstaller
     {
         error_log(__CLASS__.'::'.__FUNCTION__);
 
-        return parent::uninstall($repo, $package);
+        $basePath = $this->getPackageBasePath($package);
+
+        $modx = Bridge::getMODX();
+        $config = Bridge::loadConfig($basePath);
+        $Repoman = new Repoman($modx,$config);
+        $Repoman->uninstall($basePath);
+
+        $result = parent::uninstall($repo, $package);
+
+        return $result;
         /*
                 if (!$repo->hasPackage($package)) {
                     throw new \InvalidArgumentException('Package is not installed: '.$package);

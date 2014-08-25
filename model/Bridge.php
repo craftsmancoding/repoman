@@ -5,6 +5,7 @@
 namespace Repoman;
 
 use Modx;
+use xPDOTransport;
 use Composer\Json\JsonFile;
 
 class Bridge

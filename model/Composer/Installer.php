@@ -14,7 +14,6 @@
  */
 namespace Repoman\Composer;
 
-use Repoman;
 use Repoman\Bridge;
 use Composer\Package\PackageInterface;
 use Composer\Installer\LibraryInstaller;
@@ -101,7 +100,7 @@ class Installer extends LibraryInstaller
 
         $modx = Bridge::getMODX();
         $config = Bridge::loadConfig($basePath);
-        $Repoman = new Repoman($modx,$config);
+        $Repoman = new \Repoman($modx,$config);
         $Repoman->install($basePath);
 
         return $result;
@@ -152,7 +151,7 @@ class Installer extends LibraryInstaller
 
         $modx = Bridge::getMODX();
         $config = Bridge::loadConfig($basePath);
-        $Repoman = new Repoman($modx,$config);
+        $Repoman = new \Repoman($modx,$config);
         $Repoman->update($basePath);
 
         return $result;
@@ -178,7 +177,7 @@ class Installer extends LibraryInstaller
 
         $modx = Bridge::getMODX();
         $config = Bridge::loadConfig($basePath);
-        $Repoman = new Repoman($modx,$config);
+        $Repoman = new \Repoman($modx,$config);
         $Repoman->uninstall($basePath);
 
         $result = parent::uninstall($repo, $package);

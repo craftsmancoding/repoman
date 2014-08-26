@@ -14,6 +14,7 @@
  */
 namespace Repoman\Composer;
 
+use Repoman;
 use Repoman\Bridge;
 use Composer\Package\PackageInterface;
 use Composer\Installer\LibraryInstaller;

@@ -4,8 +4,9 @@
  * before the class is instantiated.
  *
  */
-// We need this for the xPDOTransport class constants
-require_once MODX_CORE_PATH . 'xpdo/transport/xpdotransport.class.php';
+namespace Repoman;
+use Filesystem;
+use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 
 class Repoman
 {
@@ -13,9 +14,12 @@ class Repoman
     public $modx;
 
     public $config = array();
+
+    public $Filesystem;
+
     // Used when tracking build attributes and fromDeepArray
     public $breadcrumb = array();
-    // Used to provide transparency
+    // Used to provide transparency and sorta log stuff
     public static $queue = array();
     public $readme_filenames = array('README.md', 'readme.md');
 
@@ -31,11 +35,13 @@ class Repoman
     /**
      *
      * @param object MODX reference
+     * @param array config (from a package's composer.json)
      */
     public function __construct($modx, $config = array())
     {
         $this->modx = & $modx;
         $this->config = $config;
+        $this->Filesystem = new Filesystem();
         self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR);
     }
 
@@ -80,7 +86,7 @@ class Repoman
                 $atts = $atts[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$alias];
                 // Do something?
             } else {
-                throw new Exception('build_attributes not set for ' . $classname . '-->' . implode('-->', $this->breadcrumb) . ' in composer.json. Make sure your definitions include "related_objects" and "related_object_attributes"');
+                throw new \Exception('build_attributes not set for ' . $classname . '-->' . implode('-->', $this->breadcrumb) . ' in composer.json. Make sure your definitions include "related_objects" and "related_object_attributes"');
             }
         }
     }
@@ -95,10 +101,10 @@ class Repoman
 
         $name = $this->get('namespace');
         if (empty($name)) {
-            throw new Exception('namespace parameter cannot be empty.');
+            throw new \Exception('namespace parameter cannot be empty.');
         }
         if (preg_match('/[^a-z0-9_\-\/]/', $this->get('namespace'))) {
-            throw new Exception('Invalid namespace: ' . $this->get('namespace'));
+            throw new \Exception('Invalid namespace: ' . $this->get('namespace'));
         }
 
         $N = $this->modx->getObject('modNamespace', $this->get('namespace'));
@@ -107,9 +113,10 @@ class Repoman
             $N->set('name', $this->get('namespace'));
         }
         // Infers where the controllers live
-        $N->set('path', rtrim($this->get_core_path($pkg_root_dir), '/') . trim($this->get('controllers_path'), '/') . '/');
-        $N->set('assets_path', $this->get_assets_dir($pkg_root_dir));
+        $N->set('path', rtrim($this->getCorePath($pkg_root_dir), '/') . trim($this->get('controllers_path'), '/') . '/');
+        $N->set('assets_path', $this->getAssetsPath($pkg_root_dir));
 
+        // "Logging" the paper trail
         Repoman::$queue['modNamespace'][$this->get('namespace')] = $N->toArray();
 
         if (!$this->get('dry_run')) {
@@ -118,7 +125,7 @@ class Repoman
             }
             // Prepare Cache folder for tracking object creation
             self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR . '/' . $this->get('namespace'));
-            $data = $this->get_criteria('modNamespace', $N->toArray());
+            $data = $this->getCriteria('modNamespace', $N->toArray());
             $this->modx->cacheManager->set('modNamespace/' . $N->get('name'), $data, 0, Repoman::$cache_opts);
             $this->modx->log(modX::LOG_LEVEL_INFO, "Namespace created/updated: " . $this->get('namespace'));
         }
@@ -137,7 +144,7 @@ class Repoman
     {
 
         if (empty($namespace)) {
-            throw new Exception('namespace parameter cannot be empty.');
+            throw new \Exception('namespace parameter cannot be empty.');
         }
 
         $Setting = $this->modx->getObject('modSystemSetting', array('key' => $key));
@@ -173,9 +180,9 @@ class Repoman
      */
     private function _get_elements($objecttype, $pkg_root_dir)
     {
-        require_once dirname(__FILE__) . '/repoman_parser.class.php';
-        require_once dirname(__FILE__) . '/objecttypes/' . strtolower($objecttype) . '_parser.class.php';
-        $classname = $objecttype . '_parser';
+        //require_once dirname(__FILE__) . '/repoman_parser.class.php';
+        //require_once dirname(__FILE__) . '/objecttypes/' . strtolower($objecttype) . '_parser.class.php';
+        $classname = 'Parser\\'. $objecttype;
         $Parser = new $classname($this);
         return $Parser->gather($pkg_root_dir);
     }
@@ -183,23 +190,6 @@ class Repoman
     //------------------------------------------------------------------------------
     //! Static
     //------------------------------------------------------------------------------
-    /**
-     * Verify a directory, converting for any OS variants and convert
-     * any relative paths to absolute .
-     *
-     * @param string $path path (or relative path) to package
-     * @return string full path with trailing slash
-     */
-    public static function get_dir($path)
-    {
-        $realpath = strtr(realpath($path), '\\', '/');
-        if (!file_exists($realpath)) {
-            throw new Exception('Directory does not exist: ' . $path);
-        } elseif (!is_dir($realpath)) {
-            throw new Exception('Path is not a directory: ' . $realpath);
-        }
-        return preg_replace('#/+$#', '', $realpath) . '/';
-    }
 
     /**
      * Convert a string (e.g. package name) to a string "safe" for filenames and URLs:
@@ -278,7 +268,7 @@ class Repoman
         }
 
         if (empty($classname)) {
-            throw new Exception('classname is required.');
+            throw new \Exception('classname is required.');
         }
 
         $array = $this->modx->getFields($classname);
@@ -312,7 +302,7 @@ class Repoman
     public static function load_config($pkg_root_dir, $overrides = array())
     {
         global $modx; // global b/c this is a static function
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         $global = include dirname(__FILE__) . '/global.config.php';
         $config = array();
         if (file_exists($pkg_root_dir . 'composer.json')) {
@@ -347,16 +337,16 @@ class Repoman
         $out = array_merge($global, $config, $overrides);
 
         if (preg_match('/[^a-z0-9_\-]/', $out['namespace'])) {
-            throw new Exception('Invalid namespace: ' . $out['namespace']);
+            throw new \Exception('Invalid namespace: ' . $out['namespace']);
         }
         if (isset($out['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $out['version'])) {
-            throw new Exception('Invalid version.');
+            throw new \Exception('Invalid version.');
         }
 
         if ($out['core_path'] == $out['assets_path']) {
-            throw new Exception('core_path cannot match assets_path in ' . $pkg_root_dir);
+            throw new \Exception('core_path cannot match assets_path in ' . $pkg_root_dir);
         } elseif ($out['core_path'] == $out['docs_path']) {
-            throw new Exception('core_path cannot match docs_path in ' . $pkg_root_dir);
+            throw new \Exception('core_path cannot match docs_path in ' . $pkg_root_dir);
         }
         // Todo... all path directives must be unique.
 
@@ -420,75 +410,7 @@ class Repoman
         $this->modx->cacheManager->refresh(array('system_settings' => array()));
     }
 
-    /**
-     * Recursively copy files and directories.
-     *
-     * @param string $source dir
-     * @param string $destination dir
-     * @param array $omissions full path to any files to omit (optional)
-     */
-    static public function rcopy($source, $destination, $omissions = array())
-    {
-        global $modx; // for logging
 
-        $source = rtrim($source, '/');
-        $destination = rtrim($destination, '/');
-        if (is_dir($source)) {
-
-            if (!file_exists($destination)) {
-                if (mkdir($destination, 0777) === false) {
-                    throw new Exception('Could not create directory ' . $destination);
-                }
-            }
-
-            $directory = dir($source);
-            while (false !== ($readdirectory = $directory->read())) {
-                if ($readdirectory == '.' || $readdirectory == '..') {
-                    continue;
-                }
-                $PathDir = $source . '/' . $readdirectory;
-                if (in_array($PathDir, $omissions)) {
-                    $modx->log(modX::LOG_LEVEL_INFO, "Omitting path: " . $PathDir);
-                    continue; // skip
-                }
-                if (is_dir($PathDir)) {
-                    Repoman::rcopy($PathDir, $destination . '/' . $readdirectory, $omissions);
-                    continue;
-                } else {
-                    copy($PathDir, $destination . '/' . $readdirectory);
-                }
-            }
-
-            $directory->close();
-        } else {
-            print "$source is a file\n";
-            return copy($source, $destination);
-        }
-    }
-
-    /**
-     * Recursively remove a directory and all its subdirectories and files.
-     * See http://www.php.net/manual/en/function.rmdir.php
-     * @param string $dir full path name (with or without trailing slash)
-     */
-    public static function rrmdir($dir)
-    {
-        $dir = rtrim($dir, '/');
-        if (is_dir($dir)) {
-            $objects = scandir($dir);
-            foreach ($objects as $object) {
-                if ($object != '.' && $object != '..') {
-                    if (filetype($dir . '/' . $object) == "dir") {
-                        Repoman::rrmdir($dir . '/' . $object);
-                    } else {
-                        unlink($dir . '/' . $object);
-                    }
-                }
-            }
-            reset($objects);
-            rmdir($dir);
-        }
-    }
 
     /**
      * Shows manual page for a given $function.
@@ -518,7 +440,7 @@ class Repoman
      */
     public function build($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         $this->build_prep($pkg_root_dir);
         $this->config['is_build'] = true; // TODO
         $this->config['force_static'] = false; // TODO
@@ -526,7 +448,7 @@ class Repoman
         $required = array('package_name', 'namespace', 'version', 'release');
         foreach ($required as $k) {
             if (!$this->get($k)) {
-                throw new Exception('Missing required configuration parameter: ' . $k);
+                throw new \Exception('Missing required configuration parameter: ' . $k);
             }
         }
 
@@ -540,7 +462,7 @@ class Repoman
 
         // Tests (Validators): this is run BEFORE your package code is in place
         // so you cannot reference/include package files from your validator! They won't exist when the code is run.
-        $validator_file = $this->get_core_path($pkg_root_dir) . rtrim($this->get('validators_dir'), '/') . '/install.php';
+        $validator_file = $this->getCorePath($pkg_root_dir) . rtrim($this->get('validators_dir'), '/') . '/install.php';
         if (file_exists($validator_file)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Packaging validator ' . $validator_file);
             $config = $this->config;
@@ -575,7 +497,7 @@ class Repoman
         // TODO: skip this if there are no elements
         //if (empty($chunks) && empty($plugins) && empty($snippets) && empty($templates) && empty($tvs)) {
         $build_attributes = array();
-        $build_attributes = $this->get_build_attributes($Category, 'modCategory');
+        $build_attributes = $this->getBuildAttributes($Category, 'modCategory');
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'build_attributes for ' . $Category->_class . "\n" . print_r($build_attributes, true));
         $vehicle = $builder->createVehicle($Category, $build_attributes);
         //}
@@ -627,12 +549,12 @@ class Repoman
 
 
         // Optionally Load Seed data
-        $dirs = $this->get_seed_dirs($pkg_root_dir);
+        $dirs = $this->getSeedPaths($pkg_root_dir);
         foreach ($dirs as $d) {
             $objects = $this->crawl_dir($d);
             foreach ($objects as $classname => $info) {
                 foreach ($info as $k => $Obj) {
-                    $build_attributes = $this->get_build_attributes($Obj, $classname);
+                    $build_attributes = $this->getBuildAttributes($Obj, $classname);
                     $this->modx->log(modX::LOG_LEVEL_DEBUG, $classname . ' created');
                     $vehicle = $builder->createVehicle($Obj, $build_attributes);
                     $builder->putVehicle($vehicle);
@@ -641,7 +563,7 @@ class Repoman
         }
 
         // Package Attributes (Documents)
-        $dir = $this->get_docs_path($pkg_root_dir);
+        $dir = $this->getDocsPath($pkg_root_dir);
         // defaults
         $docs = array(
             'readme' => 'This package was built using Repoman (https://github.com/craftsmancoding/repoman/)',
@@ -679,7 +601,7 @@ class Repoman
         $zip = strtolower($sanitized_package_name) . '-' . $this->get('version') . '-' . $this->get('release') . '.transport.zip';
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Build complete: ' . MODX_CORE_PATH . 'packages/' . $zip);
         if (!file_exists(MODX_CORE_PATH . 'packages/' . $zip)) {
-            throw new Exception('Transport package not created: ' . $zip . ' Please review the logs.');
+            throw new \Exception('Transport package not created: ' . $zip . ' Please review the logs.');
         }
     }
 
@@ -692,10 +614,10 @@ class Repoman
     public function build_prep($pkg_root_dir)
     {
 
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
 
         if (!$this->get('namespace')) {
-            throw new Exception('Namespace cannot be empty.');
+            throw new \Exception('Namespace cannot be empty.');
         }
 
         $build_dir = MODX_CORE_PATH . 'cache/repoman/_build/';
@@ -703,36 +625,32 @@ class Repoman
         $this->build_assets_path = $build_dir . 'assets/components/' . $this->get('namespace');
         $this->build_core_path = $build_dir . 'core/components/' . $this->get('namespace');
 
-        $assets_src = $this->get_assets_dir($pkg_root_dir);
-        $core_src = $this->get_core_path($pkg_root_dir);
+        $assets_src = $this->getAssetsPath($pkg_root_dir);
+        $core_src = $this->getCorePath($pkg_root_dir);
 
-        self::rrmdir($build_dir);
+        $this->Filesystem->remove($build_dir);
 
         $omissions = array();
         $omit = $this->get('omit');
         foreach ($omit as $o) {
-
             $omissions[] = rtrim($pkg_root_dir . $o, '/');
         }
         $this->modx->log(modX::LOG_LEVEL_DEBUG, "Defined omissions from package build: \n" . print_r($omissions, true));
 
-
-        if (file_exists($assets_src)) {
-            if (false === mkdir($this->build_assets_path, $this->get('dir_mode'), true)) {
-                throw new Exception('Could not create directory ' . $this->build_assets_path);
-            } else {
-                $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $this->build_assets_path);
-            }
-            self::rcopy($assets_src, $this->build_assets_path);
+        // Assets
+        if ($this->Filesystem->exists($assets_src)) {
+            // This will throw its own IOException on fail
+            $this->Filesystem->mkdir($this->build_assets_path, $this->get('dir_mode'));
+            $this->Filesystem->mirror($assets_src, $this->build_assets_path);
+            $this->modx->log(modX::LOG_LEVEL_INFO, 'Mirrored assets directory to ' . $this->build_assets_path);
         }
+        
+        // Core
+        // This will throw its own IOException on fail
+        $this->Filesystem->mkdir($this->build_core_path, $this->get('dir_mode'));
+        $this->Filesystem->rcopy($core_src, $this->build_core_path, $omissions);
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Recursively copied core directory to ' . $this->build_core_path);
 
-        if (false === mkdir($this->build_core_path, $this->get('dir_mode'), true)) {
-            throw new Exception('Could not create directory ' . $this->build_core_path);
-        } else {
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $this->build_core_path);
-        }
-
-        self::rcopy($core_src, $this->build_core_path, $omissions);
     }
 
     /**
@@ -764,13 +682,13 @@ class Repoman
         foreach ($files as $f) {
 
             preg_match('/^(\w+)(.?\w+)?\.(\w+)$/', basename($f), $matches);
-            if (!isset($matches[3])) throw new Exception('Invalid filename ' . $f);
+            if (!isset($matches[3])) throw new \Exception('Invalid filename ' . $f);
 
             $classname = $matches[1];
             $ext = $matches[3];
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Processing object(s) in ' . basename($f));
             $fields = $this->modx->getFields($classname);
-            if (empty($fields)) throw new Exception('Unrecognized object classname ' . $classname . ' in file ' . $f);
+            if (empty($fields)) throw new \Exception('Unrecognized object classname ' . $classname . ' in file ' . $f);
 
             $is_json = (strtolower($ext) == 'php') ? false : true;
 
@@ -779,12 +697,12 @@ class Repoman
             $i = 0;
             $attributes = $this->get('build_attributes');
             if (!isset($attributes[$classname])) {
-                throw new Exception('build_attributes not defined for classname "' . $classname . '" in composer.json');
+                throw new \Exception('build_attributes not defined for classname "' . $classname . '" in composer.json');
             }
             foreach ($data as $objectdata) {
                 // Does the object already exist?
                 if (!$this->get('is_build')) {
-                    $Object = $this->modx->getObject($classname, $this->get_criteria($classname, $objectdata));
+                    $Object = $this->modx->getObject($classname, $this->getCriteria($classname, $objectdata));
                     if ($Object && !$attributes[$classname][xPDOTransport::UPDATE_OBJECT] && !$this->get('overwrite')) {
                         $this->modx->log(modX::LOG_LEVEL_INFO, 'Skipping... Update Object not allowed without overwrite: ' . $classname);
                         continue;
@@ -798,67 +716,6 @@ class Repoman
             }
         }
         return $objects;
-    }
-
-    /**
-     * Create a new repository.
-     *
-     * @param string $namespace (sub-dir relative to $pkg_root_dir)
-     * @param array $data including sample data
-     */
-    public function create($namespace, $data)
-    {
-        // Get the config stuff...
-        global $modx;
-
-        $global = include dirname(__FILE__) . '/global.config.php';
-        $this->config = array_merge($global, $data);
-        $this->config['namespace'] = $namespace;
-
-        if (empty($this->config['namespace'])) {
-            throw new Exception('Namespace is required.');
-        }
-        if (preg_match('/[^a-z0-9_\-]/', $this->config['namespace'])) {
-            throw new Exception('Invalid namespace: ' . $this->config['namespace']);
-        }
-        if (isset($this->config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $this->config['version'])) {
-            throw new Exception('Invalid version.');
-        }
-        if (empty($this->config['category'])) {
-            $this->config['category'] = ucfirst($namespace);
-        }
-
-        // Create the file stuff
-        ob_start();
-        $config = $this->config; // for easier use in the template file
-        include dirname(dirname(dirname(__FILE__))) . '/views/composer.php';
-        $composer = ob_get_clean();
-
-        $pkg_root_dir = MODX_BASE_PATH . $this->modx->getOption('repoman.dir') . $this->config['namespace'];
-
-        if (file_exists($pkg_root_dir) && !$this->config['force']) {
-            throw new Exception('Directory already exists: ' . $pkg_root_dir . ' Will not continue unless forced');
-        } else {
-            if (false === @mkdir($pkg_root_dir, $this->config['dir_mode'], true)) {
-                throw new Exception('Could not create directory ' . $pkg_root_dir . ' Check the permissions and try again.');
-            } else {
-                $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $pkg_root_dir);
-            }
-        }
-        if (file_put_contents($pkg_root_dir . '/composer.json', $composer) === false) {
-            throw new Exception('Failed to create ' . $pkg_root_dir . '/composer.json');
-        }
-
-        $omissions = array();
-        $elements = array('chunks', 'plugins', 'snippets', 'templates', 'tvs');
-        foreach ($elements as $e) {
-            if (!isset($data['sample_' . $e]) || !$data['sample_' . $e]) {
-                $omissions[] = dirname(dirname(__FILE__)) . '/samples/repo1/elements/' . $e;
-            }
-        }
-
-        self::rcopy(dirname(dirname(__FILE__)) . '/samples/repo1', $pkg_root_dir, $omissions);
-
     }
 
     /**
@@ -879,7 +736,7 @@ class Repoman
     public function export($pkg_root_dir, $data = array())
     {
         $this->config = array_merge($this->config, $data);
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         $classname = $this->get('classname');
         $where = $this->get('where');
         $target = $this->get('target');
@@ -890,7 +747,7 @@ class Repoman
         }
 
         if (empty($classname)) {
-            throw new Exception('Parameter "classname" is required.');
+            throw new \Exception('Parameter "classname" is required.');
         }
 
         $is_element = false;
@@ -939,22 +796,22 @@ class Repoman
         if (!$is_element) {
 
             if (!$target) {
-                throw new Exception('Target directory must be specified.');
+                throw new \Exception('Target directory must be specified.');
             } elseif (!is_scalar($target)) {
-                throw new Exception('Target directory cannot be an array.');
+                throw new \Exception('Target directory cannot be an array.');
             } elseif (preg_match('/\.\./', $target)) {
-                throw new Exception('Target directory must be within your repo directory.');
+                throw new \Exception('Target directory must be within your repo directory.');
             }
-            $dir = $this->get_core_path($pkg_root_dir) . $this->get('target');
+            $dir = $this->getCorePath($pkg_root_dir) . $this->get('target');
 
             if (!file_exists($dir)) {
                 if (false === mkdir($dir, $this->get('dir_mode'), true)) {
-                    throw new Exception('Could not create directory ' . $dir);
+                    throw new \Exception('Could not create directory ' . $dir);
                 } else {
                     $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $dir);
                 }
             } elseif (!is_dir($dir)) {
-                throw new Exception('Target directory is not a directory: ' . $dir);
+                throw new \Exception('Target directory is not a directory: ' . $dir);
             }
         }
 
@@ -972,12 +829,12 @@ class Repoman
                     if (!($i % $limit) || $i == $result_cnt) {
                         $filename = $dir . '/' . $classname . '.' . $j . '.json';
                         if (file_exists($filename) && !$this->get('overwrite')) {
-                            throw new Exception('Overwrite not permitted ' . $filename);
+                            throw new \Exception('Overwrite not permitted ' . $filename);
                         }
 
                         // if (false === file_put_contents($filename, json_encode($pack, JSON_PRETTY_PRINT))) {
                         if (false === file_put_contents($filename, json_encode($pack))) {
-                            throw new Exception('Could not write to file ' . $filename);
+                            throw new \Exception('Could not write to file ' . $filename);
                         } else {
                             $this->modx->log(modX::LOG_LEVEL_INFO, 'Created object file at ' . $filename);
                         }
@@ -993,32 +850,7 @@ class Repoman
 
     }
 
-    /**
-     * Compares 2 files for equality.
-     *
-     * @param string $path1
-     * @param string $path2
-     * @return boolean true if equal
-     */
-    public function files_equal($path1, $path2)
-    {
-        if (!file_exists($path1)) {
-            $this->modx->log(modX::LOG_LEVEL_ERROR, 'File does not exist ' . $path1);
-            return false;
-        }
-        if (!file_exists($path2)) {
-            $this->modx->log(modX::LOG_LEVEL_ERROR, 'File does not exist ' . $path2);
-            return false;
-        }
 
-        if (filesize($path1) == filesize($path2) && md5_file($path1) == md5_file($path2)) {
-            return true;
-        }
-
-        $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Files are not equal: ' . $path1 . ' ' . $path2);
-
-        return false;
-    }
 
     /**
      * Return an object based on the $objectdata array.
@@ -1043,7 +875,7 @@ class Repoman
         if ($this->get('is_build')) {
             $Object = $this->modx->newObject($classname);
         } else {
-            $Object = $this->modx->getObject($classname, $this->get_criteria($classname, $objectdata));
+            $Object = $this->modx->getObject($classname, $this->getCriteria($classname, $objectdata));
             if (!$Object) {
                 $Object = $this->modx->newObject($classname);
                 $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Creating new object for ' . $classname);
@@ -1116,12 +948,12 @@ class Repoman
      *
      * @return array
      */
-    public function get_build_attributes($Obj, $classname)
+    public function getBuildAttributes($Obj, $classname)
     {
 
         $attributes = $this->get('build_attributes');
         if (!isset($attributes[$classname])) {
-            throw new Exception('build_attributes not defined for class "' . $classname . '"');
+            throw new \Exception('build_attributes not defined for class "' . $classname . '"');
         }
 
         // The attributes for the base
@@ -1152,7 +984,7 @@ class Repoman
                             $relObjs = $Obj->getMany($alias);
                             $relObj = array_shift($relObjs);
                         }
-                        $out[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$rel_class] = $this->get_build_attributes($relObj,$def['class']);
+                        $out[xPDOTransport::RELATED_OBJECT_ATTRIBUTES][$rel_class] = $this->getBuildAttributes($relObj,$def['class']);
                     }
                 }
                 return $out;
@@ -1172,11 +1004,11 @@ class Repoman
      * @param array $attributes data for a single object representing $classname
      * @return array
      */
-    public function get_criteria($classname, $attributes)
+    public function getCriteria($classname, $attributes)
     {
         $build_attributes = $this->get('build_attributes');
         if (!isset($build_attributes[$classname][xPDOTransport::UNIQUE_KEY])) {
-            throw new Exception('Build attributes xPDOTransport::UNIQUE_KEY not defined for class ' . $classname);
+            throw new \Exception('Build attributes xPDOTransport::UNIQUE_KEY not defined for class ' . $classname);
         }
         $fields = (array)$build_attributes[$classname][xPDOTransport::UNIQUE_KEY];
         $criteria = array();
@@ -1196,7 +1028,7 @@ class Repoman
      */
     public function get_readme($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         foreach ($this->readme_filenames as $f) {
             $readme = $pkg_root_dir . '/' . $f;
             if (file_exists($readme)) {
@@ -1212,9 +1044,9 @@ class Repoman
      * @param string $pkg_root_dir path to local package root
      * @return array
      */
-    public function get_seed_dirs($pkg_root_dir)
+    public function getSeedPaths($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         $dirs = array();
         $seeds = $this->get('seeds_path');
         if (!is_array($seeds)) {
@@ -1225,7 +1057,7 @@ class Repoman
             }
         }
         foreach ($seeds as $s) {
-            $d = $this->get_core_path($pkg_root_dir) . trim($s);
+            $d = $this->getCorePath($pkg_root_dir) . trim($s);
             if (file_exists($d) && is_dir($d)) {
                 $dirs[] = $d;
             } else {
@@ -1249,7 +1081,7 @@ class Repoman
      * @param string $pkg_root_dir
      * @return string dir with trailing slash
      */
-    public function get_core_path($pkg_root_dir)
+    public function getCorePath($pkg_root_dir)
     {
         // Handle any case where shorthand for current working dir has been used
         if (in_array($this->get('core_path'), array(null, '/', '.' . './'))) {
@@ -1267,7 +1099,7 @@ class Repoman
      * @param string $pkg_root_dir
      * @return string dir with trailing slash
      */
-    public function get_assets_dir($pkg_root_dir)
+    public function getAssetsPath($pkg_root_dir)
     {
         if ($this->get('assets_dir')) {
             return $pkg_root_dir . $this->get('assets_dir');
@@ -1283,7 +1115,7 @@ class Repoman
      * @param string $pkg_root_dir
      * @return string dir with trailing slash
      */
-    public function get_docs_path($pkg_root_dir)
+    public function getDocsPath($pkg_root_dir)
     {
         if ($this->get('docs_path')) {
             return $pkg_root_dir . $this->get('docs_path');
@@ -1299,12 +1131,12 @@ class Repoman
      */
     public function import($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
 
         // Is installed?
         $namespace = $this->get('namespace');
         if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace . '.version'))) {
-            throw new Exception('Package is not installed. Run "install" instead.');
+            throw new \Exception('Package is not installed. Run "install" instead.');
         }
 
         // The gratis Category
@@ -1331,7 +1163,7 @@ class Repoman
         if ($tvs) $Category->addMany($tvs);
 
         if (!$this->get('dry_run') && $Category->save()) {
-            $data = $this->get_criteria('modCategory', $Category->toArray());
+            $data = $this->getCriteria('modCategory', $Category->toArray());
             $this->modx->cacheManager->set('modCategory/' . $this->get('category'), $data, 0, self::$cache_opts);
             $this->modx->log(modX::LOG_LEVEL_INFO, "Category created/updated: " . $this->get('category'));
         }
@@ -1357,13 +1189,13 @@ class Repoman
      */
     public function install($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
 
         // Is already installed?
         $namespace = $this->get('namespace');
         if ($Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace . '.version'))) {
             return $this->update($pkg_root_dir);
-            //throw new Exception('Package is already installed. Run "update" instead.');
+            //throw new \Exception('Package is already installed. Run "update" instead.');
         }
         $this->prep_modx($pkg_root_dir);
         $this->_create_setting($this->get('namespace'), $this->get('namespace') . '.version', trim($this->get('version')));
@@ -1383,29 +1215,29 @@ class Repoman
     public function load_data($file, $json = false)
     {
         if (!file_exists($file)) {
-            throw new Exception('Loading data failed. File does not exist: ' . $file);
+            throw new \Exception('Loading data failed. File does not exist: ' . $file);
         }
 
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Processing object(s) in ' . $file . ' (json: ' . $json);
 
         if ($json) {
-            $data = \Composer\Json\JsonFile::parseJson(file_get_contents($file),$file);
+            $data = \Composer\Json\JsonFile::parseJson(file_get_contents($file), $file);
             //$data = json_decode(file_get_contents($file), true);
             if (!is_array($data)) {
-                throw new Exception('Bad JSON in ' . $file);
+                throw new \Exception('Bad JSON in ' . $file);
             }
         } else {
             // check file syntax
             $out = exec(escapeshellcmd("php -l $file"));
             if (preg_match('/^Errors parsing/', $out)) {
-                throw new Exception($out);
+                throw new \Exception($out);
             }
             $data = include $file;
         }
 
         if (!is_array($data)) {
             $this->modx->log(modX::LOG_LEVEL_ERROR, 'Data in ' . $file . ' not an array.');
-            throw new Exception('Data in ' . $file . 'not an array.');
+            throw new \Exception('Data in ' . $file . 'not an array.');
         }
         if (!isset($data[0])) {
             $data = array($data);
@@ -1425,7 +1257,7 @@ class Repoman
      */
     public function migrate($pkg_root_dir, $mode = 'install')
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         $this->prep_modx($pkg_root_dir);
 
         global $modx;
@@ -1433,7 +1265,7 @@ class Repoman
         $object = $this->config;
         // TODO: check for modx_transport_packages -- SELECT * FROM modx_transport_packages WHERE package_name = xxx
         // if this has been installed via a package, then skip??
-        $migrations_path = $this->get_core_path($pkg_root_dir) . $this->get('migrations_path');
+        $migrations_path = $this->getCorePath($pkg_root_dir) . $this->get('migrations_path');
 
         if (!file_exists($migrations_path) || !is_dir($migrations_path)) {
             $this->modx->log(modX::LOG_LEVEL_INFO, "No migrations detected at " . $migrations_path);
@@ -1480,9 +1312,9 @@ class Repoman
      */
     public function seed($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         $this->_addPkgs($this->config, $pkg_root_dir);
-        $dirs = $this->get_seed_dirs($pkg_root_dir);
+        $dirs = $this->getSeedPaths($pkg_root_dir);
         foreach ($dirs as $d) {
             $objects = $this->crawl_dir($d);
             foreach ($objects as $classname => $info) {
@@ -1509,7 +1341,7 @@ class Repoman
      */
     public function schema_parse($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         $this->_addPkgs($this->config, $pkg_root_dir);
 
         $model = trim(strtolower($this->get('model')), '/'); // stub-name of XML schema file
@@ -1526,12 +1358,12 @@ class Repoman
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Model parameter not set. Falling back to namespace as model name.');
         }
         if (preg_match('/^[^a-z0-9_\-]/i', $model)) {
-            throw new Exception('Invalid model. Model name can only contain alphanumeric characters.');
+            throw new \Exception('Invalid model. Model name can only contain alphanumeric characters.');
         }
 
         $now = time();
-        $schema_file = $this->get_core_path($pkg_root_dir) . $this->get('orm_path') . 'schema/' . $model . '.mysql.schema.xml';
-        $model_dir = $this->get_core_path($pkg_root_dir) . $this->get('orm_path');
+        $schema_file = $this->getCorePath($pkg_root_dir) . $this->get('orm_path') . 'schema/' . $model . '.mysql.schema.xml';
+        $model_dir = $this->getCorePath($pkg_root_dir) . $this->get('orm_path');
 
         $manager = $this->modx->getManager();
         $generator = $manager->getGenerator();
@@ -1539,22 +1371,22 @@ class Repoman
         $renamed_files = array();
 
         $this->modx->setPackage($this->get('namespace'), $pkg_root_dir, $table_prefix);
-        if (!file_exists($schema_file)) throw new Exception('Schema file does not exist: ' . $schema_file);
+        if (!file_exists($schema_file)) throw new \Exception('Schema file does not exist: ' . $schema_file);
         $class_dir = $model_dir . $model . '/';
 
         if (!file_exists($class_dir)) {
             if (!mkdir($class_dir, $dir_mode, true)) {
-                throw new Exception('Could not create directory ' . $class_dir);
+                throw new \Exception('Could not create directory ' . $class_dir);
             }
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $class_dir);
         }
         if (!is_writable($class_dir)) {
-            throw new Exception('Directory is not writeable ' . $class_dir);
+            throw new \Exception('Directory is not writeable ' . $class_dir);
         }
 
         $xml = file_get_contents($schema_file);
         if ($xml === false) {
-            throw new Exception('Could not read XML schema file: ' . $schema_file);
+            throw new \Exception('Could not read XML schema file: ' . $schema_file);
         }
         // Check class files by reading the XML file
         preg_match_all('/<object class="(\w+)"/U', $xml, $matches);
@@ -1567,17 +1399,17 @@ class Repoman
                     if ($overwrite == 'polite') {
                         $class_file_new = $class_dir . $now . '.' . strtolower($f) . '.class.php';
                         if (!rename($class_file, $class_file_new)) {
-                            throw new Exception('Could not rename class file ' . $class_file);
+                            throw new \Exception('Could not rename class file ' . $class_file);
                         }
                         $renamed_files[$class_file] = $class_file_new;
                         $this->modx->log(modX::LOG_LEVEL_INFO, 'Renamed file ' . basename($class_file) . ' to ' . basename($class_file_new));
                     } elseif ($overwrite == 'force') {
                         if (!unlink($class_file)) {
-                            throw new Exception('Could not delete class file ' . $class_file);
+                            throw new \Exception('Could not delete class file ' . $class_file);
                         }
                         $this->modx->log(modX::LOG_LEVEL_INFO, 'Deleted file ' . $class_file);
                     } else {
-                        throw new Exception('Class file exists: ' . $class_file . ' Refusing to overwrite unless forced.');
+                        throw new \Exception('Class file exists: ' . $class_file . ' Refusing to overwrite unless forced.');
                     }
                 }
             }
@@ -1588,17 +1420,17 @@ class Repoman
                 if ($overwrite == 'polite') {
                     $metadata_file_new = $class_dir . $now . '.metadata.mysql.php';
                     if (!rename($metadata_file, $metadata_file_new)) {
-                        throw new Exception('Could not rename metadata file  ' . $metadata_file);
+                        throw new \Exception('Could not rename metadata file  ' . $metadata_file);
                     }
                     $renamed_files[$metadata_file] = $metadata_file_new;
                     $this->modx->log(modX::LOG_LEVEL_INFO, 'Renamed file ' . $metadata_file);
                 } elseif ($overwrite == 'force') {
                     if (!unlink($metadata_file)) {
-                        throw new Exception('Could not delete metadata file ' . $metadata_file);
+                        throw new \Exception('Could not delete metadata file ' . $metadata_file);
                     }
                     $this->modx->log(modX::LOG_LEVEL_INFO, 'Deleted metadata file ' . $metadata_file);
                 } else {
-                    throw new Exception('metadata.mysql.php file exits. Refusing to overwrite unless forced.');
+                    throw new \Exception('metadata.mysql.php file exits. Refusing to overwrite unless forced.');
                 }
             }
             // Check mysql files
@@ -1607,27 +1439,27 @@ class Repoman
                 if ($overwrite == 'polite') {
                     $new_mysql_dir = dirname($mysql_dir) . '/' . $now . '.mysql';
                     if (!rename($mysql_dir, $new_mysql_dir)) {
-                        throw new Exception('Could not rename mysql directory ' . $mysql_dir);
+                        throw new \Exception('Could not rename mysql directory ' . $mysql_dir);
                     }
                     if (!mkdir($mysql_dir, $dir_mode, true)) {
-                        throw new Exception('Could not create directory ' . $mysql_dir);
+                        throw new \Exception('Could not create directory ' . $mysql_dir);
                     }
                     $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $mysql_dir);
                 } elseif ($overwrite == 'force') {
-                    if (!$this->rrmdir($mysql_dir)) {
-                        throw new Exception('Could not delete mysqld dir ' . $mysql_dir);
+                    if (!$this->Filesystem->remove($mysql_dir)) {
+                        throw new \Exception('Could not delete mysqld dir ' . $mysql_dir);
                     }
                     $this->modx->log(modX::LOG_LEVEL_INFO, 'Deleted directory ' . $mysql_dir);
                     if (!mkdir($mysql_dir, $dir_mode, true)) {
-                        throw new Exception('Could not create directory ' . $mysql_dir);
+                        throw new \Exception('Could not create directory ' . $mysql_dir);
                     }
                     $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $mysql_dir);
                 } else {
-                    throw new Exception('mysql directory exists: ' . $mysql_dir . ' Refusing to overwrite unless forced.');
+                    throw new \Exception('mysql directory exists: ' . $mysql_dir . ' Refusing to overwrite unless forced.');
                 }
             } else {
                 if (!mkdir($mysql_dir, $dir_mode, true)) {
-                    throw new Exception('Could not create directory ' . $mysql_dir);
+                    throw new \Exception('Could not create directory ' . $mysql_dir);
                 }
                 $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $mysql_dir);
             }
@@ -1638,9 +1470,9 @@ class Repoman
         if ($overwrite == 'polite') {
             //$this->modx->log(modX::LOG_LEVEL_INFO,'Renamed: '.print_r($renamed_files,true));
             foreach ($renamed_files as $old => $new) {
-                if (self::files_equal($old, $new)) {
+                if ($this->Filesystem->areEqual($old, $new)) {
                     if (!unlink($new)) {
-                        throw new Exception('Could not delete file ' . $new);
+                        throw new \Exception('Could not delete file ' . $new);
                     }
                     $this->modx->log(modX::LOG_LEVEL_INFO, 'Cleanup - removing unchanged file ' . basename($new));
                 }
@@ -1652,7 +1484,7 @@ class Repoman
                 foreach ($restore_array as $r) {
                     if (preg_match('/^' . preg_quote($r, '/') . '/', basename($old))) {
                         if (file_exists($new) && !rename($new, $old)) {
-                            throw new Exception('Could not restore file ' . $new);
+                            throw new \Exception('Could not restore file ' . $new);
                         }
                         $this->modx->log(modX::LOG_LEVEL_INFO, 'Restoring original file ' . basename($old));
                     }
@@ -1678,7 +1510,7 @@ class Repoman
      */
     public function schema_write($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
         $this->_addPkgs($this->config, $pkg_root_dir);
         // $this->prep_modx($pkg_root_dir); // populate the system settings not req'd
 
@@ -1696,12 +1528,12 @@ class Repoman
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Model parameter not set. Falling back to namespace as model name.');
         }
         if (preg_match('/^[^a-z0-9_\-]/i', $model)) {
-            throw new Exception('Invalid model. Model name can only contain alphanumeric characters.');
+            throw new \Exception('Invalid model. Model name can only contain alphanumeric characters.');
         }
 
         $now = time();
-        $schema_file = $this->get_core_path($pkg_root_dir) . $this->get('orm_path') . 'schema/' . $model . '.mysql.schema.xml';
-        $model_dir = $this->get_core_path($pkg_root_dir) . $this->get('orm_path');
+        $schema_file = $this->getCorePath($pkg_root_dir) . $this->get('orm_path') . 'schema/' . $model . '.mysql.schema.xml';
+        $model_dir = $this->getCorePath($pkg_root_dir) . $this->get('orm_path');
 
         $manager = $this->modx->getManager();
         $generator = $manager->getGenerator();
@@ -1710,18 +1542,18 @@ class Repoman
         // Generate XML schema by reverse-engineering from existing database tables.
         if (file_exists($schema_file)) {
             if ($overwrite == 'polite') {
-                $schema_file_new = $this->get_core_path($pkg_root_dir) . $this->get('orm_path') . 'schema/' . $model . '.' . $now . '.mysql.schema.xml';
+                $schema_file_new = $this->getCorePath($pkg_root_dir) . $this->get('orm_path') . 'schema/' . $model . '.' . $now . '.mysql.schema.xml';
                 if (!rename($schema_file, $schema_file_new)) {
-                    throw new Exception('Could not rename schema file ' . $schema_file);
+                    throw new \Exception('Could not rename schema file ' . $schema_file);
                 }
                 $renamed_files[$schema_file] = $schema_file_new;
             } elseif ($overwrite == 'force') {
                 if (!unlink($schema_file)) {
-                    throw new Exception('Could not delete schema file ' . $schema_file);
+                    throw new \Exception('Could not delete schema file ' . $schema_file);
                 }
                 $this->modx->log(modX::LOG_LEVEL_INFO, 'Deleted file ' . $schema_file);
             } else {
-                throw new Exception('Schema already exists: ' . $schema_file . ' Refusing to overwrite unless forced.');
+                throw new \Exception('Schema already exists: ' . $schema_file . ' Refusing to overwrite unless forced.');
             }
         }
         $schema_dir = $model_dir . 'schema/';
@@ -1729,11 +1561,11 @@ class Repoman
         foreach ($dirs as $d) {
             if (!file_exists($d)) {
                 if (!mkdir($d, $dir_mode, true)) {
-                    throw new Exception('Could not create directory ' . $d);
+                    throw new \Exception('Could not create directory ' . $d);
                 }
             }
             if (!is_writable($d)) {
-                throw new Exception('Directory is not writeable ' . $d);
+                throw new \Exception('Directory is not writeable ' . $d);
             }
         }
         $generator->writeSchema($schema_file, $this->get('namespace'), 'xPDOObject', $table_prefix, $restrict_prefix);
@@ -1743,9 +1575,9 @@ class Repoman
         if ($overwrite == 'polite') {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Renamed: ' . print_r($renamed_files, true));
             foreach ($renamed_files as $old => $new) {
-                if (self::files_equal($old, $new)) {
+                if ($this->Filesystem->areEqual($old, $new)) {
                     if (!unlink($new)) {
-                        throw new Exception('Could not delete file ' . $new);
+                        throw new \Exception('Could not delete file ' . $new);
                     }
                     $this->modx->log(modX::LOG_LEVEL_INFO, 'Cleanup - removing file ' . $new);
                 }
@@ -1801,13 +1633,13 @@ class Repoman
      */
     public function update($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
 
         // Is already installed?
         $namespace = $this->get('namespace');
         if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace . '.version'))) {
             return $this->install($pkg_root_dir);
-            //throw new Exception('Package is not installed. Run "install" instead.');
+            //throw new \Exception('Package is not installed. Run "install" instead.');
         }
         $this->prep_modx($pkg_root_dir);
 
@@ -1829,7 +1661,7 @@ class Repoman
      */
     public function uninstall($pkg_root_dir)
     {
-        $pkg_root_dir = self::get_dir($pkg_root_dir);
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
 
         // uninstall migrations. Global $modx and $object variables
         $this->migrate($pkg_root_dir, 'uninstall');
@@ -1858,7 +1690,7 @@ class Repoman
                 }
             }
 
-            Repoman::rrmdir($cache_dir);
+            $this->Filesystem->remove($cache_dir);
         } else {
             $this->modx->log(modX::LOG_LEVEL_WARN, 'No cached import data at ' . $cache_dir);
         }

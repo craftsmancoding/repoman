@@ -4,7 +4,8 @@
  */
 namespace Repoman;
 
-use Modx;
+use modX;
+use Filesystem;
 use xPDOTransport;
 use Composer\Json\JsonFile;
 
@@ -29,24 +30,6 @@ class Bridge
         }
     }
 
-    /**
-     * Verify a directory, converting for any OS variants and convert
-     * any relative paths to absolute .
-     *
-     * @param string $path path (or relative path) to package
-     * @return string full path with trailing slash
-     */
-    public static function getDir($path)
-    {
-        if (!is_scalar($path)) throw new \Exception('Invalid input. $path must be a scalar.');
-        $realpath = strtr(realpath($path), '\\', '/');
-        if (!file_exists($realpath)) {
-            throw new \Exception('Directory does not exist: ' . $path);
-        } elseif (!is_dir($realpath)) {
-            throw new \Exception('Path is not a directory: ' . $realpath);
-        }
-        return preg_replace('#/+$#', '', $realpath) . '/';
-    }
 
     /**
      * Get configuration for a given package path.
@@ -59,8 +42,8 @@ class Bridge
      */
     public static function loadConfig($pkg_root_dir, $overrides = array())
     {
-        $pkg_root_dir = self::getDir($pkg_root_dir);
-        $global = include dirname(__FILE__) . '/repoman/global.config.php';
+        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
+        $global = include dirname(dirname(__FILE__)) . '/includes/global.config.php';
         $config = array();
         if (file_exists($pkg_root_dir . 'composer.json')) {
             $str = file_get_contents($pkg_root_dir . 'composer.json');

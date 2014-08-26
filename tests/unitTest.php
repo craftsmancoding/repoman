@@ -387,30 +387,4 @@ class unitTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue(count($parsed) == 2, 'Two arguments should come through.');   
         $this->assertFalse(isset($parsed['skip']), 'Value should not be set.');   
     }
-    
-    /**
-     * Test recursive copying of directories
-     *
-     *
-     */
-    public function testRCopy() {
-        $name = $this->_get_rand_name();
-        $source_dir = dirname(dirname(__FILE__)).'/model/samples/repo1';
-        $target_dir = MODX_CORE_PATH.'cache/repoman/'.$name;
-        Repoman::rcopy($source_dir,$target_dir,array());
- 
-        $this->assertTrue(file_exists($target_dir.'/elements') && is_dir($target_dir.'/elements'), 'elements directory must exist');   
-        $this->assertTrue(file_exists($target_dir.'/elements/plugins') && is_dir($target_dir.'/elements/plugins'), 'elements/plugins directory must exist');
-        $this->assertTrue(file_exists($target_dir.'/elements/snippets') && is_dir($target_dir.'/elements/snippets'), 'elements/snippets directory must exist');
-        $this->assertTrue(file_exists($target_dir.'/elements/templates') && is_dir($target_dir.'/elements/templates'), 'elements/templates directory must exist');
-        $this->assertTrue(file_exists($target_dir.'/elements/tvs') && is_dir($target_dir.'/elements/tvs'), 'elements/tvs directory must exist');
-
-        $this->assertTrue(file_exists($target_dir.'/elements/chunks/MyChunk.html'), 'elements/chunks/MyChunk.html file must exist');
-        $this->assertTrue(file_exists($target_dir.'/elements/plugins/MyPlugin.php'), 'elements/plugins/MyPlugin.php file must exist');
-        $this->assertTrue(file_exists($target_dir.'/elements/snippets/MySnippet.php'), 'elements/snippets/MySnippet.php file must exist');
-        $this->assertTrue(file_exists($target_dir.'/elements/templates/MyTemplate.html'), 'elements/templates/MyTemplate.html file must exist');
-        $this->assertTrue(file_exists($target_dir.'/elements/tvs/myTV.php'), 'elements/tvs/myTV.php file must exist');
-                                 
-        Repoman::rrmdir($target_dir);       
-    }
 }

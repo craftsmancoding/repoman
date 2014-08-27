@@ -32,12 +32,12 @@ return array(
     'require_docblocks' => false, // if true, your elements *must* define docblocks in order to be imported
     'build_docs' => '*', // you may include an array specifying basenames of specific files in the build
     'overwrite' => false, // if true, will overwrite repo files during extract operations
-    'log_level' => modX::LOG_LEVEL_INFO,
+    'log_level' => 3,
 
     // Author stuff (better when the mgr is used)...
     'author_name' => '',
     'author_email' => '',
-    'author_homepage' => MODX_SITE_URL,
+    'author_homepage' => '',
 
     // Paths
     'core_path' => '',

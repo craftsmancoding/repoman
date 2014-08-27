@@ -21,18 +21,21 @@ class configTest extends \PHPUnit_Framework_TestCase
 {
 
     /**
-     * @expectedException        \Exception
-     * @expectedExceptionMessage Could not find a valid MODX config.core.php file.
+     * @  expectedException        \Exception
+     * @  expectedExceptionMessage Could not find a valid MODX config.core.php file.
      */
-    public function testBadDir()
-    {
-        $modx = Bridge::getMODX('/tmp');
-    }
+//    public function testBadDir()
+//    {
+//        $modx = Bridge::getMODX('/tmp');
+//    }
 
-    public function testGetModx() {
-        $modx = Bridge::getMODX();
+    public function testGlobal() {
+        $Config = new Config(dirname(__FILE__).'/pkg1/');
+        $actual = $Config->render();
+        $this->assertTrue(is_array($actual));
+        //$expected = $Config->getGlobal();
 
-        $this->assertTrue(is_a($modx, 'modX'));
+        //$this->assertEqual($expected, $actual);
     }
 
 }

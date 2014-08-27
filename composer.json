@@ -22,6 +22,7 @@
     "require": {
         "php": ">=5.3",
         "composer-plugin-api": "1.0.0",
+        "justinrainbow/json-schema": "dev-master",
         "symfony/filesystem": "dev-master",
         "symfony/finder": "dev-master",
         "symfony/console": "dev-master"

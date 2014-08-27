@@ -3,21 +3,21 @@
     "description": "My description here.",
     "type": "library",
     "keywords": ["one","two","three"],
-    "homepage": "github.com/craftsmancoding/repoman",
+    "homepage": "https://github.com/craftsmancoding/repoman",
     "license": "GPL2",
     "authors": [
         {
             "name": "Everett Griffiths",
             "email": "everett@craftsmancoding.com",
-            "homepage": "http://craftsmancoding.com"
+            "homepage": "http://craftsmancoding.com/"
         }        
     ],
     "support": {
         "email": "donotreply@craftsmancoding.org",
-        "issues": "github.com/craftsmancoding/repoman/issues",
-        "forum": "forums.modx.com/",
-        "wiki": "github.com/craftsmancoding/repoman/wiki",
-        "source": "github.com/craftsmancoding/repoman"
+        "issues": "https://github.com/craftsmancoding/repoman/issues",
+        "forum": "http://forums.modx.com/",
+        "wiki": "https://github.com/craftsmancoding/repoman/wiki",
+        "source": "https://github.com/craftsmancoding/repoman"
     },    
     "require": {
         "php": ">=5.3"

@@ -4,7 +4,7 @@
  */
 namespace Repoman;
 
-use Composer\Json\JsonFile;
+use JsonSchema\Validator;
 use Repoman\Filesystem;
 
 class Config
@@ -18,20 +18,20 @@ class Config
      * @param array $overrides line-item overrides usually from console
      */
     public function __construct($dir,$overrides=array()) {
-        $this->pkg_dir = $dir;
+        $this->pkg_dir = Filesystem::getDir($dir);
         $this->overrides = $overrides;
     }
 
     /**
-     * Get all of the config, as an array
+     * Get all of the config, as an array, intelligently merging overrides
      *
      * @throws \Exception if namespace contains invalid characters
      * @throws \Exception if version is not valid
      * @return array
      */
-    public function render() {
+    public function getAll() {
         $global = $this->getGlobal();
-        $pkg = ($this->pkg_dir)? $this->getPkg($this->pkg_dir) : array();
+        $pkg = $this->getPkg();
 
         $out = array_merge($global, $pkg, $this->overrides);
 
@@ -43,9 +43,9 @@ class Config
         }
 
         if ($out['core_path'] == $out['assets_path']) {
-            throw new \Exception('core_path cannot match assets_path in ' . $pkg_root_dir);
+            throw new \Exception('core_path cannot match assets_path in ' . $this->pkg_dir);
         } elseif ($out['core_path'] == $out['docs_path']) {
-            throw new \Exception('core_path cannot match docs_path in ' . $pkg_root_dir);
+            throw new \Exception('core_path cannot match docs_path in ' . $this->pkg_dir);
         }
         // Todo... all path directives must be unique.
 
@@ -64,28 +64,26 @@ class Config
      * @return array
      */
     public function getGlobal() {
-        $pkg_root_dir = $this->pkg_dir; // requires $pkg_root_dir
+        $pkg_root_dir = $this->pkg_dir; // make available to the include $pkg_root_dir
         $global = include dirname(dirname(__FILE__)) . '/includes/global.config.php';
         return $global;
     }
+
     /**
      * Get configuration for a given package path.
-     * This reads the config.php (if present), and merges it with global config
+     * This reads the package's composer.json (if present), and merges it with global config
      * settings.
      *
-     * @param string $pkg_root_dir path to local package root (w trailing slash)
+     * @internal param string pkg_dir path to local package root (w trailing slash)
      *
      * @return array combined config
      */
-    public static function getPkg($pkg_root_dir)
+    public function getPkg()
     {
-        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
-
         $config = array();
-        if (file_exists($pkg_root_dir . 'composer.json')) {
-            $str = file_get_contents($pkg_root_dir . 'composer.json');
+        if (file_exists($this->pkg_dir . 'composer.json')) {
 
-            $composer = JsonFile::parseJson($str, $pkg_root_dir . 'composer.json');
+            $composer = $this->parseJson($this->pkg_dir . 'composer.json');
 
             if (isset($composer['extra']) && is_array($composer['extra'])) {
                 $config = $composer['extra'];
@@ -112,4 +110,32 @@ class Config
         return $config;
     }
 
+    /**
+     * Double-dipping a bit here: we include the justinrainbow/json-schema package to validate composer.json
+     * files when repoman is called as a stand-alone tool (and not as a composer plugin).  Otherwise we could
+     * leverage composer's inclusion of the same justinrainbow/json-schema package.  We have also downloaded
+     * a copy of the composer.json schema file (res/composer-schema.json)
+     *
+     * @throws \Exception if json schema is invalid
+     * @param $file full path to composer.json file
+     * @return array
+     */
+    public function parseJson($file) {
+
+        $schemaFile = __DIR__ . '/../res/composer-schema.json';
+        $schemaData = json_decode(file_get_contents($schemaFile));
+        $contents = file_get_contents($file);
+        $data = json_decode($contents);
+        $validator = new Validator();
+        $validator->check($data, $schemaData);
+        if (!$validator->isValid()) {
+            $error_msg = "\n";
+            foreach ((array) $validator->getErrors() as $error) {
+                $error_msg .= ($error['property'] ? $error['property'].' : ' : '').$error['message']. "\n";
+            }
+            throw new \Exception('"'.$file.'" does not match the expected JSON schema.'.$error_msg);
+        }
+
+        return json_decode($contents,true); // we want it as an array
+    }
 }

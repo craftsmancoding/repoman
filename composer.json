@@ -23,7 +23,8 @@
         "php": ">=5.3",
         "composer-plugin-api": "1.0.0",
         "symfony/filesystem": "dev-master",
-        "symfony/finder": "dev-master"
+        "symfony/finder": "dev-master",
+        "symfony/console": "dev-master"
     },
     "autoload": {
         "psr-4": {

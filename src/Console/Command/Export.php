@@ -18,9 +18,35 @@ class Export extends Command
             ->setName('export')
             ->setDescription('Export MODX elements and objects from the MODX database into your repository as files.')
             ->addArgument(
-                'pkg_root_dir',
+                'classname',
                 InputArgument::REQUIRED,
-                'Path to package root'
+                'MODX Classname'
+            )
+            ->addArgument(
+                'target',
+                InputArgument::REQUIRED,
+                'Destination directory'
+            )
+            ->addOption(
+                'where',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'JSON where clause filtering results from <classname> collection',
+                null
+            )
+            ->addOption(
+                'graph',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'JSON graph to define joins on related data',
+                null
+            )
+            ->addOption(
+                'limit',
+                null,
+                InputOption::VALUE_OPTIONAL,
+                'How many records per file?',
+                1
             );
     }
 

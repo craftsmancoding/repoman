@@ -12,9 +12,10 @@
  *  php phpunit.phar path/to/tests
  *
  */
+use Repoman\Bridge;
+use Repoman\Config;
 
-
-class unitTest extends PHPUnit_Framework_TestCase {
+class unitTest extends \PHPUnit_Framework_TestCase {
 
     // Must be static because we set it up inside a static function
     public static $modx;
@@ -25,30 +26,11 @@ class unitTest extends PHPUnit_Framework_TestCase {
      *
      */
     public static function setUpBeforeClass() {        
-        $docroot = dirname(dirname(__FILE__));
-        while (!file_exists($docroot.'/config.core.php')) {
-            if ($docroot == '/') {
-                die('Failed to locate config.core.php');
-            }
-            $docroot = dirname($docroot);
-        }
-        if (!file_exists($docroot.'/config.core.php')) {
-            die('Failed to locate config.core.php');
-        }
-        
-        include_once $docroot . '/config.core.php';
-        
-        if (!defined('MODX_API_MODE')) {
-            define('MODX_API_MODE', false);
-        }
-        require_once dirname(dirname(__FILE__)).'/vendor/autoload.php';
-        include_once MODX_CORE_PATH . 'model/modx/modx.class.php';
-        require_once dirname(dirname(__FILE__)).'/model/repoman/repoman.class.php';         
-        
-        self::$modx = new modX();
+
+        self::$modx = Bridge::getMODX();
         self::$modx->initialize('mgr');          
         
-        self::$repoman = new Repoman(self::$modx);
+        //self::$repoman = new Repoman(self::$modx);
         
     }
 
@@ -78,42 +60,19 @@ class unitTest extends PHPUnit_Framework_TestCase {
     }
     
 
-    public function testConfig() {
-        $config = Repoman::load_config(dirname(__FILE__).'/pkg1/');
-        $this->assertTrue($config['namespace'] == 'packagename', 'Namespace not detected.');
-        $this->assertTrue($config['description'] == 'My description here.', 'Description not detected.');
-    }
-    
-    /**
-     * Test for bad JSON
-     *
-     * @expectedException Exception
-     * @expectedExceptionMessage Invalid JSON
-     */
-    public function testConfig2() {
-        $config = Repoman::load_config(dirname(__FILE__).'/pkg2/');
-    }
-
-    /**
-     * Test for bad version number
-     *
-     * @expectedException Exception
-     * @expectedExceptionMessage Invalid version
-     */
-    public function testConfig3() {
-        $config = Repoman::load_config(dirname(__FILE__).'/pkg3/');
-    }
 
     /**
      *
      */    
     public function testPrep() {
-        $config = Repoman::load_config(dirname(__FILE__).'/pkg4/');
-        $config['dry_run'] = true;
+        $dir = dirname(__FILE__).'/pkg4/';
+
+        $config = new Config($dir, array('dry_run'=>true));
+
         self::$modx->setLogLevel(modX::LOG_LEVEL_FATAL);
         self::$modx->setLogTarget('ECHO'); 
-        $Repoman = new Repoman(self::$modx,$config);
-        $Repoman->prep_modx(dirname(__FILE__).'/pkg4/');
+        $Repoman = new Repoman($dir,self::$modx,$config);
+        $Repoman->prepModx($dir);
 
         $assets_url = MODX_BASE_URL .preg_replace('#'.MODX_BASE_PATH.'#', '', dirname(__FILE__).'/pkg4/').$config['assets_path'];
         $assets_path = dirname(__FILE__).'/pkg4/'.$config['assets_path'];

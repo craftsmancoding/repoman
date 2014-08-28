@@ -150,65 +150,6 @@ class Bridge
         flush();
         return $modx;
     }
-    /**
-     * Import pkg elements (Snippets,Chunks,Plugins,Templates) into MODX from the filesystem.
-     * They will be marked as static elements.
-     *
-     * @param string $pkg_root_dir path to local package root (w trailing slash)
-     */
-//    public function import($pkg_root_dir)
-//    {
-//        $pkg_root_dir = self::getDir($pkg_root_dir);
-//
-//        // Is installed?
-//        $namespace = $this->get('namespace');
-//        if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => $namespace . '.version'))) {
-//            throw new Exception('Package is not installed. Run "install" instead.');
-//        }
-//
-//        // The gratis Category
-//        $Category = $this->modx->getObject('modCategory', array('category' => $this->get('category')));
-//        if (!$Category) {
-//            $this->modx->log(modX::LOG_LEVEL_DEBUG, "Creating new category: " . $this->get('category'));
-//            $Category = $this->modx->newObject('modCategory');
-//            $Category->set('category', $this->get('category'));
-//        } else {
-//            $this->modx->log(modX::LOG_LEVEL_INFO, "Using existing category: " . $this->get('category'));
-//        }
-//
-//        // Import Elements
-//        $chunks = self::_get_elements('modChunk', $pkg_root_dir);
-//        $plugins = self::_get_elements('modPlugin', $pkg_root_dir);
-//        $snippets = self::_get_elements('modSnippet', $pkg_root_dir);
-//        $tvs = self::_get_elements('modTemplateVar', $pkg_root_dir);
-//        $templates = self::_get_elements('modTemplate', $pkg_root_dir);
-//
-//        if ($chunks) $Category->addMany($chunks);
-//        if ($plugins) $Category->addMany($plugins);
-//        if ($snippets) $Category->addMany($snippets);
-//        if ($templates) $Category->addMany($templates);
-//        if ($tvs) $Category->addMany($tvs);
-//
-//        if (!$this->get('dry_run') && $Category->save()) {
-//            $data = $this->get_criteria('modCategory', $Category->toArray());
-//            $this->modx->cacheManager->set('modCategory/' . $this->get('category'), $data, 0, self::$cache_opts);
-//            $this->modx->log(modX::LOG_LEVEL_INFO, "Category created/updated: " . $this->get('category'));
-//        }
-//
-//        if ($this->get('dry_run')) {
-//            $msg = "\n==================================\n";
-//            $msg .= "    Dry Run Enqueued Elements:\n";
-//            $msg .= "===================================\n";
-//            foreach (Repoman::$queue as $classname => $list) {
-//                $msg .= "\n" . $classname . "\n" . str_repeat('-', strlen($classname)) . "\n";
-//                foreach ($list as $k => $def) {
-//                    $msg .= "    " . $k . "\n";
-//                }
-//            }
-//            $this->modx->log(modX::LOG_LEVEL_INFO, $msg);
-//        }
-//    }
-    //}
 
 }
 /*EOF*/

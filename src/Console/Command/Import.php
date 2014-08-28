@@ -21,6 +21,18 @@ class Import extends Command
                 'pkg_root_dir',
                 InputArgument::REQUIRED,
                 'Path to package root'
+            )
+            ->addOption(
+                'overwrite',
+                null,
+                InputOption::VALUE_NONE,
+                'Use to overwrite existing files in the target directory'
+            )
+            ->addOption(
+                'static', // force_static
+                null,
+                InputOption::VALUE_NONE,
+                'Force elements to be static'
             );
     }
 

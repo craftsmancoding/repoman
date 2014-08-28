@@ -3,7 +3,7 @@
     "description": "Testing package",
     "type": "library",
     "keywords": ["one","two","three"],
-    "homepage": "github.com/craftsmancoding/repoman",
+    "homepage": "https:///craftsmancoding/repoman",
     "license": "GPL2",
     "authors": [
         {
@@ -14,10 +14,10 @@
     ],
     "support": {
         "email": "donotreply@craftsmancoding.org",
-        "issues": "github.com/craftsmancoding/repoman/issues",
-        "forum": "forums.modx.com/",
-        "wiki": "github.com/craftsmancoding/repoman/wiki",
-        "source": "github.com/craftsmancoding/repoman"
+        "issues": "https:///craftsmancoding/repoman/issues",
+        "forum": "http://forums.modx.com/",
+        "wiki": "https:///craftsmancoding/repoman/wiki",
+        "source": "https:///craftsmancoding/repoman"
     },    
     "require": {
         "php": ">=5.3"

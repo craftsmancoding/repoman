@@ -21,6 +21,18 @@ class Build extends Command
                 'pkg_root_dir',
                 InputArgument::REQUIRED,
                 'Path to package root'
+            )
+            ->addOption(
+                'strip_docblocks',
+                null,
+                InputOption::VALUE_NONE,
+                'Strip out the first block comment from elements, the first block comment is assumed to be the docblock.'
+            )
+            ->addOption(
+                'strip_comments',
+                null,
+                InputOption::VALUE_NONE,
+                'Strip out all comments and whitespace from elements, including docblocks.'
             );
     }
 

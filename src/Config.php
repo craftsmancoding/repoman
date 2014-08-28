@@ -17,7 +17,8 @@ class Config
      * @param string $dir path to package root
      * @param array $overrides line-item overrides usually from console
      */
-    public function __construct($dir,$overrides=array()) {
+    public function __construct($dir=null,$overrides=array()) {
+        $dir = ($dir) ? $dir : __DIR__;
         $this->pkg_dir = Filesystem::getDir($dir);
         $this->overrides = $overrides;
     }

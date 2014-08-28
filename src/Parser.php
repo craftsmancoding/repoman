@@ -9,9 +9,8 @@ namespace Repoman;
 
 use modX;
 use Symfony\Component\Filesystem\Exception\IOException;
-use Symfony\Component\Filesystem\Filesystem;
-use Symfony\Component\Filesystem\Exception\IOExceptionInterface;
 use Symfony\Component\Finder\Finder;
+use Repoman\Repoman;
 
 abstract class Parser
 {
@@ -31,8 +30,6 @@ abstract class Parser
     public $dox_start = '/*';
     public $dox_end = '*/';
     public $dox_pad = ' * '; // left of line before the @attribute
-    public $comment_start = '<!--REPOMAN_COMMENT_START';
-    public $comment_end = 'REPOMAN_COMMENT_END-->';
 
     public $extensions = '';
     public $pkg_dir;
@@ -50,26 +47,26 @@ abstract class Parser
 
 
     /**
-     * @param object $modx
-     * @param array $config
+     * @param Repoman $Repoman
      */
     public function __construct(Repoman $Repoman)
     {
-        $this->modx = & $Repoman->modx;
-        $this->Repoman = & $Repoman;
+        $this->modx = $Repoman->modx;
+
+        $this->Repoman =  $Repoman;
         $this->Filesystem = new Filesystem();
         $this->Finder = new Finder();
 
-        $this->classname =get_class($this);
+        $this->classname = get_class($this);
     }
 
     /**
-     * Create an element from attributes, including a DocBlock
+     * Create an element from attributes, including a DocBlock.  Used by the export command
      *
      * @param string $pkg_dir
      * @param object $Obj
      * @param boolean $graph whether to include related data
-     *
+     * @throws \Exception
      */
     public function create($pkg_dir, $Obj, $graph)
     {
@@ -84,7 +81,7 @@ abstract class Parser
             $name = $attributes[$this->objectname];
         }
 
-        $dir = $this->Repoman->get_core_path($pkg_dir) . rtrim($this->Repoman->get($this->dir_key), '/');
+        $dir = $this->Repoman->getCorePath($pkg_dir) . rtrim($this->Repoman->get($this->dir_key), '/');
 
         $filename = $dir . '/' . $name . $this->write_ext;
         if ($this->Filesystem->exists($filename) && !$this->Repoman->get('overwrite')) {
@@ -107,16 +104,14 @@ abstract class Parser
         if (!$this->Filesystem->exists($dir)) {
             try {
                 $this->Filesystem->mkdir($dir, $this->Repoman->get('dir_mode'));
-            }
-            catch (IOException $e) {
+            } catch (IOException $e) {
                 throw new \Exception('Could not create directory ' . $dir);
             }
         }
         // Create the file
         try {
-            $this->Filesystem->dumpFile($content,$filename);
-        }
-        catch (IOException $e) {
+            $this->Filesystem->dumpFile($content, $filename);
+        } catch (IOException $e) {
             throw new \Exception('Could not write to file ' . $filename);
         }
 
@@ -137,7 +132,7 @@ abstract class Parser
 
     /**
      * Add any extended docblock attributes for this object type. This is where you would define
-     * related object attributes such as plugin events.
+     * related object attributes such as plugin events that are related to the passed $Obj.
      *
      * @param object $Obj
      * @return string
@@ -148,34 +143,39 @@ abstract class Parser
     }
 
     /**
-     * Gather all elements as objects in the given directory
-     * @param string $pkg_dir name
-     * @return array
+     * Gather all elements (i.e. files) in the given directory as an array of objects.
+     * @param $dir
+     * @return array of objects
      */
-    public function gather($pkg_dir)
+    public function gather($dir)
     {
-
-        $this->pkg_dir = $pkg_dir;
+        try {
+        $dir = $this->Filesystem->getDir($dir);
+        }
+        catch (\Exception $e) {
+            $this->modx->log(modX::LOG_LEVEL_DEBUG, $e->getMessage());
+            return array();
+        }
 
         $objects = array();
 
         // Calculate the element's directory given the repo dir...
-        $dir = $this->Repoman->get_core_path($pkg_dir) . rtrim($this->Repoman->get($this->dir_key), '/') . '/';
-        if (!file_exists($dir) || !is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Directory does not exist: ' . $dir);
-            return array();
-        }
+        //$dir = $this->Repoman->get_core_path($pkg_dir) . rtrim($this->Repoman->get($this->dir_key), '/') . '/';
 
-        $files = glob($dir . $this->ext);
-        $finder->name($this->ext);
+        // TODO: use Finder
+//        $finder = new Finder();
+//        $finder->files()->in($dir)->name($this->ext);
+//
+//        $files = glob($dir . $this->ext);
+//        $finder->name($this->ext);
         $i = 0;
         //foreach ($files as $f) {
-        foreach ($this->Finder->in($dir) as $f) {
+        foreach ($this->Finder->in($dir)->name($this->ext) as $f) {
             $content = $f->getContents();
             $attributes = self::repossess($content, $this->dox_start, $this->dox_end);
             if ($this->Repoman->get('is_build')) {
                 $this->modx->log(modX::LOG_LEVEL_DEBUG, 'is_build = true: preparing for build.');
-                $content = $this->prepare_for_pkg($content);
+                $content = $this->prepareForBuild($content);
             }
             // Skip importing?
             if (isset($attributes['no_import'])) {
@@ -193,7 +193,7 @@ abstract class Parser
                 $attributes[$this->objectname] = $name;
             }
 
-            $Obj = $this->modx->getObject($this->objecttype, $this->Repoman->get_criteria($this->objecttype, $attributes));
+            $Obj = $this->modx->getObject($this->objecttype, $this->Repoman->getCriteria($this->objecttype, $attributes));
             // Building should always create a new object.
             if ($this->Repoman->get('is_build') || !$Obj) {
                 $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Creating new object from file ' . $f);
@@ -222,10 +222,11 @@ abstract class Parser
             $this->relate($attributes, $Obj);
 
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Created/updated ' . $this->objecttype . ': ' . $Obj->get($this->objectname) . ' from file ' . $f);
-            Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
+            $this->Repoman->remember($this->objecttype,$this->objectname,$Obj->toArray());
+            //Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
 
             if (!$this->Repoman->get('dry_run') && !$this->Repoman->get('is_build')) {
-                $data = $this->Repoman->get_criteria($this->objecttype, $attributes);
+                $data = $this->Repoman->getCriteria($this->objecttype, $attributes);
                 $this->modx->cacheManager->set($this->objecttype . '/' . $attributes[$this->objectname], $data, 0, Repoman::$cache_opts);
             }
             $i++;
@@ -241,13 +242,41 @@ abstract class Parser
     }
 
     /**
-     * Run when files are being put into the package, this allows for
-     * extraneous comment blocks to be filtered out and placeholders to be adjusted.
+     * Get the proper directory for the particular element class given the package root
+     * @internal $Repoman->pkg_root_path
+     * @return string full path
+     */
+    public function getSubDir()
+    {
+        return $this->Repoman->getCorePath() . rtrim($this->Repoman->get($this->dir_key), '/') . '/';
+    }
+
+    /**
+     * Run when files are being put into the package, this allows for last-minute adjustments
+     * to the element content before being packaged, e.g. stripping out comment blocks
+     * and adjustment of placeholders.
+     * Config items affecting the behavior:
+     *      strip_docblocks
+     *      strip_comments
      *
      * @param string $string
      * @return string
      */
-    abstract function prepare_for_pkg($string);
+    public function prepareForBuild($string) {
+        if ($this->Repoman->get('strip_docblocks')) {
+            $string = preg_replace('#('.preg_quote($this->dox_start).')(.*)('.preg_quote($this->dox_end).')#Usi', '', $string,1);
+            //$string = preg_replace("#{$this->dox_start}(.*){$this->dox_end}#msU", '',$string, 1);
+        }
+        if ($this->Repoman->get('strip_comments')) {
+            $string = $this->removeComments($string);
+        }
+        $string = str_replace('[[++' . $this->Repoman->get('namespace') . '.assets_url', '[[++assets_url', $string);
+        $string = str_replace('[[++' . $this->Repoman->get('namespace') . '.assets_path', '[[++assets_path', $string);
+        $string = str_replace('[[++' . $this->Repoman->get('namespace') . '.core_path', '[[++core_path', $string);
+
+        return $string;
+
+    }
 
     /**
      * Default behavior here requires nothing... really we only need this for Plugins and TVs...
@@ -261,12 +290,29 @@ abstract class Parser
     }
 
     /**
-     * Read parameters out of a DocBlock... like a repoman repossessing of
+     * Strips out comments and whitespace from PHP
+     * See http://stackoverflow.com/questions/503871/best-way-to-automatically-remove-comments-from-php-code
+     * php_strip_whitespace
+     * @param $string
+     * @return string
+     */
+    public function removeComments($string)
+    {
+        // Write the contents to a temporary file
+        $filename = tempnam($this->modx->getOption('core_path').'cache/','repo_');
+        $this->Filesystem->dumpFile($filename, $string);
+        $string = php_strip_whitespace($filename);
+        $this->Filesystem->remove($filename);
+        return $string;
+    }
+
+    /**
+     * Read parameters out of a DocBlock... like a repoman repossessing
      * outstanding leased attributes.
      *
      * @param string $string the unparsed contents of a file
      * @param string $dox_start string designating the start of a doc block
-     * @param string $dox_start string designating the start of a doc block
+     * @param string $dox_end
      * @return array on success | false on no doc block found
      */
     public static function repossess($string, $dox_start = '/*', $dox_end = '*/')

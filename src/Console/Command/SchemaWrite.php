@@ -21,7 +21,8 @@ class SchemaWrite extends Command
                 'pkg_root_dir',
                 InputArgument::REQUIRED,
                 'Path to package root'
-            );
+            )
+            ->setHelp(file_get_contents(dirname(dirname(dirname(dirname(__FILE__)))) . '/docs/schema_write.txt'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

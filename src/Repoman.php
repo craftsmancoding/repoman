@@ -36,41 +36,30 @@ class Repoman
     const CACHE_DIR = 'repoman';
 
     /**
-     * @param string $pkg_root_dir full path to the directory containing the package you're operating on
      * @param \modX $modX
      * @param Config $config
      */
-    public function __construct($pkg_root_dir,modX $modX, Config $config)
+    public function __construct(modX $modX, Config $config)
     {
-        $this->Filesystem = new Filesystem();
-        $this->pkg_root_dir = $this->Filesystem->getDir($pkg_root_dir);
-        $this->modx = & $modx;
+        $this->modx = & $modX;
         $this->config = $config->getAll();
-
+        $this->Filesystem = new Filesystem();
         self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR);
     }
 
     /**
      * Add packages to MODX's radar so we can use their objects.
      *
-     * @param array $args
+     * @param $pkg_root_dir
      */
-    private function _addPkgs($args, $pkg_root_dir)
+    private function _addPkgs($pkg_root_dir)
     {
-        $pkg = (isset($args['packages'])) ? $args['packages'] : false;
-        if ($pkg && is_array($pkg)) {
-            foreach ($pkg as $p) {
-                $this->modx->addPackage($p['pkg'], $pkg_root_dir . $p['path'], $p['table_prefix']);
-            }
-        } elseif ($pkg) {
-            $parts = explode(';', $pkg);
-            if (isset($parts[2])) {
-                $this->modx->addPackage($parts[0], $pkg_root_dir . $parts[1], $parts[2]);
-            } elseif (isset($parts[1])) {
-                $this->modx->addPackage($parts[0], $pkg_root_dir . $parts[1]);
-            } else {
-                $this->modx->addPackage($parts[0], $this->modx->getOption('core_path') . 'components/' . $parts[0] . '/' . $this->get('orm_path'));
-            }
+        $Config = new Config($pkg_root_dir);
+        $args = $Config->getAll();
+        $pkg = (isset($args['packages'])) ? $args['packages'] : array();
+
+        foreach ($pkg as $p) {
+            $this->modx->addPackage($p['pkg'], $pkg_root_dir . $p['path'], $p['table_prefix']);
         }
     }
 
@@ -371,7 +360,7 @@ class Repoman
      * TODO: use Finder instead of glob() to iterate over files
      * @throws \Exception
      */
-    public function build()
+    public function build($force_static=false)
     {
         $this->build_prep();
         $this->config['is_build'] = true; // TODO
@@ -664,25 +653,34 @@ class Repoman
      *      e.g. `tiles:[[++core_path]]components/tiles/model/:tiles_` or
      *      If only the package name is supplied, the path is assumed to be "[[++core_path]]components/$package_name/model/"
      *
+     *
+     * @param $classname
+     * @param $target
+     * @param array $options
      * @throws \Exception
-     * @param array $data additional data
+     *
      * @return void
      */
-    public function export($data = array())
+    public function export($classname,$target,$options=array())
     {
-        $this->config = array_merge($this->config, $data);
-        $classname = $this->get('classname');
-        $where = $this->get('where');
-        $target = $this->get('target');
-        $graph = $this->get('graph');
-        $limit = (int)$this->get('limit'); // how many records per file?
-        if (!$limit) {
-            $limit = 1; // no div by zero
+          $defaults = array(
+              'where' => null,
+              'graph' => null,
+              'limit' => 1,
+              'dir' => array(),
+              'debug' => false,
+              'overwrite' => false,
+          );
+          $config = array_merge($defaults, $options);
+
+        if (!$config['limit'] || $config['limit'] < 0) {
+            $config['limit'] = 1; // no div by zero
         }
 
         if (empty($classname)) {
             throw new \Exception('Parameter "classname" is required.');
         }
+        $target = $this->Filesystem->mkdir($target);
 
         $is_element = false;
         $Parser = null;
@@ -692,24 +690,23 @@ class Repoman
             $Parser = new $element_class($this);
         }
 
-        if (is_scalar($where)) {
-            $where = json_decode($where, true);
+        if (is_scalar($config['where'])) {
+            $config['where'] = json_decode($config['where'], true);
         }
 
-        $this->_addPkgs($this->config, $this->pkg_root_dir);
+        foreach ($config['dirs'] as $d) {
+            $this->_addPkgs($d);
+        }
 
         $criteria = $this->modx->newQuery($classname);
-        if (!empty($where)) {
-            $criteria->where($where);
+        if (!empty($config['where'])) {
+            $criteria->where($config['where']);
         }
         $result_cnt = $this->modx->getCount($classname, $criteria);
         $this->modx->log(modX::LOG_LEVEL_INFO, 'Results found: ' . $result_cnt);
 
-        $results = array();
-        $related = array();
-        if ($graph) {
-            $results = $this->modx->getCollectionGraph($classname, $graph, $criteria);
-            $related = json_decode($graph, true);
+        if ($config['graph']) {
+            $results = $this->modx->getCollectionGraph($classname, $config['graph'], $criteria);
         } else {
             $results = $this->modx->getCollection($classname, $criteria);
         }
@@ -724,28 +721,6 @@ class Repoman
             $out .= "\n\nResults found : {$result_cnt}\n\n";
             return $out;
         }
-        // Seed data or element?
-        if (!$is_element) {
-
-            if (!$target) {
-                throw new \Exception('Target directory must be specified.');
-            } elseif (!is_scalar($target)) {
-                throw new \Exception('Target directory cannot be an array.');
-            } elseif (preg_match('/\.\./', $target)) {
-                throw new \Exception('Target directory must be within your repo directory.');
-            }
-            $dir = $this->getCorePath($pkg_root_dir) . $this->get('target');
-
-            if (!file_exists($dir)) {
-                if (false === mkdir($dir, $this->get('dir_mode'), true)) {
-                    throw new \Exception('Could not create directory ' . $dir);
-                } else {
-                    $this->modx->log(modX::LOG_LEVEL_INFO, 'Created directory ' . $dir);
-                }
-            } elseif (!is_dir($dir)) {
-                throw new \Exception('Target directory is not a directory: ' . $dir);
-            }
-        }
 
         if ($results) {
             $i = 1;
@@ -753,7 +728,7 @@ class Repoman
             $pack = array();
             foreach ($results as $r) {
                 if ($is_element) {
-                    $Parser->create($pkg_root_dir, $r, $graph);
+                    $Parser->create($this->pkg_root_dir, $r, $graph);
                 } else {
                     $array = $r->toArray('', false, false, $graph);
                     $pack[] = $array;
@@ -868,6 +843,16 @@ class Repoman
     }
 
     /**
+     * Our config setter
+     * @param string $key
+     * @return mixed
+     */
+    public function set($key,$value)
+    {
+        $this->config[$key] = $value;
+    }
+
+    /**
      * When building packages, these attributes govern how objects are updated
      * when the package is installed.  One difficulty here is that one instance
      * of an object may have many related objects (and thus require deeply nested
@@ -878,6 +863,7 @@ class Repoman
      * @param object $Obj
      * @param string $classname
      *
+     * @throws \Exception
      * @return array
      */
     public function getBuildAttributes($Obj, $classname)
@@ -939,10 +925,10 @@ class Repoman
     public function getCriteria($classname, $attributes)
     {
         $build_attributes = $this->get('build_attributes');
-        if (!isset($build_attributes[$classname][xPDOTransport::UNIQUE_KEY])) {
-            throw new \Exception('Build attributes xPDOTransport::UNIQUE_KEY not defined for class ' . $classname);
+        if (!isset($build_attributes[$classname]['unique_key'])) {
+            throw new \Exception('Build attributes "unique_key" not defined for class ' . $classname);
         }
-        $fields = (array)$build_attributes[$classname][xPDOTransport::UNIQUE_KEY];
+        $fields = (array)$build_attributes[$classname]['unique_key'];
         $criteria = array();
         foreach ($fields as $f) {
             if (isset($attributes[$f]) && !empty($attributes[$f])) {
@@ -1010,16 +996,15 @@ class Repoman
      * usually core/components/<namespace>/
      * For better compatibility with composer, this is configurable.
      *
-     * @param string $pkg_root_dir
      * @return string dir with trailing slash
      */
-    public function getCorePath($pkg_root_dir)
+    public function getCorePath()
     {
         // Handle any case where shorthand for current working dir has been used
         if (in_array($this->get('core_path'), array(null, '/', '.' . './'))) {
-            return $pkg_root_dir;
+            return $this->pkg_root_dir;
         } else {
-            return $pkg_root_dir . $this->get('core_path');
+            return $this->pkg_root_dir . $this->get('core_path');
         }
     }
 
@@ -1129,8 +1114,8 @@ class Repoman
         $this->prepModx();
         $this->_create_setting($this->get('namespace'), $this->get('namespace') . '.version', trim($this->get('version')));
         $this->import();
-        $this->migrate($pkg_root_dir, 'install');
-        $this->seed($pkg_root_dir);
+        $this->migrate('install');
+        $this->seed($pkg_root_dir); // TODO
         $this->modx->cacheManager->refresh();
     }
 
@@ -1151,8 +1136,7 @@ class Repoman
         $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Processing object(s) in ' . $file . ' (json: ' . $json);
 
         if ($json) {
-            $data = \Composer\Json\JsonFile::parseJson(file_get_contents($file), $file);
-            //$data = json_decode(file_get_contents($file), true);
+            $data = json_decode(file_get_contents($file), true);
             if (!is_array($data)) {
                 throw new \Exception('Bad JSON in ' . $file);
             }
@@ -1267,6 +1251,13 @@ class Repoman
                 }
             }
         }
+    }
+
+    /**
+     * @param $path string
+     */
+    public function setPkgRootDir($path) {
+        $this->pkg_root_dir = $this->Filesystem->getDir($path);
     }
 
     /**

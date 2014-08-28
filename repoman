@@ -39,7 +39,7 @@ $application->add(new Build());
 $application->add(new Create());
 $application->add(new Export());
 $application->add(new Graph());
-$application->add(new Help());
+//$application->add(new Help());  // How to augment the default generated stuff?
 $application->add(new Import());
 $application->add(new Install());
 $application->add(new Migrate());

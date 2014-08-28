@@ -3,7 +3,7 @@
     "description": "Test Package 7",
     "type": "library",
     "keywords": ["modx","composer","git","repository","manager"],
-    "homepage": "github.com/craftsmancoding/repoman",
+    "homepage": "https://github.com/craftsmancoding/repoman",
     "license": "GPL2",
     "authors": [
         {

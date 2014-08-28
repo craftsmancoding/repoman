@@ -15,13 +15,15 @@ class Graph extends Command
     protected function configure()
     {
         $this
-            ->setName('export')
+            ->setName('graph')
             ->setDescription("Prints all of an object's attributes and it includes meta data for each defined relation.")
+            //->setSynopsis('A little something')
             ->addArgument(
                 'pkg_root_dir',
                 InputArgument::REQUIRED,
                 'Path to package root'
-            );
+            )
+            ->setHelp(file_get_contents(dirname(dirname(dirname(dirname(__FILE__)))) . '/docs/graph.txt'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

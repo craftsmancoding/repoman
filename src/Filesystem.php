@@ -35,6 +35,7 @@ class Filesystem extends \Symfony\Component\Filesystem\Filesystem
      * any relative paths to absolute.  Output includes trailing slash.
      *
      * @param string $path path (or relative path) to package
+     * @throws \Exception
      * @return string full path with trailing slash
      */
     public static function getDir($path)

@@ -13,7 +13,7 @@
  *
  */
 
-use Repoman\Bridge;
+use Repoman\Utils;
 use Repoman\Config;
 use Repoman\Parser\modChunk;
 use Repoman\Parser\modPlugin;
@@ -37,7 +37,7 @@ class parserTest extends \PHPUnit_Framework_TestCase
     public static function setUpBeforeClass()
     {
 
-        self::$modx = Bridge::getMODX();
+        self::$modx = Utils::getMODX();
         self::$modx->initialize('mgr');
         self::$repoman = new Repoman(self::$modx, new Config());
     }
@@ -48,6 +48,9 @@ class parserTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse($result);
     }
 
+    /**
+     *
+     */
     public function testRepossess2()
     {
         $result = Parser::repossess('
@@ -62,41 +65,54 @@ class parserTest extends \PHPUnit_Framework_TestCase
         $this->assertFalse(isset($result['author']));
     }
 
+    /**
+     *
+     */
     public function testGetSubDir()
     {
-        $P = new modChunk(self::$repoman);
+        $P      = new modChunk(self::$repoman);
         $subdir = $P->getSubDir();
         $this->assertEquals(self::$repoman->getCorePath() . 'elements/chunks/', $subdir);
 
-        $P = new modPlugin(self::$repoman);
+        $P      = new modPlugin(self::$repoman);
         $subdir = $P->getSubDir();
         $this->assertEquals(self::$repoman->getCorePath() . 'elements/plugins/', $subdir);
 
-        $P = new modSnippet(self::$repoman);
+        $P      = new modSnippet(self::$repoman);
         $subdir = $P->getSubDir();
         $this->assertEquals(self::$repoman->getCorePath() . 'elements/snippets/', $subdir);
 
-        $P = new modTemplate(self::$repoman);
+        $P      = new modTemplate(self::$repoman);
         $subdir = $P->getSubDir();
         $this->assertEquals(self::$repoman->getCorePath() . 'elements/templates/', $subdir);
 
-        $P = new modTemplatevar(self::$repoman);
+        $P      = new modTemplatevar(self::$repoman);
         $subdir = $P->getSubDir();
         $this->assertEquals(self::$repoman->getCorePath() . 'elements/tvs/', $subdir);
+
+        // Try using locations customized in the package's composer.json
+        $dir    = __DIR__ . '/repos/pkg6/';
+        $R      = new Repoman(self::$modx, new Config($dir));
+        $P      = new modSnippet($R);
+        $subdir = $P->getSubDir();
+        $this->assertEquals(__DIR__ . '/repos/pkg6/snippets/', $subdir);
+
     }
 
-
+    /**
+     *
+     */
     public function testPrepareForBuild()
     {
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/pkg4/'));
-        $P = new modChunk(self::$repoman);
-        $actual = $P->prepareForBuild('<!--
+        $P             = new modChunk(self::$repoman);
+        $actual        = $P->prepareForBuild('<!--
         @name MyChunk
         @description This is my chunk
         -->
         [[++pkg4.assets_url]]
         ');
-        $expected = '<!--
+        $expected      = '<!--
         @name MyChunk
         @description This is my chunk
         -->
@@ -104,29 +120,35 @@ class parserTest extends \PHPUnit_Framework_TestCase
         $this->assertEquals(normalize_string($expected), normalize_string($actual));
     }
 
+    /**
+     *
+     */
     public function testPrepareForBuildStripDocBlocks()
     {
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/pkg4/', array('strip_docblocks' => true)));
-        $P = new modChunk(self::$repoman);
-        $actual = $P->prepareForBuild('<!--
+        $P             = new modChunk(self::$repoman);
+        $actual        = $P->prepareForBuild('<!--
         @name MyChunk
         @description This is my chunk
         -->
         <!-- Second Comment -->
         [[++pkg4.assets_url]]
         ');
-        $expected = '
+        $expected      = '
         <!-- Second Comment -->
         [[++assets_url]]';
         $this->assertEquals(normalize_string($expected), normalize_string($actual));
 
     }
 
+    /**
+     *
+     */
     public function testPrepareForBuildStripDocBlocks2()
     {
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/pkg4/', array('strip_docblocks' => true)));
-        $P = new modSnippet(self::$repoman);
-        $actual = $P->prepareForBuild('
+        $P             = new modSnippet(self::$repoman);
+        $actual        = $P->prepareForBuild('
         <?php
         /**
          * @name MySnippet
@@ -135,7 +157,7 @@ class parserTest extends \PHPUnit_Framework_TestCase
         // Second Comment
         [[++pkg4.assets_url]]
         ');
-        $expected = '
+        $expected      = '
         <?php
         // Second Comment
         [[++assets_url]]';
@@ -143,27 +165,33 @@ class parserTest extends \PHPUnit_Framework_TestCase
 
     }
 
+    /**
+     *
+     */
     public function testPrepareForBuildStripDocComments()
     {
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/pkg4/', array('strip_comments' => true)));
-        $P = new modChunk(self::$repoman);
-        $actual = $P->prepareForBuild('<!--
+        $P             = new modChunk(self::$repoman);
+        $actual        = $P->prepareForBuild('<!--
         @name MyChunk
         @description This is my chunk
         -->
         <!-- Second Comment -->
         [[++pkg4.assets_url]]
         ');
-        $expected = '[[++assets_url]]';
+        $expected      = '[[++assets_url]]';
         $this->assertEquals(normalize_string($expected), normalize_string($actual));
     }
 
+    /**
+     *
+     */
     public function testPrepareForBuildStripDocComments2()
     {
 
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/pkg4/', array('strip_comments' => true)));
-        $P = new modSnippet(self::$repoman);
-        $actual = $P->prepareForBuild('
+        $P             = new modSnippet(self::$repoman);
+        $actual        = $P->prepareForBuild('
         <?php
         /**
          * @name MySnippet
@@ -172,25 +200,77 @@ class parserTest extends \PHPUnit_Framework_TestCase
         // Second Comment
         [[++pkg4.assets_url]]
         ');
-        $expected = '<?php
+        $expected      = '<?php
         [[++assets_url]]';
         $this->assertEquals(normalize_string($expected), normalize_string($actual));
 
     }
 
-
-    public function testGather() {
+    /**
+     *
+     */
+    public function testGather()
+    {
 
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/pkg7/'));
-        $P = new modSnippet(self::$repoman);
-        $dir = __DIR__.'/repos/pkg6/doesnotexist';
-        $objects = $P->gather($dir);
+        $P             = new modSnippet(self::$repoman);
+        $dir           = __DIR__ . '/repos/pkg6/doesnotexist';
+        $objects       = $P->gather($dir);
         $this->assertTrue(empty($objects));
 
-        $dir = __DIR__.'/repos/pkg6/snippets';
+        $dir     = __DIR__ . '/repos/pkg6/snippets';
         $objects = $P->gather($dir);
-        $this->assertEquals(1,count($objects));
+        $this->assertEquals(1, count($objects));
 
+        $Snippet = array_shift($objects);
 
+        $this->assertEquals($Snippet->get('name'), 'test_pkg6');
+        $this->assertEquals($Snippet->get('description'), 'Let me make you some coffee');
+
+    }
+
+    /**
+     * @expectedException        \Exception
+     * @expectedExceptionMessage Errors parsing
+     */
+    public function testGather2()
+    {
+        self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/repos/pkg7/'));
+        $P             = new modSnippet(self::$repoman);
+        $dir = $P->getSubDir();
+        $objects       = $P->gather($dir);
+    }
+
+    /**
+     *
+     */
+//    public function testCreate() {
+//        self::$repoman = new Repoman(self::$modx, new Config());
+//        $P             = new modSnippet(self::$repoman);
+//
+//    }
+
+    public function testGetFilename() {
+        $Snippet = self::$modx->newObject('modSnippet');
+        $Snippet->fromArray(array(
+            'name' => 'Dork',
+            'description' => 'Morky and Mindy',
+            'snippet' => '<?php return time(); ?>'
+        ));
+        self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/repos/pkg7/'));
+        $P             = new modSnippet(self::$repoman);
+        $name = $P->getBasename($Snippet);
+        $this->assertEquals('Dork.php',$name);
+
+        $Template = self::$modx->newObject('modTemplate');
+        $Template->fromArray(array(
+            'templatename' => 'Contain Me',
+            'description' => 'How I went nuts',
+            'content' => '<html><body>for ever...</body></html>'
+        ));
+        self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/repos/pkg7/'));
+        $P             = new modTemplate(self::$repoman);
+        $name = $P->getBasename($Template);
+        $this->assertEquals('Contain Me.html',$name);
     }
 }

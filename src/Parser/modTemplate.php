@@ -26,7 +26,7 @@ class modTemplate extends Parser
      * @param object $Obj
      * @return string
      */
-    public function extend_docblock(&$Obj)
+    public function extendDocblock(&$Obj)
     {
         $out = '';
         // 2 tiers here to get to the TVs.

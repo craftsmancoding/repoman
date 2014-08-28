@@ -61,15 +61,16 @@ abstract class Parser
     }
 
     /**
-     * Create an element from attributes, including a DocBlock.  Used by the export command
+     * Create file including a DocBlock to represent the inputted Object.  Used by the export command.
      *
-     * @param string $pkg_dir
+     * @param string $dir target directory
      * @param object $Obj
      * @param boolean $graph whether to include related data
      * @throws \Exception
      */
-    public function create($pkg_dir, $Obj, $graph)
+    public function create($dir, $Obj, $graph)
     {
+        $dir = $this->Filesystem->getDir($dir);
 
         $array = $Obj->toArray('', false, false, $graph);
         $content = $Obj->getContent();
@@ -80,8 +81,6 @@ abstract class Parser
         } else {
             $name = $attributes[$this->objectname];
         }
-
-        $dir = $this->Repoman->getCorePath($pkg_dir) . rtrim($this->Repoman->get($this->dir_key), '/');
 
         $filename = $dir . '/' . $name . $this->write_ext;
         if ($this->Filesystem->exists($filename) && !$this->Repoman->get('overwrite')) {
@@ -94,7 +93,7 @@ abstract class Parser
             $docblock = $this->dox_start . "\n";
             $docblock .= $this->dox_pad . '@' . $this->objectname . ' ' . $array[$this->objectname] . "\n";
             $docblock .= $this->dox_pad . '@description ' . $array['description'] . "\n";
-            $docblock .= $this->extend_docblock($Obj);
+            $docblock .= $this->extendDocblock($Obj);
             $docblock .= $this->dox_end . "\n";
             $this->modx->log(modX::LOG_LEVEL_DEBUG, "DocBlock generated:\n" . $docblock);
             $content = $docblock . $content;
@@ -137,7 +136,7 @@ abstract class Parser
      * @param object $Obj
      * @return string
      */
-    public function extend_docblock(&$Obj)
+    public function extendDocblock(&$Obj)
     {
         return '';
     }
@@ -150,7 +149,7 @@ abstract class Parser
     public function gather($dir)
     {
         try {
-        $dir = $this->Filesystem->getDir($dir);
+            $dir = $this->Filesystem->getDir($dir);
         }
         catch (\Exception $e) {
             $this->modx->log(modX::LOG_LEVEL_DEBUG, $e->getMessage());
@@ -162,15 +161,10 @@ abstract class Parser
         // Calculate the element's directory given the repo dir...
         //$dir = $this->Repoman->get_core_path($pkg_dir) . rtrim($this->Repoman->get($this->dir_key), '/') . '/';
 
-        // TODO: use Finder
-//        $finder = new Finder();
-//        $finder->files()->in($dir)->name($this->ext);
-//
-//        $files = glob($dir . $this->ext);
-//        $finder->name($this->ext);
         $i = 0;
         //foreach ($files as $f) {
         foreach ($this->Finder->in($dir)->name($this->ext) as $f) {
+            Utils::validPhpSyntax($f->getRealpath());
             $content = $f->getContents();
             $attributes = self::repossess($content, $this->dox_start, $this->dox_end);
             if ($this->Repoman->get('is_build')) {
@@ -244,11 +238,21 @@ abstract class Parser
     /**
      * Get the proper directory for the particular element class given the package root
      * @internal $Repoman->pkg_root_path
-     * @return string full path
+     * @return string full path with trailing slash
      */
     public function getSubDir()
     {
         return $this->Repoman->getCorePath() . rtrim($this->Repoman->get($this->dir_key), '/') . '/';
+    }
+
+    /**
+     * Given an object of a type correlated with the classname, return a viable file basename (no dir).
+     *
+     * @param $Obj
+     * @return string
+     */
+    public function getBasename($Obj) {
+        return $Obj->get($this->objectname) . $this->write_ext;
     }
 
     /**

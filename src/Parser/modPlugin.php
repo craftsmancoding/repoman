@@ -20,7 +20,7 @@ class modPlugin extends Parser
      * @param object $Obj
      * @return string
      */
-    public function extend_docblock(&$Obj)
+    public function extendDocblock(&$Obj)
     {
         $out = '';
         if (isset($Obj->PluginEvents) && is_array($Obj->PluginEvents)) {

@@ -1,0 +1,6 @@
+This file isn't even php
+<?php
+so you shouldn't
+even = $worry;
+about it;
+?>

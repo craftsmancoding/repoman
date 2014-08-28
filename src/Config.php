@@ -9,7 +9,7 @@ use Repoman\Filesystem;
 
 class Config
 {
-    public $pkg_dir;
+    public $pkg_root_dir;
     public $overrides = array();
     public $params = array();
 
@@ -19,8 +19,16 @@ class Config
      */
     public function __construct($dir=null,$overrides=array()) {
         $dir = ($dir) ? $dir : __DIR__;
-        $this->pkg_dir = Filesystem::getDir($dir);
+        $this->pkg_root_dir = Filesystem::getDir($dir);
         $this->overrides = $overrides;
+    }
+
+    /**
+     * Directory at the root of the package (the dir holding the composer.json)
+     * @return string
+     */
+    public function getPkgRootDir() {
+        return $this->pkg_root_dir;
     }
 
     /**
@@ -44,9 +52,9 @@ class Config
         }
 
         if ($out['core_path'] == $out['assets_path']) {
-            throw new \Exception('core_path cannot match assets_path in ' . $this->pkg_dir);
+            throw new \Exception('core_path cannot match assets_path in ' . $this->pkg_root_dir);
         } elseif ($out['core_path'] == $out['docs_path']) {
-            throw new \Exception('core_path cannot match docs_path in ' . $this->pkg_dir);
+            throw new \Exception('core_path cannot match docs_path in ' . $this->pkg_root_dir);
         }
         // Todo... all path directives must be unique.
 
@@ -65,7 +73,7 @@ class Config
      * @return array
      */
     public function getGlobal() {
-        $pkg_root_dir = $this->pkg_dir; // make available to the include $pkg_root_dir
+        $pkg_root_dir = $this->pkg_root_dir; // make available to the include $pkg_root_dir
         $global = include dirname(dirname(__FILE__)) . '/includes/global.config.php';
         return $global;
     }
@@ -82,9 +90,9 @@ class Config
     public function getPkg()
     {
         $config = array();
-        if (file_exists($this->pkg_dir . 'composer.json')) {
+        if (file_exists($this->pkg_root_dir . 'composer.json')) {
 
-            $composer = $this->parseJson($this->pkg_dir . 'composer.json');
+            $composer = $this->parseJson($this->pkg_root_dir . 'composer.json');
 
             if (isset($composer['extra']) && is_array($composer['extra'])) {
                 $config = $composer['extra'];

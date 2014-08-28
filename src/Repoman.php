@@ -8,7 +8,7 @@ namespace Repoman;
 use modX;
 use xPDO;
 use Repoman\Filesystem;
-
+use Repoman\Utils;
 
 class Repoman
 {
@@ -36,13 +36,15 @@ class Repoman
     const CACHE_DIR = 'repoman';
 
     /**
-     * @param \modX $modX
-     * @param Config $config
+     * @param \modX $modx
+     * @param Config $Config
+     * @param $pkg_root_dir
      */
-    public function __construct(modX $modX, Config $config)
+    public function __construct(modX $modx, Config $Config)
     {
-        $this->modx = & $modX;
-        $this->config = $config->getAll();
+        $this->modx = & $modx;
+        $this->config = $Config->getAll();
+        $this->pkg_root_dir = $Config->getPkgRootDir();
         $this->Filesystem = new Filesystem();
         self::$cache_opts = array(xPDO::OPT_CACHE_KEY => self::CACHE_DIR);
     }
@@ -1141,11 +1143,8 @@ class Repoman
                 throw new \Exception('Bad JSON in ' . $file);
             }
         } else {
-            // check file syntax
-            $out = exec(escapeshellcmd("php -l $file"));
-            if (preg_match('/^Errors parsing/', $out)) {
-                throw new \Exception($out);
-            }
+            // check file syntax (throws Exception on errors)
+            Utils::validPhpSyntax($file);
             $data = include $file;
         }
 

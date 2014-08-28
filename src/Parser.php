@@ -27,10 +27,11 @@ abstract class Parser
     public $objecttype;
     public $objectname = 'name'; // most objects use the 'name' field to identify themselves
 
-    public $dox_start = '/*';
+    public $dox_start = '/**';
     public $dox_end = '*/';
     public $dox_pad = ' * '; // left of line before the @attribute
 
+    public $content_prefix = "<?php\n"; // used when creating files via the export command
     public $extensions = '';
     public $pkg_dir;
 
@@ -62,27 +63,26 @@ abstract class Parser
 
     /**
      * Create file including a DocBlock to represent the inputted Object.  Used by the export command.
+     * For consistency, the name of the object will come from the inputted $Obj and will overwrite any
+     * name defined in the docblock.
      *
-     * @param string $dir target directory
+     * @param string $filename target filename including path
      * @param object $Obj
      * @param boolean $graph whether to include related data
      * @throws \Exception
      */
-    public function create($dir, $Obj, $graph)
+    public function create($filename, $Obj, $graph=true)
     {
-        $dir = $this->Filesystem->getDir($dir);
 
         $array = $Obj->toArray('', false, false, $graph);
         $content = $Obj->getContent();
         $attributes = self::repossess($content, $this->dox_start, $this->dox_end);
-        if (!isset($attributes[$this->objectname])) {
-            $name_attribute = $this->objectname;
-            $name = $Obj->get($name_attribute);
-        } else {
-            $name = $attributes[$this->objectname];
+        if (isset($attributes[$this->objectname]) && $attributes[$this->objectname] != $Obj->get($this->objectname)) {
+            $attributes[$this->objectname] = $Obj->get($this->objectname);
+            // Adjust the docblock
+            $content = preg_replace('#^.*@'.$this->objectname .'.*$#m', $this->dox_pad .'@'.$this->objectname.' '.$array[$this->objectname], $content);
         }
 
-        $filename = $dir . '/' . $name . $this->write_ext;
         if ($this->Filesystem->exists($filename) && !$this->Repoman->get('overwrite')) {
             throw new \Exception('Element already exists. Overwrite not allowed. ' . $filename);
         }
@@ -99,27 +99,19 @@ abstract class Parser
             $content = $docblock . $content;
         }
 
-        // Create dir if doesn't exist
-        if (!$this->Filesystem->exists($dir)) {
-            try {
-                $this->Filesystem->mkdir($dir, $this->Repoman->get('dir_mode'));
-            } catch (IOException $e) {
-                throw new \Exception('Could not create directory ' . $dir);
-            }
-        }
         // Create the file
         try {
-            $this->Filesystem->dumpFile($content, $filename);
+            $this->Filesystem->dumpFile($filename, $this->content_prefix . $content);
         } catch (IOException $e) {
             throw new \Exception('Could not write to file ' . $filename);
         }
 
-        $this->modx->log(modX::LOG_LEVEL_INFO, 'Created static element at ' . $f);
+        $this->modx->log(modX::LOG_LEVEL_INFO, 'Created static element at ' . $filename);
 
         // Do you want to mess with the original object?  Or just grab a snapshot of it?
         if ($this->Repoman->get('move')) {
             $Obj->set('static', true);
-            $Obj->set('static_file', $this->Filesystem->makePathRelative($filename, MODX_BASE_PATH));
+            $Obj->set('static_file', $this->Filesystem->makePathRelative($filename, $this->modx->getOption('base_path')));
             if (!$Obj->save()) {
                 throw new \Exception('Problem saving ' . $this->classname . ' ' . $array[$this->objectname]);
             }

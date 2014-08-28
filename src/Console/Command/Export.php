@@ -23,9 +23,9 @@ class Export extends Command
                 'MODX Classname'
             )
             ->addArgument(
-                'target',
+                'target_dir',
                 InputArgument::REQUIRED,
-                'Specific destination directory, or path to repo root to store data in recommended location within repo'
+                'Destination directory, or path to repo root to store data in recommended location within repo'
             )
             ->addOption(
                 'where',

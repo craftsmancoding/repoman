@@ -1,26 +1,10 @@
-Build
-
-Build a MODX transport package from the files in the specified repository directory.  You can then
-submit this transport package to the official directory of MODX Extras (http://modx.com/extras/)
-or you can copy the package to other MODX sites and install it there.
-
-Usage:
-
-    php repoman build <pkg_root_dir>
-
-Make sure you have updated your package's config.php with the latest information.  The following
-configuration details are required for a successful build:
+Make sure you have updated your package's composer.json with the latest information.  The following
+configuration "extra" attributes are required for a successful build:
 
 * package_name
 * namespace
 * version
 * release
 
-These attributes should be set in your project's config.php file, however if you are feeling lazy
-you can set the options at run-time using command-line options:
-
-    php repoman build <pkg_root_dir> --version=1.0.0 --log_level=4
-    
-If you need to quote values, you should quote the key and the value, e.g.
-
-    php repoman build <pkg_root_dir> '--package_name=My Package'
+Once built, you can submit the zip package to the official directory of MODX Extras (http://modx.com/extras/)
+or you can copy the package to other MODX sites and install it there.

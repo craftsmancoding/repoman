@@ -33,7 +33,8 @@ class Import extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Force elements to be static'
-            );
+            )
+            ->setHelp(file_get_contents(dirname(dirname(dirname(dirname(__FILE__)))) . '/docs/import.txt'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

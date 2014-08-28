@@ -18,6 +18,7 @@ class modChunk extends Parser
     public $dox_start = '<!--';
     public $dox_end = '-->';
     public $dox_pad = ''; // left of line before the @attribute	
+    public $content_prefix = '';
 
     /**
      * Strips out comments and whitespace from HTML

@@ -15,6 +15,7 @@
 
 use Repoman\Utils;
 use Repoman\Config;
+use Repoman\Filesystem;
 use Repoman\Parser\modChunk;
 use Repoman\Parser\modPlugin;
 use Repoman\Parser\modSnippet;
@@ -237,40 +238,92 @@ class parserTest extends \PHPUnit_Framework_TestCase
     {
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/repos/pkg7/'));
         $P             = new modSnippet(self::$repoman);
-        $dir = $P->getSubDir();
+        $dir           = $P->getSubDir();
         $objects       = $P->gather($dir);
     }
 
     /**
      *
      */
-//    public function testCreate() {
-//        self::$repoman = new Repoman(self::$modx, new Config());
-//        $P             = new modSnippet(self::$repoman);
-//
-//    }
-
-    public function testGetFilename() {
+    public function testGetFilename()
+    {
         $Snippet = self::$modx->newObject('modSnippet');
         $Snippet->fromArray(array(
-            'name' => 'Dork',
+            'name'        => 'Dork',
             'description' => 'Morky and Mindy',
-            'snippet' => '<?php return time(); ?>'
+            'snippet'     => '<?php return time(); ?>'
         ));
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/repos/pkg7/'));
         $P             = new modSnippet(self::$repoman);
-        $name = $P->getBasename($Snippet);
-        $this->assertEquals('Dork.php',$name);
+        $name          = $P->getBasename($Snippet);
+        $this->assertEquals('Dork.php', $name);
 
         $Template = self::$modx->newObject('modTemplate');
         $Template->fromArray(array(
             'templatename' => 'Contain Me',
-            'description' => 'How I went nuts',
-            'content' => '<html><body>for ever...</body></html>'
+            'description'  => 'How I went nuts',
+            'content'      => '<html><body>for ever...</body></html>'
         ));
         self::$repoman = new Repoman(self::$modx, new Config(__DIR__ . '/repos/pkg7/'));
         $P             = new modTemplate(self::$repoman);
-        $name = $P->getBasename($Template);
-        $this->assertEquals('Contain Me.html',$name);
+        $name          = $P->getBasename($Template);
+        $this->assertEquals('Contain Me.html', $name);
+    }
+
+    /**
+     *
+     */
+    public function testCreate()
+    {
+        $Filesystem = new Filesystem();
+
+        self::$repoman = new Repoman(self::$modx, new Config());
+        $P             = new modSnippet(self::$repoman);
+        $Snippet = self::$modx->newObject('modSnippet');
+        $Snippet->fromArray(array(
+            'name'        => 'Dork',
+            'description' => 'Morky and Mindy',
+            'snippet'     => '<?php return time(); ?>' // No docblock
+        ));
+
+        $filename = tempnam(self::$modx->getOption('core_path').'cache/repoman/','rep') .'.php';
+        $P->create($filename, $Snippet);
+        $actual = file_get_contents($filename);
+        $expected = '<?php
+/**
+ * @name Dork
+ * @description Morky and Mindy
+*/
+return time();';
+        $this->assertEquals(normalize_string($expected), normalize_string($actual));
+        $Filesystem->remove($filename);
+
+        // Test override DocBlock
+        self::$repoman = new Repoman(self::$modx, new Config());
+        $P             = new modSnippet(self::$repoman);
+        $Snippet = self::$modx->newObject('modSnippet');
+        $Snippet->fromArray(array(
+            'name'        => 'Dork',
+            'description' => 'Morky and Mindy',
+            'snippet'     => '<?php
+/**
+ * @name Fugawi
+ * @description Morky and Mindy
+ */
+            return time();
+            ?>' // with bad/misleading @name
+        ));
+
+        $filename = tempnam(self::$modx->getOption('core_path').'cache/repoman/','rep') .'.php';
+        $P->create($filename, $Snippet);
+        $actual = file_get_contents($filename);
+        $expected = '<?php
+/**
+ * @name Dork
+ * @description Morky and Mindy
+ */
+return time();';
+        $this->assertEquals(normalize_string($expected), normalize_string($actual));
+        $Filesystem->remove($filename);
     }
 }

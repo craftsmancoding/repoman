@@ -33,7 +33,8 @@ class Build extends Command
                 null,
                 InputOption::VALUE_NONE,
                 'Strip out all comments and whitespace from elements, including docblocks.'
-            );
+            )
+            ->setHelp(file_get_contents(dirname(dirname(dirname(dirname(__FILE__)))) . '/docs/build.txt'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)

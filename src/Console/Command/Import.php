@@ -16,7 +16,7 @@ class Import extends Command
     {
         $this
             ->setName('import')
-            ->setDescription("Import elements from the filesystem into MODX, including templates, chunks, and snippets.")
+            ->setDescription("Import a modx-package directory into MODX, including templates, chunks, and snippets.")
             ->addArgument(
                 'pkg_root_dir',
                 InputArgument::REQUIRED,

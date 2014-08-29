@@ -1115,10 +1115,14 @@ class Repoman
      * They will be marked as static elements.
      *
      * @param string $pkg_root_dir path to local package root (w trailing slash)
+     * @param array  $options
+     *
+     * @throws \Exception
      */
-    public function import($pkg_root_dir)
+    public function import($pkg_root_dir,$options=array())
     {
         $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
+        $dryrun = (isset($options['dry-run'])) ? true : false;
 
         // Is installed?
         $namespace = $this->get('namespace');
@@ -1149,14 +1153,14 @@ class Repoman
         if ($templates) $Category->addMany($templates);
         if ($tvs) $Category->addMany($tvs);
 
-        if (!$this->get('dry_run') && $Category->save()) {
+        if (!$dryrun && $Category->save()) {
             $data = $this->getCriteria('modCategory', $Category->toArray());
             $this->modx->cacheManager->set('modCategory/' . $this->get('category'), $data, 0, self::$cache_opts);
             $this->modx->log(modX::LOG_LEVEL_INFO, "Category created/updated: " . $this->get('category'));
         }
 
         // TODO: query database
-        if ($this->get('dry_run')) {
+        if ($dryrun) {
             $msg = "\n==================================\n";
             $msg .= "    Dry Run Enqueued Elements:\n";
             $msg .= "===================================\n";
@@ -1288,7 +1292,9 @@ class Repoman
     }
 
     /**
-     * Remember something that repoman saves or processed. TODO: store in database
+     * Remember something that repoman saves or processed.
+     * TODO: store in database
+     * TODO: peg this to a specific package vendor/name
      *
      * @param $object_type string
      * @param $identifier  string
@@ -1297,6 +1303,14 @@ class Repoman
     public function remember($object_type, $identifier, $contents)
     {
         Repoman::$queue[$object_type][$identifier] = $contents;
+    }
+
+    /**
+     * Pull up records "remembered" by the packagname
+     * @param $packagename
+     */
+    public function recall($packagename) {
+
     }
 
     /**
@@ -1324,13 +1338,6 @@ class Repoman
         }
     }
 
-    /**
-     * Dependency injection for graph and
-     * @param $output
-     */
-    public function setOutputInterface($output) {
-        $this->output = $output;
-    }
     /**
      * @param $path string
      */

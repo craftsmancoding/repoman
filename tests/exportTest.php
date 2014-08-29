@@ -70,20 +70,40 @@ class exportTest extends \PHPUnit_Framework_TestCase
         );
         $str = self::$repoman->export('modChunk', $dir, $options);
 
-        error_log($str);
 
         $this->assertTrue((bool) strpos($str, 'Export Debugging Info'));
 
         $options['debug'] = false;
         $str = self::$repoman->export('modChunk', $dir, $options);
 
-        $Finder = new Finder();
-        $Finder->files()->in($dir);
-        foreach ($Finder as $f) {
-            // Print the absolute path
-            error_log($f->getRealpath());
-        }
-        error_log('WROTE TO: '.$dir);
+//        $Finder = new Finder();
+//        $Finder->files()->in($dir);
+//        foreach ($Finder as $f) {
+//            // Print the absolute path
+//            $contents = file_get_contents($f->getRealpath());
+//            error_log($contents);
+//
+//        }
+        $file1 = '<!--
+@name test-1-737
+@description This is a test1
+-->
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Curabitur non imperdiet enim. Sed vel erat non metus euismod posuere vitae nec odio. Etiam malesuada interdum leo quis mattis. Pellentesque habitant morbi tristique senectus et netus et malesuada fames ac turpis egestas. Cras faucibus dolor quis mi fermentum euismod. Praesent eget sodales lectus, vitae blandit ante. Vestibulum tristique faucibus nibh, quis faucibus mauris ornare sed. Nam dapibus elementum massa vel facilisis. Praesent scelerisque augue convallis est consequat feugiat.';
+        $file2 = '<!--
+@name test-2-149
+@description This is a test2
+-->
+Lorem ipsum dolor sit amet, consectetur adipiscing elit. Proin eget venenatis magna. In laoreet imperdiet nisl, posuere aliquet ex pulvinar vitae. In a magna id metus ornare sollicitudin in ac massa. Nam dictum magna et dui pretium, vitae convallis enim dignissim. Class aptent taciti sociosqu ad litora torquent per conubia nostra, per inceptos himenaeos. Aliquam condimentum pretium mollis. Nullam sodales lorem ac fermentum aliquam. Donec lobortis malesuada orci in mollis. Sed ac urna a nunc egestas sagittis. Fusce fermentum sed metus feugiat mollis. Nunc elementum risus sit amet ante pretium maximus. Mauris mattis magna eget ligula sollicitudin, eu semper lectus scelerisque. Vestibulum malesuada non nulla vel porttitor. Pellentesque iaculis tristique velit, vitae tristique neque ullamcorper sed.';
+        //error_log('WROTE TO: '.$dir);
+        $P = new \Repoman\Parser\modChunk(self::$repoman);
+        $filename1 = $dir .'/'. $P->getBasename($C1);
+        $filename2 = $dir .'/'. $P->getBasename($C2);
+        //error_log('=======================>'. $dir.'/'.$P->getBasename($C1));
+        $this->assertTrue(file_exists($filename1), 'File does not exist: '.$filename1);
+        $this->assertTrue(file_exists($filename2), 'File does not exist: '.$filename2);
+        $this->assertEquals(normalize_string($file1), normalize_string(file_get_contents($filename1)));
+        $this->assertEquals(normalize_string($file2), normalize_string(file_get_contents($filename2)));
+
         $C1->remove();
         $C2->remove();
         $Filesystem->remove($dir);

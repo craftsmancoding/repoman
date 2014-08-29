@@ -681,9 +681,9 @@ class Repoman
      * @param       $target_dir
      * @param array $options
      *
-     * @throws \Exception
+     * @throws \Exception if directory does not exist and mkdir has not been specified
      *
-     * @return void
+     * @return mixed, string on debug, void otherwise
      */
     public function export($classname, $target_dir, $options = array())
     {
@@ -691,8 +691,9 @@ class Repoman
             'where'     => null,
             'graph'     => null,
             'limit'     => 1,
-            'dir'       => array(),
+            'load'       => array(),
             'move'      => false,
+            'mkdir'     => false,
             'debug'     => false,
             'overwrite' => false,
         );
@@ -710,9 +711,6 @@ class Repoman
             throw new \Exception('Parameter "classname" is required.');
         }
 
-        $this->Filesystem->mkdir($target_dir);
-        $target_dir = $this->Filesystem->getDir($target_dir);
-
         $is_element = false;
         $Parser     = null;
         if (in_array($classname, array('modSnippet', 'modChunk', 'modTemplate', 'modPlugin', 'modTemplateVar'))) {
@@ -722,8 +720,8 @@ class Repoman
         }
 
 
-        foreach ($options['dir'] as $d) {
-            $this->_addPkgs($d);
+        foreach ($options['load'] as $dir) {
+            $this->_addPkgs($dir);
         }
 
         $criteria = $this->modx->newQuery($classname);
@@ -754,6 +752,18 @@ class Repoman
         }
 
         if ($results) {
+
+            // Check the dir -- it's only relevant if we have results and we're not doing a debug operation
+            if ($options['mkdir']) {
+                $this->Filesystem->mkdir($target_dir);
+            }
+            try {
+                $target_dir = $this->Filesystem->getDir($target_dir);
+            }
+            catch (\Exception $e) {
+                throw new \Exception('Target directory does not exist. Create it or export using the mkdir option.');
+            }
+
             $i    = 1;
             $j    = 1; // tracks "groups" of records
             $pack = array();
@@ -1492,7 +1502,6 @@ class Repoman
         $this->_addPkgs($this->config, $this->pkg_root_dir);
         // $this->prepModx($pkg_root_dir); // populate the system settings not req'd
 
-        $action          = strtolower($this->get('action')); // write|parse|both
         $model           = trim(strtolower($this->get('model')), '/'); // name of the schema and the subdir
         $table_prefix    = $this->get('table_prefix');
         $restrict_prefix = $this->get('restrict_prefix');

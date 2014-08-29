@@ -25,7 +25,7 @@ class Export extends Command
             ->addArgument(
                 'target_dir',
                 InputArgument::REQUIRED,
-                'Destination directory, or path to repo root to store data in recommended location within repo'
+                'Destination directory where JSON files will be created'
             )
             ->addOption(
                 'where',
@@ -45,7 +45,7 @@ class Export extends Command
                 'limit',
                 null,
                 InputOption::VALUE_REQUIRED,
-                'How many records per file?',
+                'How many records per file? This option only affects non-elements (elements are always 1 record per file)',
                 1
             )
             ->addOption(
@@ -61,16 +61,22 @@ class Export extends Command
                 'Move elements to the target directory as a static element (affects elements only)'
             )
             ->addOption(
+                'mkdir',
+                null,
+                InputOption::VALUE_NONE,
+                'Create the target directory if it does not exist'
+            )
+            ->addOption(
                 'debug',
                 null,
                 InputOption::VALUE_NONE,
                 'Print raw SQL query and other debugging data about the data you are trying to export'
             )
             ->addOption(
-                'dir',
+                'load',
                 null,
                 InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
-                "Package directories where extra.packages are defined for MODX::addPackage(). Use this if your models are not listed in the extension_packages System Setting for automatic loading",
+                "One or more directories where extra.packages are defined in composer.json as arguments for MODX::addPackage(). Use this if your models are not listed in the extension_packages System Setting for automatic loading",
                 array()
             )
             ->setHelp(file_get_contents(dirname(dirname(dirname(dirname(__FILE__)))) . '/docs/export.txt'));

@@ -4,6 +4,9 @@
  */
 namespace Repoman\Console\Command;
 
+use Repoman\Utils;
+use Repoman\Repoman;
+use Repoman\Config;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
@@ -16,21 +19,43 @@ class Graph extends Command
     {
         $this
             ->setName('graph')
-            ->setDescription("Prints all of an object's attributes and it includes meta data for each defined relation.")
-            //->setSynopsis('A little something')
+            ->setDescription("Prints all of an object's attributes its relations.")
             ->addArgument(
-                'pkg_root_dir',
-                InputArgument::REQUIRED,
+                'classname',
+                InputArgument::OPTIONAL,
                 'Path to package root'
+            )
+            ->addOption(
+                'load',
+                null,
+                InputOption::VALUE_IS_ARRAY | InputOption::VALUE_REQUIRED,
+                "One or more directories where extra.packages are defined in composer.json as arguments for MODX::addPackage(). Use this if your models are not listed in the extension_packages System Setting for automatic loading",
+                array()
+            )
+            ->addOption(
+                'aggregates',
+                'a',
+                InputOption::VALUE_NONE,
+                'Show only related classes which are aggregates. If the primary object is deleted, aggregate objects are not affected.'
+            )
+            ->addOption(
+                'composites',
+                'c',
+                InputOption::VALUE_NONE,
+                'Show only related classes which are composites. If the primary object is deleted, composite objects are also deleted.'
             )
             ->setHelp(file_get_contents(dirname(dirname(dirname(dirname(__FILE__)))) . '/docs/graph.txt'));
     }
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $pkg_root_dir = $input->getArgument('pkg_root_dir');
-
-        $output->writeln('Graph...'.$pkg_root_dir);
+        $modx = Utils::getMODX();
+        $repoman = new Repoman($modx, new Config());
+        $classname = $input->getArgument('classname');
+        $options = $input->getOptions();
+        $out = $repoman->graph($classname,$options);
+        $output->write($out);
+        //$output->writeln('Graph...'.$pkg_root_dir);
     }
 }
 /*EOF*/

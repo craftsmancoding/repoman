@@ -12,6 +12,7 @@ class Config
     public $pkg_root_dir;
     public $overrides = array();
     public $params = array();
+    public $config_file = 'composer.json';
 
     /**
      * @param string $dir path to package root
@@ -90,9 +91,9 @@ class Config
     public function getPkg()
     {
         $config = array();
-        if (file_exists($this->pkg_root_dir . 'composer.json')) {
+        if (file_exists($this->pkg_root_dir . $this->config_file)) {
 
-            $composer = $this->parseJson($this->pkg_root_dir . 'composer.json');
+            $composer = $this->parseJson($this->pkg_root_dir . $this->config_file);
 
             if (isset($composer['extra']) && is_array($composer['extra'])) {
                 $config = $composer['extra'];

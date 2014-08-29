@@ -38,15 +38,13 @@ class SchemaWrite extends Command
                 'force',
                 null,
                 InputOption::VALUE_NONE,
-                'Force overwrite of existing files and directories.',
-                false
+                'Force overwrite of existing files and directories.'
             )
             ->addOption(
                 'polite',
                 null,
                 InputOption::VALUE_NONE,
-                'Renames existing files and directories. More polite than the force option.',
-                false
+                'Renames existing files and directories. More polite than the force option.'
             )
             ->addOption(
                 'restrict_prefix',

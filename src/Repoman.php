@@ -7,6 +7,7 @@
 namespace Repoman;
 
 use modX;
+use Symfony\Component\Console\Output\OutputInterface;
 use xPDO;
 use Repoman\Filesystem;
 use Repoman\Utils;
@@ -64,7 +65,7 @@ class Repoman
      */
     private function _addPkgs($pkg_root_dir)
     {
-        $Config = new Config($pkg_root_dir);
+        $Config = new Config($pkg_root_dir); // knows to look in composer.json
         $args   = $Config->getAll();
         $pkg    = (isset($args['packages'])) ? $args['packages'] : array();
 
@@ -244,53 +245,59 @@ class Repoman
      * Optional options:
      *      aggregates : if set, only aggregate relationships will be shown.
      *      composites : if set, only composite relationships will be shown.
-     *      pkg : colon-separated input for loading a package via addPackage.
+     *      load : arry of directories for packages to add
      *
-     * @param       $classname
+     * @param       $classname (optional)
      * @param array $args
-     *
      * @throws \Exception
      * @return array
      */
-    public function graph($classname, $args = array())
+    public function graph($classname=null, $args = array())
     {
-
+        // Defaults
         $aggregates = (isset($args['aggregates'])) ? $args['aggregates'] : false;
         $composites = (isset($args['composites'])) ? $args['composites'] : false;
+        $load = array();
+        if (isset($args['load'])) {
+            $load = (is_array($args['load'])) ? $args['load'] : array($args['load']);
+        }
 
+        // Handle weird use-case where user sets both options
+        if ($aggregates && $composites) {
+            $aggregates = false;
+            $composites = false;
+        }
 
         //Load up configs packages
-        if ($dir = $this->modx->getOption('repoman.dir')) {
-            foreach (scandir($dir) as $file) {
-                if ('.' === $file) continue;
-                if ('..' === $file) continue;
-                if (is_dir($dir . $file)) {
-                    $attributes = self::load_config($dir . $file . '/');
-                    $this->_addPkgs($attributes, $dir . $file . '/');
-                }
-            }
+        foreach ($load as $dir) {
+             $this->_addPkgs($dir);
         }
 
         if (empty($classname)) {
-            $out = "\n-------------------------\n";
-            $out .= "All Available Classes\n";
-            $out .= "-------------------------\n";
-            foreach ($this->modx->classMap as $parentclass => $childclasses) {
+            $out = "\n<bg=cyan>";
+            $out .= str_repeat(' ',30)."\n";
+            $out .= str_pad("All Available Classes",30,' ', STR_PAD_BOTH)."\n";
+            $out .= str_repeat(' ',30)."\n";
+            $out .= "</bg=cyan>\n";
+            $out .= "This is a list of all built-in MODX classes and those loaded by models listed in the extension_packages System Setting.\n";
+            $out .= "Use the --load option to identify package root directories where other packages are defined in the composer.json.\n";
 
-                $out .= "\n" . $parentclass . "\n" . str_repeat('-', strlen($parentclass)) . "\n";
+            foreach ($this->modx->classMap as $parentclass => $childclasses) {
+                $out .= "\n<fg=green>" . $parentclass . "</fg=green>\n" . str_repeat('-', strlen($parentclass)) . "\n";
                 foreach ($childclasses as $c) {
                     $out .= "    " . $c . "\n";
+                    //$output->writeln("    " . $c);
                 }
             }
 
             return $out;
         }
 
-        if (empty($classname)) {
-            throw new \Exception('classname is required.');
-        }
-
         $array = $this->modx->getFields($classname);
+
+        if (empty($array)) {
+            throw new \Exception('Classname not found. Call graph without arguments to see a list of registered classnames.');
+        }
 
         // Default
         $related = array_merge($this->modx->getAggregates($classname), $this->modx->getComposites($classname));
@@ -304,8 +311,15 @@ class Repoman
         foreach ($related as $alias => $def) {
             $array[$alias] = $def;
         }
-
-        return $array;
+        $out = "\n<bg=cyan>";
+        $out .= str_repeat(' ',30)."\n";
+        $out .= str_pad($classname,30,' ', STR_PAD_BOTH)."\n";
+        $out .= str_repeat(' ',30)."\n";
+        $out .= "</bg=cyan>\n";
+        $out .= print_r($array,true);
+        // Try to make the result pretty. TODO: make it have correct syntax!!!
+        $out = str_replace(array('Array','[',']',')'), array('array',"'","'",'),'), $out);
+        return $out;
 
     }
 
@@ -1310,6 +1324,13 @@ class Repoman
         }
     }
 
+    /**
+     * Dependency injection for graph and
+     * @param $output
+     */
+    public function setOutputInterface($output) {
+        $this->output = $output;
+    }
     /**
      * @param $path string
      */

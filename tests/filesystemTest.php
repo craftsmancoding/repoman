@@ -15,7 +15,7 @@
 
 use Repoman\Filesystem;
 
-class fileTest extends \PHPUnit_Framework_TestCase
+class filesystemTest extends \PHPUnit_Framework_TestCase
 {
 
     /**
@@ -52,6 +52,14 @@ class fileTest extends \PHPUnit_Framework_TestCase
         $result = Filesystem::getDir(__FILE__);
     }
 
+    /**
+     * @expectedException        \Exception
+     * @expectedExceptionMessage Path is not a directory
+     */
+    public function testDirDoesNotExist()
+    {
+        $result = Filesystem::getDir('/does/not/exist');
+    }
 
     function testGetDir()
     {

@@ -16,7 +16,7 @@ class Export extends Command
     {
         $this
             ->setName('export')
-            ->setDescription('Export MODX elements and objects from the MODX database into your repository as files.')
+            ->setDescription('Export MODX elements and objects from the database into your repository as JSON files.')
             ->addArgument(
                 'classname',
                 InputArgument::REQUIRED,
@@ -55,10 +55,16 @@ class Export extends Command
                 'Use to overwrite existing files in the target directory'
             )
             ->addOption(
+                'move',
+                null,
+                InputOption::VALUE_NONE,
+                'Move elements to the target directory as a static element (affects elements only)'
+            )
+            ->addOption(
                 'debug',
                 null,
                 InputOption::VALUE_NONE,
-                'Print raw SQL query and other debugging data.'
+                'Print raw SQL query and other debugging data about the data you are trying to export'
             )
             ->addOption(
                 'dir',

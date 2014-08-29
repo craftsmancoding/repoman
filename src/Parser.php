@@ -69,9 +69,10 @@ abstract class Parser
      * @param string $filename target filename including path
      * @param object $Obj
      * @param boolean $graph whether to include related data
+     * @param boolean $move - if true, the element will be moved to the location
      * @throws \Exception
      */
-    public function create($filename, $Obj, $graph=true)
+    public function create($filename, $Obj, $graph=true, $move=false)
     {
 
         $array = $Obj->toArray('', false, false, $graph);

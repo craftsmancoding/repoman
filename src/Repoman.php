@@ -759,7 +759,7 @@ class Repoman
             $pack = array();
             foreach ($results as $r) {
                 if ($is_element) {
-                    $filename = $target_dir . $j . '.' . $Parser->getBasename($r);
+                    $filename = $target_dir . $Parser->getBasename($r);
                     $Parser->create($filename, $r, $graph, $options['move']);
                 } else {
                     $array  = $r->toArray('', false, false, $graph);

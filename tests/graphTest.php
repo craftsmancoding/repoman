@@ -14,7 +14,7 @@
  */
 namespace Repoman;
 
-use Repoman\Graph;
+use Repoman\Action\Graph;
 use Repoman\Utils;
 use Repoman\Config;
 use Repoman\Filesystem;
@@ -36,7 +36,7 @@ class graphTest extends \PHPUnit_Framework_TestCase
 
         self::$modx = Utils::getMODX();
         self::$modx->initialize('mgr');
-        self::$graph = new Graph(self::$modx);
+        self::$graph = new Graph(self::$modx, new Config(self::$modx, new Filesystem()));
     }
 
     public static function tearDownAfterClass()

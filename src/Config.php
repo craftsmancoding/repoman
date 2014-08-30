@@ -1,14 +1,19 @@
 <?php
 /**
- *
+ * The Config class represents a package's configuration in total, including the package's
+ * info from composer.json, attributes inherited from the global definition, as well as
+ * any last minute overrides.  The configuration is bound to the package root directory
+ * ($pkg_root_dir).
  */
 namespace Repoman;
 
 use JsonSchema\Validator;
 use Repoman\Filesystem;
+use modX;
 
 class Config
 {
+    public $modx;
     public $Filesystem;
     public $pkg_root_dir;
     public $config_file = 'composer.json';
@@ -16,8 +21,26 @@ class Config
     /**
      * @param Filesystem $Filesystem
      */
-    public function __construct(Filesystem $Filesystem) {
+    public function __construct(modX $modx, Filesystem $Filesystem) {
+        $this->modx = $modx;
         $this->Filesystem = $Filesystem;
+    }
+
+    /**
+     * Add packages to MODX's radar so we can use their objects.
+     *
+     * @param $pkg_root_dir
+     */
+    public function addModxPkgs($pkg_root_dir)
+    {
+        $pkg_root_dir = $this->Filesystem->getDir($pkg_root_dir);
+        //$Config->setPkgRootDir($pkg_root_dir);
+        $args   = $this->getPkg($pkg_root_dir);
+        $pkg    = (isset($args['packages'])) ? $args['packages'] : array();
+
+        foreach ($pkg as $p) {
+            $this->modx->addPackage($p['pkg'], $pkg_root_dir . $p['path'], $p['table_prefix']);
+        }
     }
 
     /**
@@ -46,7 +69,7 @@ class Config
      */
     public function getAll(array $overrides=array()) {
         $global = $this->getGlobal();
-        $pkg = $this->getPkg();
+        $pkg = $this->getPkg($this->getPkgRootDir());
 
         $out = array_merge($global, $pkg, $overrides);
 
@@ -89,14 +112,14 @@ class Config
      * This reads the package's composer.json (if present), and merges it with global config
      * settings.
      *
-     * @internal param string pkg_dir path to local package root (w trailing slash)
+     * @param $pkg_root_dir path to local package root (w trailing slash)
      *
      * @return array combined config
      */
-    public function getPkg()
+    public function getPkg($pkg_root_dir)
     {
         $config = array();
-        if (file_exists($this->pkg_root_dir . $this->config_file)) {
+        if (file_exists($pkg_root_dir . $this->config_file)) {
 
             $composer = $this->parseJson();
 

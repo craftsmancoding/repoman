@@ -1,18 +1,24 @@
 <?php
 /**
- * Handles graphing MODX objects: shows attributes and relations
+ * Handles graphing MODX objects: shows attributes and relations.  It is not dependent on
+ * the configuration of any package, however, the option to load additional packages while
+ * reporting on their data models does trigger some configuration lookups.
  */
-namespace Repoman\Action\Graph;
+namespace Repoman\Action;
 
+use \modX;
+use Repoman\Config;
 
 class Graph
 {
 
     public $modx;
+    public $config;
 
-    public function __construct(\modX $modx)
+    public function __construct(modX $modx, Config $config)
     {
         $this->modx = $modx;
+        $this->config = $config;
     }
 
     /**
@@ -51,7 +57,7 @@ class Graph
 
         //Load up configs packages
         foreach ($load as $dir) {
-            $this->_addPkgs($dir);
+            $this->config->addModxPkgs($dir);
         }
 
         if (empty($classname)) {

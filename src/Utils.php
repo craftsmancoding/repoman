@@ -33,73 +33,30 @@ class Utils
 
 
     /**
-     * Get configuration for a given package path.
-     * This reads the config.php (if present), and merges it with global config
-     * settings.
+     * Convert a string (e.g. package name) to a string "safe" for filenames and URLs:
+     * no spaces or weird character hanky-panky.
+     * See http://stackoverflow.com/questions/2668854/sanitizing-strings-to-make-them-url-and-filename-safe
      *
-     * @param string $pkg_root_dir path to local package root (w or wo trailing slash)
-     * @param array $overrides any run-time overrides
-     * @return array combined config
+     * Parameters:
+     *     $string - The string to sanitize.
+     *     $force_lowercase - Force the string to lowercase?
+     *     $anal - If set to *true*, will remove all non-alphanumeric characters.
      */
-//    public static function loadConfig($pkg_root_dir, $overrides = array())
-//    {
-//        $pkg_root_dir = Filesystem::getDir($pkg_root_dir);
-//        $global = include dirname(dirname(__FILE__)) . '/includes/global.config.php';
-//        $config = array();
-//        if (file_exists($pkg_root_dir . 'composer.json')) {
-//            $str = file_get_contents($pkg_root_dir . 'composer.json');
-//
-//            $composer = JsonFile::parseJson($str, $pkg_root_dir . 'composer.json');
-//
-//            if (isset($composer['extra']) && is_array($composer['extra'])) {
-//                $config = $composer['extra'];
-//                if (isset($composer['support'])) {
-//                    $config['support'] = $composer['support'];
-//                }
-//                if (isset($composer['authors'])) {
-//                    $config['authors'] = $composer['authors'];
-//                }
-//                if (isset($composer['license'])) {
-//                    $config['license'] = $composer['license'];
-//                }
-//                if (isset($composer['homepage'])) {
-//                    $config['homepage'] = $composer['homepage'];
-//                }
-//            }
-//            if (!isset($config['namespace']) && $composer['name']) {
-//                $config['namespace'] = substr($composer['name'], strpos($composer['name'], '/') + 1);
-//            }
-//            if (!isset($config['description']) && isset($composer['description'])) {
-//                $config['description'] = $composer['description'];
-//            }
-//        }
-//
-//
-//        $out = array_merge($global, $config, $overrides);
-//
-//        if (preg_match('/[^a-z0-9_\-]/', $out['namespace'])) {
-//            throw new Exception('Invalid namespace: ' . $out['namespace']);
-//        }
-//        if (isset($out['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $out['version'])) {
-//            throw new Exception('Invalid version.');
-//        }
-//
-//        if ($out['core_path'] == $out['assets_path']) {
-//            throw new Exception('core_path cannot match assets_path in ' . $pkg_root_dir);
-//        } elseif ($out['core_path'] == $out['docs_path']) {
-//            throw new Exception('core_path cannot match docs_path in ' . $pkg_root_dir);
-//        }
-//        // Todo... all path directives must be unique, e.g. assets cannot be the same path as core
-//
-//        // This nukes any deeply nested structure, e.g. build_attributes
-//        $out['build_attributes'] = $global['build_attributes'];
-//        if (isset($config['build_attributes']) && is_array($config['build_attributes'])) {
-//            foreach ($config['build_attributes'] as $classname => $def) {
-//                $out['build_attributes'][$classname] = $def;
-//            }
-//        }
-//        return $out;
-//    }
+    public static function sanitize($string, $force_lowercase = true, $anal = false)
+    {
+        $strip = array("~", "`", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "_", "=", "+", "[", "{", "]",
+            "}", "\\", "|", ";", ":", "\"", "'", "&#8216;", "&#8217;", "&#8220;", "&#8221;", "&#8211;", "&#8212;",
+            "â€”", "â€“", ",", "<", ".", ">", "/", "?");
+        $clean = trim(str_replace($strip, "", strip_tags($string)));
+        $clean = preg_replace('/\s+/', "-", $clean);
+        $clean = ($anal) ? preg_replace("/[^a-zA-Z0-9]/", "", $clean) : $clean;
+
+        return ($force_lowercase) ?
+            (function_exists('mb_strtolower')) ?
+                mb_strtolower($clean, 'UTF-8') :
+                strtolower($clean) :
+            $clean;
+    }
 
     /**
      * Finds the MODX instance in the current working directory, instantiates it and returns it.
@@ -108,9 +65,11 @@ class Utils
      * Syntax {$config_key}.inc.php
      *
      * @param string $dir optional directory to look in. Default: current dir
+     *
+     * @throws \Exception
      * @return object modx instance
      */
-    public static function getMODX($dir = '')
+    public static function getMODX($dir = null)
     {
         $dir = ($dir) ? $dir : dirname(__FILE__);
 

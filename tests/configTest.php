@@ -14,6 +14,7 @@
  */
 namespace Repoman;
 
+use Repoman\Utils;
 use Repoman\Config;
 use Repoman\Filesystem;
 
@@ -28,7 +29,7 @@ class configTest extends \PHPUnit_Framework_TestCase
      */
     public static function setUpBeforeClass()
     {
-        self::$config = new Config(new Filesystem());
+        self::$config = new Config(Utils::getMODX(), new Filesystem());
 
     }
 
@@ -59,7 +60,7 @@ class configTest extends \PHPUnit_Framework_TestCase
 
     public function testPkg() {
         self::$config->setPkgRootDir(dirname(__FILE__).'/pkg1/');
-        $config = self::$config->getPkg();
+        $config = self::$config->getPkg(dirname(__FILE__).'/pkg1/');
         $this->assertTrue(is_array($config));
         //error_log(print_r($config,true));
         $this->assertEquals('123.456.789',$config['version']);

@@ -981,6 +981,7 @@ class Repoman
      * @param string $classname
      * @param array  $attributes data for a single object representing $classname
      *
+     * @throws \Exception
      * @return array
      */
     public function getCriteria($classname, $attributes)

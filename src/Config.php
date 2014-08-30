@@ -9,23 +9,27 @@ use Repoman\Filesystem;
 
 class Config
 {
+    public $Filesystem;
     public $pkg_root_dir;
-    public $overrides = array();
-    public $params = array();
     public $config_file = 'composer.json';
 
     /**
-     * @param string $dir path to package root
-     * @param array $overrides line-item overrides usually from console
+     * @param Filesystem $Filesystem
      */
-    public function __construct($dir=null,$overrides=array()) {
-        $dir = ($dir) ? $dir : __DIR__;
-        $this->pkg_root_dir = Filesystem::getDir($dir);
-        $this->overrides = $overrides;
+    public function __construct(Filesystem $Filesystem) {
+        $this->Filesystem = $Filesystem;
     }
 
     /**
-     * Directory at the root of the package (the dir holding the composer.json)
+     * Set Root directory for the package, the one containing the root composer.json
+     * @param $dir string
+     */
+    public function setPkgRootDir($dir) {
+        $this->pkg_root_dir = $this->Filesystem->getDir($dir);
+    }
+
+    /**
+     * Get Directory at the root of the package (the dir holding the composer.json)
      * @return string
      */
     public function getPkgRootDir() {
@@ -35,15 +39,16 @@ class Config
     /**
      * Get all of the config, as an array, intelligently merging overrides
      *
+     * @param array $overrides
      * @throws \Exception if namespace contains invalid characters
      * @throws \Exception if version is not valid
      * @return array
      */
-    public function getAll() {
+    public function getAll(array $overrides=array()) {
         $global = $this->getGlobal();
         $pkg = $this->getPkg();
 
-        $out = array_merge($global, $pkg, $this->overrides);
+        $out = array_merge($global, $pkg, $overrides);
 
         if (preg_match('/[^a-z0-9_\-]/', $out['namespace'])) {
             throw new \Exception('Invalid namespace: ' . $out['namespace']);
@@ -57,7 +62,7 @@ class Config
         } elseif ($out['core_path'] == $out['docs_path']) {
             throw new \Exception('core_path cannot match docs_path in ' . $this->pkg_root_dir);
         }
-        // Todo... all path directives must be unique.
+        // Todo... all path directives must be unique.  Validate Config?
 
         // This nukes any deeply nested structure, e.g. build_attributes
         $out['build_attributes'] = $global['build_attributes'];
@@ -93,7 +98,7 @@ class Config
         $config = array();
         if (file_exists($this->pkg_root_dir . $this->config_file)) {
 
-            $composer = $this->parseJson($this->pkg_root_dir . $this->config_file);
+            $composer = $this->parseJson();
 
             if (isset($composer['extra']) && is_array($composer['extra'])) {
                 $config = $composer['extra'];
@@ -127,13 +132,13 @@ class Config
      * a copy of the composer.json schema file (res/composer-schema.json)
      *
      * @throws \Exception if json schema is invalid
-     * @param $file full path to composer.json file
      * @return array
      */
-    public function parseJson($file) {
+    public function parseJson() {
 
         $schemaFile = __DIR__ . '/../res/composer-schema.json';
         $schemaData = json_decode(file_get_contents($schemaFile));
+        $file = $this->getPkgRootDir().$this->config_file;
         $contents = file_get_contents($file);
         $data = json_decode($contents);
         $validator = new Validator();

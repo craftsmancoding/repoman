@@ -14,7 +14,7 @@
  */
 namespace Repoman;
 
-use Repoman\Repoman;
+use Repoman\Graph;
 use Repoman\Utils;
 use Repoman\Config;
 use Repoman\Filesystem;
@@ -25,7 +25,7 @@ class graphTest extends \PHPUnit_Framework_TestCase
 {
     // Must be static because we set it up inside a static function
     public static $modx;
-    public static $repoman;
+    public static $graph;
 
     /**
      * Load up MODX for our tests.
@@ -36,7 +36,7 @@ class graphTest extends \PHPUnit_Framework_TestCase
 
         self::$modx = Utils::getMODX();
         self::$modx->initialize('mgr');
-        self::$repoman = new Repoman(self::$modx, new Config());
+        self::$graph = new Graph(self::$modx);
     }
 
     public static function tearDownAfterClass()
@@ -53,7 +53,7 @@ class graphTest extends \PHPUnit_Framework_TestCase
 
     public function testGraph()
     {
-        $out = self::$repoman->graph(null,array());
+        $out = self::$graph->execute(null,array());
         //error_log($out);
         $this->assertTrue((bool) strpos($out,'All Available Classes'));
 
@@ -61,7 +61,7 @@ class graphTest extends \PHPUnit_Framework_TestCase
 
     public function testGraphChunk()
     {
-        $out = self::$repoman->graph('modChunk',array());
+        $out = self::$graph->execute('modChunk',array());
         //error_log($out);
         $this->assertTrue((bool) strpos($out,'property_preprocess'));
         $this->assertTrue((bool) strpos($out,'CategoryAcls'));
@@ -74,7 +74,7 @@ class graphTest extends \PHPUnit_Framework_TestCase
      */
     public function testMissingDir()
     {
-        $out = self::$repoman->graph(null,array('load'=>'/does/not/exist'));
+        $out = self::$graph->execute(null,array('load'=>'/does/not/exist'));
     }
 
     /**
@@ -83,6 +83,6 @@ class graphTest extends \PHPUnit_Framework_TestCase
      */
     public function testInvalidClassname()
     {
-        $out = self::$repoman->graph('class_does_not_exist');
+        $out = self::$graph->execute('class_does_not_exist');
     }
 }

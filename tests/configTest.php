@@ -15,10 +15,22 @@
 namespace Repoman;
 
 use Repoman\Config;
-
+use Repoman\Filesystem;
 
 class configTest extends \PHPUnit_Framework_TestCase
 {
+
+    public static $config;
+
+    /**
+     * Load up MODX for our tests.
+     *
+     */
+    public static function setUpBeforeClass()
+    {
+        self::$config = new Config(new Filesystem());
+
+    }
 
     /**
      * @expectedException        \Exception
@@ -26,37 +38,36 @@ class configTest extends \PHPUnit_Framework_TestCase
      */
     public function testBadDir()
     {
-        $C = new Config('does/not/exist');
+        self::$config->setPkgRootDir('does/not/exist');
     }
 
     public function testGlobal() {
-        $C = new Config(dirname(__FILE__).'/pkg1/');
-        $config = $C->getGlobal();
+        self::$config->setPkgRootDir(dirname(__FILE__).'/pkg1/');
+        $config = self::$config->getGlobal();
         $this->assertTrue(is_array($config));
-        //error_log(print_r($config,true));
         $this->assertEquals('elements/chunks/',$config['chunks_path']);
     }
 
     public function testParseJson() {
         $dir = dirname(__FILE__).'/pkg1/';
-        $C = new Config($dir);
-        $config = $C->parseJson($dir.'composer.json');
+        self::$config->setPkgRootDir($dir);
+        $config = self::$config->parseJson();
         $this->assertTrue(is_array($config));
-        //error_log(print_r($config,true));
         $this->assertEquals('123.456.789',$config['extra']['version']);
 
     }
 
     public function testPkg() {
-        $C = new Config(dirname(__FILE__).'/pkg1/');
-        $config = $C->getPkg();
+        self::$config->setPkgRootDir(dirname(__FILE__).'/pkg1/');
+        $config = self::$config->getPkg();
         $this->assertTrue(is_array($config));
         //error_log(print_r($config,true));
         $this->assertEquals('123.456.789',$config['version']);
     }
     public function testOverrides() {
-        $C = new Config(dirname(__FILE__).'/pkg1/', array('version'=>'1.2.3'));
-        $config = $C->getAll();
+        //$C = new Config(dirname(__FILE__).'/pkg1/', array('version'=>'1.2.3'));
+        self::$config->setPkgRootDir(dirname(__FILE__).'/pkg1/');
+        $config = self::$config->getAll(array('version'=>'1.2.3'));
         $this->assertTrue(is_array($config));
         $this->assertEquals('1.2.3',$config['version']);
     }
@@ -67,8 +78,8 @@ class configTest extends \PHPUnit_Framework_TestCase
      * @expectedExceptionMessage does not match the expected JSON schema.
      */
     public function testBadConfig() {
-        $C = new Config(dirname(__FILE__).'/pkg2/');
-        $config = $C->getAll();
+        self::$config->setPkgRootDir(dirname(__FILE__).'/pkg2/');
+        $config = self::$config->getAll();
     }
 
     /**
@@ -76,8 +87,8 @@ class configTest extends \PHPUnit_Framework_TestCase
      * @expectedExceptionMessage Invalid namespace
      */
     public function testInvalidNamespace() {
-        $C = new Config(dirname(__FILE__).'/pkg1/', array('namespace'=>'@#$^@%#$&'));
-        $config = $C->getAll();
+        self::$config->setPkgRootDir(dirname(__FILE__).'/pkg1/');
+        $config = self::$config->getAll(array('namespace'=>'@#$^@%#$&'));
     }
 
     /**
@@ -85,7 +96,7 @@ class configTest extends \PHPUnit_Framework_TestCase
      * @expectedExceptionMessage Invalid version
      */
     public function testInvalidVersion() {
-        $C = new Config(dirname(__FILE__).'/pkg1/', array('version'=>'donkey(duck)#punch'));
-        $config = $C->getAll();
+        self::$config->setPkgRootDir(dirname(__FILE__).'/pkg1/');
+        $config = self::$config->getAll(array('version'=>'donkey(duck)#punch'));
     }
 }

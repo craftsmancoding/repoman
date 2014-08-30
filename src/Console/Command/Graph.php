@@ -5,16 +5,20 @@
 namespace Repoman\Console\Command;
 
 use Repoman\Utils;
-use Repoman\Repoman;
+//use Repoman\Action\Graph;
 use Repoman\Config;
+use Repoman\Filesystem;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\Filesystem\Exception\FileNotFoundException;
 
 class Graph extends Command
 {
+
+
     protected function configure()
     {
         $this
@@ -49,11 +53,10 @@ class Graph extends Command
 
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $modx = Utils::getMODX();
-        $repoman = new Repoman($modx, new Config());
+        $graph = new \Repoman\Action\Graph(Utils::getMODX(), new Config(Utils::getMODX(), new Filesystem()));
         $classname = $input->getArgument('classname');
         $options = $input->getOptions();
-        $out = $repoman->graph($classname,$options);
+        $out = $graph->execute($classname,$options);
         $output->write($out);
         //$output->writeln('Graph...'.$pkg_root_dir);
     }

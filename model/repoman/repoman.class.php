@@ -307,6 +307,7 @@ class Repoman
      *
      * @param string $pkg_root_dir path to local package root (w trailing slash)
      * @param array $overrides any run-time overrides
+     * @throws Exception
      * @return array combined config
      */
     public static function load_config($pkg_root_dir, $overrides = array())
@@ -318,7 +319,8 @@ class Repoman
         if (file_exists($pkg_root_dir . 'composer.json')) {
             $str = file_get_contents($pkg_root_dir . 'composer.json');
 
-            $composer = \Composer\Json\JsonFile::parseJson($str, $pkg_root_dir . 'composer.json');
+            //$composer = \Composer\Json\JsonFile::parseJson($str, $pkg_root_dir . 'composer.json');
+            $composer = json_decode($str,true);
 
             if (isset($composer['extra']) && is_array($composer['extra'])) {
                 $config = $composer['extra'];

@@ -14,14 +14,16 @@ class modTemplateVar_parser extends Repoman_parser {
 	public $dox_end = '';
     public $dox_pad = ''; // left of line before the @attribute	
 
-	/**
-	 * Create a TV from existing object.  We override the parent here because TVs are stored as PHP arrays,
-	 * not as textual elements with DocBlocks.
-	 *
-	 * @param string $pkg_dir
-	 * @param object $Obj
-	 * @param boolean $graph whether to include related data
-	 */
+    /**
+     * Create a TV from existing object.  We override the parent here because TVs are stored as PHP arrays,
+     * not as textual elements with DocBlocks.
+     *
+     * @param string  $pkg_dir
+     * @param object  $Obj
+     * @param boolean $graph whether to include related data
+     *
+     * @throws Exception
+     */
     public function create($pkg_dir, $Obj, $graph) {
 
         $array = $Obj->toArray('',false,false,$graph);
@@ -51,7 +53,7 @@ class modTemplateVar_parser extends Repoman_parser {
             throw new Exception('Could not write to file '.$filename);
         }
         else {
-            $this->modx->log(modX::LOG_LEVEL_INFO,'Created static element at '. $f);        
+            $this->modx->log(modX::LOG_LEVEL_INFO,'Created static element at '. $filename);
         }
     }
 
@@ -76,6 +78,7 @@ class modTemplateVar_parser extends Repoman_parser {
         foreach($files as $f) {
             $data = $this->Repoman->load_data($f);
             $attributes = $data[0];
+            // Get a name based on the file if no name was explicitly provided
             if (!isset($attributes[$this->objectname])) {
                 $name = str_replace(array('snippet.','.snippet','chunk.','.chunk'
                     ,'plugin.','.plugin','tv.','.tv','template.','.template'

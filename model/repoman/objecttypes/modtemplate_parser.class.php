@@ -54,18 +54,13 @@ class modTemplate_parser extends Repoman_parser {
 	 *
 	 */
 	public function relate($attributes,&$Obj) {
-        $tvs = array();
+
+        $tvts = array(); // join: templatevars-templates
         $templateid = $Obj->get('id');
         if (isset($attributes['TVs'])) {
             $tv_names = explode(',',$attributes['TVs']);
-            // Remove unassociated TVs
-/*
-            $TVTs = $this->modx->getCollection('modTemplateVarTemplate', array('templateid'=>$templateid, 'event:NOT IN'=> $tv_names));
-            foreach ($TVTs as $t) {
-                $t->remove();
-            }
-*/
-            
+
+            $rank = 0;
             foreach ($tv_names as $t) {
                 $t = trim($t);
                 if (!$TV = $this->modx->getObject('modTemplateVar', array('name'=>$t))) {
@@ -74,10 +69,21 @@ class modTemplate_parser extends Repoman_parser {
                 // Set TV attributes?  This is like Seed data, but it lives in elements/tvs
                 $filename = $this->Repoman->get_core_path($this->pkg_dir).$this->Repoman->get('tvs_path').'/'.$t.'.php';
                 $data = $this->Repoman->load_data($filename);
+                print '----------------- DATA:'; print_r($data);
                 $TV->fromArray($data[0]); // one at a time only.
 
+                // Add modTemplateVarTemplate to link TV w Template
+                if (!$TVT = $this->modx->getObject('modTemplateVarTemplate', array('tmplvarid'=>$TV->get('id'), 'templateid'=>$templateid))) {
+                    $TVT = $this->modx->newObject('modTemplateVarTemplate');
+                }
+                $TVT->set('rank', $rank);
+                $TVT->addOne($TV);
+                $rank++;
+
+                $tvts[] = $TVT;
+                //$TV->addMany($join);
                 Repoman::$queue[$this->objecttype][] = 'modTemplateVarTemplate: '. $TV->get('name') .' '.$Obj->get('templatename');
-                $tvs[] = $TV;
+                //$tvs[] = $TV;
             }
         }
         else {
@@ -87,7 +93,8 @@ class modTemplate_parser extends Repoman_parser {
                 $t->remove();
             }        
         }
-    	$Obj->addMany($tvs);
+        // Do the Join
+    	$Obj->addMany($tvts);
 	}
 
 	

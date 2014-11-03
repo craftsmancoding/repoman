@@ -18,7 +18,6 @@
 <?php else: ?>
     <div class="repo-wrapper">
     	<h2 style="margin-top:20px;">Your Repositories</h2>
-    	<a class="green-btn" href="<?php print $this->getUrl('create'); ?>" class="repoman_button create-btn">Create New Repo</a>
     </div>
     
     <?php print $repos; ?>

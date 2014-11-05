@@ -198,7 +198,7 @@ class unitTest extends PHPUnit_Framework_TestCase {
             foreach($TVTs as $t) {
                 if ($TVs = $t->getMany('TemplateVar')) {
                     foreach ($TVs as $tv)
-                    $this->assertTrue($tv->get('name') == 'test_pkg6', 'TV should have been imported.');            
+                    $this->assertTrue($tv->get('name') == 'test_pkg6', 'TV should have been imported.');
                 }
             }
         }

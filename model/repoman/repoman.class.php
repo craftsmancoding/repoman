@@ -173,7 +173,6 @@ class Repoman {
         if (file_exists($pkg_root_dir . 'composer.json')) {
             $str = file_get_contents($pkg_root_dir . 'composer.json');
 
-            //$composer = \Composer\Json\JsonFile::parseJson($str, $pkg_root_dir . 'composer.json');
             $composer = json_decode($str, true);
 
             if (isset($composer['extra']) && is_array($composer['extra'])) {

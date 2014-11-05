@@ -46,15 +46,16 @@ abstract class Repoman_parser {
         $this->Repoman = &$Repoman;
         $this->classname = str_replace('_parser', '', get_class($this));
 	}
-	
-	/**
-	 * Create an element from attributes, including a DocBlock
-	 *
-	 * @param string $pkg_dir
-	 * @param object $Obj
-	 * @param boolean $graph whether to include related data
-	 * 
-	 */
+
+    /**
+     * Create an element from attributes, including a DocBlock
+     *
+     * @param string  $pkg_dir
+     * @param object  $Obj
+     * @param boolean $graph whether to include related data
+     *
+     * @throws Exception
+     */
     public function create($pkg_dir, $Obj, $graph) {
 
         $array = $Obj->toArray('',false,false,$graph);
@@ -102,7 +103,7 @@ abstract class Repoman_parser {
         // Do you want to mess with the original object?  Or just grab a snapshot of it?
         if ($this->Repoman->get('move')) {
             $Obj->set('static', true);
-            $Obj->set('static_file', path_to_rel($filename,MODX_BASE_PATH));
+            $Obj->set('static_file', self::path_to_rel($filename,MODX_BASE_PATH));
             if (!$Obj->save()) {
                 throw new Exception('Problem saving '.$this->classname.' '.$array[$this->objectname]);
             }
@@ -222,7 +223,7 @@ abstract class Repoman_parser {
      * @param string $base : the /full/path/to/base/ (MODX_BASE_PATH)
      * @return string
      */
-    public function path_to_rel($path,$base) {
+    public static function path_to_rel($path,$base) {
         return str_replace($base,'',$path); // convert path to url
     }
 

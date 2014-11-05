@@ -13,16 +13,20 @@ class RepomanHomeManagerController extends RepomanManagerController {
     public $loadBaseJavascript = true;
     
     public $props = array();
-    
-    /**
-     * Any specific processing we want to do here. Return a string of html.
-     * @param array $scriptProperties
-     */
+
+	/**
+	 * Any specific processing we want to do here. Return a string of html.
+	 *
+	 * @param array $scriptProperties
+	 *
+	 * @return string
+	 */
     public function process(array $scriptProperties = array()) {
 
 		$this->props['pagetitle'] = 'Overview';
 		$pagedata = array('repo_dir_settings'=>'', 'cache_settings'=>'','repos'=>'','error'=>false);
-		$props = array();		
+		$props = array();
+		// Listen specifically for POST (poor-man's routing here...)
 		if (!empty($_POST)) {
 
 			if (!$Setting = $this->modx->getObject('modSystemSetting', array('key' => 'repoman.dir'))) {

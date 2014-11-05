@@ -11,9 +11,13 @@ class RepomanViewManagerController extends RepomanManagerController {
     public $loadFooter = true;
     /** @var bool Set to false to prevent loading of the base MODExt JS classes. */
     public $loadBaseJavascript = true;
+
     /**
      * Any specific processing we want to do here. Return a string of html.
+     *
      * @param array $scriptProperties
+     *
+     * @return string
      */
     public function process(array $scriptProperties = array()) {
 		$this->props['pagetitle'] = 'View Repo';	

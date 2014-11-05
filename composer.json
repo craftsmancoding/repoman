@@ -44,7 +44,7 @@
             "modSystemSetting": {
         	   "unique_key": "key",
         	   "preserve_keys": true,
-        	   "update_object": true
+        	   "update_object": false
             }
         }
     }

@@ -44,31 +44,31 @@
 }
 */
 return array(
-    'name' => '',
+    'name'        => '',
     'description' => '',
-    'type' => 'library',
-    'keywords' => array('modx','repoman'),
-    'homepage' => '',
-    'license' => 'GPL-2.0+',
-    'authors' => array(
+    'type'        => 'library',
+    'keywords'    => array('modx', 'repoman'),
+    'homepage'    => '',
+    'license'     => 'GPL-2.0+',
+    'authors'     => array(
         array(
-            'name' => '',
-            'email' => '',
+            'name'     => '',
+            'email'    => '',
             'homepage' => '',
         )
     ),
-    'support' => array(
-        'email' => '',
+    'support'     => array(
+        'email'  => '',
         'issues' => '',
-        'forum' => '',
-        'wiki' => '',
+        'forum'  => '',
+        'wiki'   => '',
         'source' => '',
     ),
-    'extra' => array(
+    'extra'       => array(
         'package_name' => '',
-        'namespace' => '',
-        'version' => '',
-        'release' => '',
-        'category' => '',
+        'namespace'    => '',
+        'version'      => '',
+        'release'      => '',
+        'category'     => '',
     )
 );

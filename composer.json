@@ -45,6 +45,11 @@
         	   "unique_key": "key",
         	   "preserve_keys": true,
         	   "update_object": false
+            },
+            "modMediaSource":{
+                "unique_key":"name",
+                "preserve_keys": true,
+                "update_object": true
             }
         }
     }

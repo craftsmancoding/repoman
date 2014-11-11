@@ -148,7 +148,7 @@ return array(
         'modSystemSetting'            => array(
             xPDOTransport::UNIQUE_KEY    => 'key',
             xPDOTransport::PRESERVE_KEYS => true,
-            xPDOTransport::UPDATE_OBJECT => true, // <-- critical! We don't want to overwrite user's values
+            xPDOTransport::UPDATE_OBJECT => false, // <-- critical! We don't want to overwrite user's values
         ),
         'modMenu'                     => array(
             xPDOTransport::PRESERVE_KEYS             => true,

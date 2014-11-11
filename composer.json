@@ -31,10 +31,10 @@
     },
 
     "extra": {
-        "repoman": "1.1.1",
+        "repoman": "1.1.2",
         "package_name": "Repoman",
         "namespace": "repoman",
-        "version": "1.1.1",
+        "version": "1.1.2",
         "release": "pl",
         "category":"repoman",
         "core_path": "",

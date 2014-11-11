@@ -1,3 +1,8 @@
 Repoman Changelog
 
 Taking back the simplicity... stay tuned...
+
+
+# 1.1.2
+
+Fixed broken path in Transport Package version

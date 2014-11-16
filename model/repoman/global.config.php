@@ -54,7 +54,7 @@ return array(
     // Relative to core/components/<namespace>/  (do not start these with a slash!)
     'orm_path'              => 'model/', // <-- xPDO's ORM classes here. MODX convention is "model/"
     'migrations_path'       => 'model/migrations/',
-    'seeds_path'            => array(),
+    'seeds_path'            => array('model/seeds/'),
     'validators_path'       => 'tests/',
     'controllers_path'      => '', // Default is blank.  MODX hard-codes this pattern: {$controllers_path}controllers/{$action}.class.php
 

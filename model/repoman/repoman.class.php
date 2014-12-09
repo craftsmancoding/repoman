@@ -301,7 +301,7 @@ class Repoman {
 
         $this->modx->loadClass('transport.modPackageBuilder', '', false, true);
         $builder = new modPackageBuilder($this->modx);
-        $sanitized_package_name = self::sanitize($this->get('package_name'), true, true);
+        $sanitized_package_name = $this->get('package_name');
         $builder->createPackage($sanitized_package_name, $this->get('version'), $this->get('release'));
         $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace') . '/');
 

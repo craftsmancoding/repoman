@@ -303,7 +303,7 @@ class Repoman {
         $builder = new modPackageBuilder($this->modx);
         $sanitized_package_name = $this->get('package_name');
         $builder->createPackage($sanitized_package_name, $this->get('version'), $this->get('release'));
-        $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace') . '/');
+        $builder->registerNamespace($this->get('namespace'), false, true, '{core_path}components/' . $this->get('namespace') . '/','{assets_path}components/' . $this->get('namespace') . '/');
 
         // Tests (Validators): this is run BEFORE your package code is in place
         // so you cannot reference/include package files from your validator! They won't exist when the code is run.

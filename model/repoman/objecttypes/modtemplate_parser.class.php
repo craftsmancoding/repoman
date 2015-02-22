@@ -58,7 +58,7 @@ class modTemplate_parser extends Repoman_parser {
 
     /**
      * Attach and Remove Template's TVs
-     *
+     * This is tricky because it involves a join table (2 hops): modTemplate --> modTemplateVarTemplate --> modTemplateVar
      */
     public function relate($attributes, &$Obj)
     {
@@ -79,7 +79,7 @@ class modTemplate_parser extends Repoman_parser {
                 $data = $this->Repoman->load_data($filename);
                 $TV->fromArray($data[0]); // one at a time only.
 
-                // Add modTemplateVarTemplate to link TV w Template
+                // Add modTemplateVarTemplate to link TV with TVT
                 if (!$TVT = $this->modx->getObject('modTemplateVarTemplate', array('tmplvarid' => $TV->get('id'), 'templateid' => $templateid))) {
                     $TVT = $this->modx->newObject('modTemplateVarTemplate');
                 }
@@ -88,7 +88,7 @@ class modTemplate_parser extends Repoman_parser {
                 $rank++;
 
                 $tvts[] = $TVT;
-                //$TV->addMany($join);
+                $TV->addMany($join);
                 Repoman::$queue[$this->objecttype][] = 'modTemplateVarTemplate: ' . $TV->get('name') . ' ' . $Obj->get('templatename');
                 //$tvs[] = $TV;
             }

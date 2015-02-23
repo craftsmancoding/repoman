@@ -1,0 +1,41 @@
+<!--
+@param textfield $tpl This is my description. default="Something"
+@param textfield $tpl2 Other description. default='Single Quotes'
+@param textfield $tpl3 Yet another. default=NoQuotes
+@param list $choose A dropdown default=int options={"str":"String","int":"Integer"}
+-->
+
+Example from https://github.com/opengeek/getResources/blob/master/_build/properties.inc.php
+
+    array(
+        'name' => 'debug',
+        'desc' => 'If true, will send the SQL query to the MODX log. Defaults to false.',
+        'type' => 'combo-boolean',
+        'options' => '',
+        'value' => false,
+    ),
+    array(
+        'name' => 'where',
+        'desc' => 'A JSON expression of criteria to build any additional where clauses from, e.g. &where=`{{"alias:LIKE":"foo%", "OR:alias:LIKE":"%bar"},{"OR:pagetitle:=":"foobar", "AND:description:=":"raboof"}}`',
+        'type' => 'textfield',
+        'options' => '',
+        'value' => '',
+    ),
+    array(
+        'name' => 'tplOperator',
+        'desc' => 'An optional operator to use for the tplCondition when comparing against the conditionalTpls operands. Default is == (equals).',
+        'type' => 'list',
+        'options' => array(
+            array('text' => 'is equal to','value' => '=='),
+            array('text' => 'is not equal to','value' => '!='),
+            array('text' => 'less than','value' => '<'),
+            array('text' => 'less than or equal to','value' => '<='),
+            array('text' => 'greater than or equal to','value' => '>='),
+            array('text' => 'is empty','value' => 'empty'),
+            array('text' => 'is not empty','value' => '!empty'),
+            array('text' => 'is null','value' => 'null'),
+            array('text' => 'is in array','value' => 'inarray'),
+            array('text' => 'is between','value' => 'between'),
+        ),
+        'value' => '==',
+    )

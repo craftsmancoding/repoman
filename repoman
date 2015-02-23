@@ -141,7 +141,7 @@ switch ($function) {
         unset($argv[2]);
         $args = Repoman::parse_args($argv);
         try {
-            $Repoman = new Repoman($modx,$config);
+            $Repoman = new Repoman($modx,array());
             $out = $Repoman->graph($classname, $args);
             $out = print_r($out,true); 
             // Try to make the result pretty. TODO: make it have correct syntax!!!

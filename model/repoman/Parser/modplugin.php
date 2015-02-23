@@ -1,10 +1,10 @@
-<?php
+<?php namespace Repoman\Parser;
 
 /**
  *
  *
  */
-class modPlugin_parser extends Repoman_parser {
+class modplugin extends Parser {
 
     public $dir_key = 'plugins_path';
     public $ext = '*.php';
@@ -70,7 +70,7 @@ class modPlugin_parser extends Repoman_parser {
                     $Event->set('event', trim($e));
                 }
 
-                Repoman::$queue[$this->objecttype][] = 'modPluginEvent: ' . $Event->get('event');
+                \Repoman::$queue[$this->objecttype][] = 'modPluginEvent: ' . $Event->get('event');
                 $events[] = $Event;
             }
         } else {

@@ -656,9 +656,7 @@ class Repoman {
      */
     private function _get_elements($objecttype, $pkg_root_dir)
     {
-        require_once dirname(__FILE__) . '/repoman_parser.class.php';
-        require_once dirname(__FILE__) . '/objecttypes/' . strtolower($objecttype) . '_parser.class.php';
-        $classname = $objecttype . '_parser';
+        $classname = '\\Repoman\\Parser\\'. strtolower($objecttype);
         $Parser = new $classname($this);
 
         return $Parser->gather($pkg_root_dir);
@@ -1136,10 +1134,8 @@ class Repoman {
         $is_element = false;
         $Parser = null;
         if (in_array($classname, array('modSnippet', 'modChunk', 'modTemplate', 'modPlugin', 'modTemplateVar'))) {
-            require_once dirname(__FILE__) . '/repoman_parser.class.php';
-            require_once dirname(__FILE__) . '/objecttypes/' . strtolower($classname) . '_parser.class.php';
             $is_element = true;
-            $element_class = strtolower($classname) . '_parser';
+            $element_class = '\\Repoman\\Parser\\'.strtolower($classname);
             $Parser = new $element_class($this);
         }
 

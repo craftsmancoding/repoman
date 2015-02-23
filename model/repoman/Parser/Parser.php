@@ -1,4 +1,4 @@
-<?php
+<?php namespace Repoman\Parser;
 
 /**
  * Used by Repman to parse MODX static elements (chunks, templates, snippets, tvs)
@@ -6,7 +6,7 @@
  *
  * @package repoman
  */
-abstract class Repoman_parser {
+abstract class Parser {
 
     public $modx;
     public $Repoman;
@@ -36,17 +36,17 @@ abstract class Repoman_parser {
      */
     public static $skip_tags = array('param', 'return', 'abstract', 'access', 'author', 'copyright',
         'deprecated', 'deprec', 'example', 'exception', 'global', 'ignore', 'internal', 'link', 'magic',
-        'package', 'see', 'since', 'staticvar', 'subpackage', 'throws', 'todo', 'var', 'version'
+        'package', 'see', 'since', 'staticvar', 'subpackage', 'throws', 'todo', 'url', 'var', 'version'
     );
 
 
     /**
-     * @param Repoman $Repoman
+     * @param \Repoman $Repoman
      *
      * @internal param object $modx
      * @internal param array $config
      */
-    public function __construct(Repoman $Repoman)
+    public function __construct(\Repoman $Repoman)
     {
         $this->modx = &$Repoman->modx;
         $this->Repoman = &$Repoman;
@@ -60,14 +60,15 @@ abstract class Repoman_parser {
      * @param object  $Obj
      * @param boolean $graph whether to include related data
      *
-     * @throws Exception
+     * @throws \Exception
      */
     public function create($pkg_dir, $Obj, $graph)
     {
 
         $array = $Obj->toArray('', false, false, $graph);
         $content = $Obj->getContent();
-        $attributes = self::repossess($content, $this->dox_start, $this->dox_end);
+        $attributes = $this->getObjAttributes($content, $this->dox_start, $this->dox_end);
+        // TODO: getProperties?
         if (!isset($attributes[$this->objectname])) {
             $name_attribute = $this->objectname;
             $name = $Obj->get($name_attribute);
@@ -79,7 +80,7 @@ abstract class Repoman_parser {
 
         $filename = $dir . '/' . $name . $this->write_ext;
         if (file_exists($filename) && !$this->Repoman->get('overwrite')) {
-            throw new Exception('Element already exists. Overwrite not allowed. ' . $filename);
+            throw new \Exception('Element already exists. Overwrite not allowed. ' . $filename);
         }
 
 
@@ -90,19 +91,19 @@ abstract class Repoman_parser {
             $docblock .= $this->dox_pad . '@description ' . $array['description'] . "\n";
             $docblock .= $this->extend_docblock($Obj);
             $docblock .= $this->dox_end . "\n";
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, "DocBlock generated:\n" . $docblock);
+            $this->modx->log(\modX::LOG_LEVEL_DEBUG, "DocBlock generated:\n" . $docblock);
             $content = $docblock . $content;
         }
 
         // Create dir if doesn't exist
         if (!file_exists($dir) && false === mkdir($dir, $this->Repoman->get('dir_mode'), true)) {
-            throw new Exception('Could not create directory ' . $dir);
+            throw new \Exception('Could not create directory ' . $dir);
         }
 
         if (false === file_put_contents($filename, $content)) {
-            throw new Exception('Could not write to file ' . $filename);
+            throw new \Exception('Could not write to file ' . $filename);
         } else {
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Created static element at ' . $f);
+            $this->modx->log(\modX::LOG_LEVEL_INFO, 'Created static element at ' . $f);
         }
 
         // Do you want to mess with the original object?  Or just grab a snapshot of it?
@@ -111,11 +112,11 @@ abstract class Repoman_parser {
             $Obj->set('static_file', self::path_to_rel($filename, MODX_BASE_PATH));
             $Obj->set('source', $this->getSource());
             if (!$Obj->save()) {
-                throw new Exception('Problem saving ' . $this->classname . ' ' . $array[$this->objectname]);
+                throw new \Exception('Problem saving ' . $this->classname . ' ' . $array[$this->objectname]);
             }
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Original ' . $this->classname . ' ' . $array[$this->objectname] . ' updated to new location.');
+            $this->modx->log(\modX::LOG_LEVEL_INFO, 'Original ' . $this->classname . ' ' . $array[$this->objectname] . ' updated to new location.');
         } else {
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Original ' . $this->classname . ' ' . $array[$this->objectname] . ' copied only.');
+            $this->modx->log(\modX::LOG_LEVEL_DEBUG, 'Original ' . $this->classname . ' ' . $array[$this->objectname] . ' copied only.');
         }
     }
 
@@ -132,7 +133,7 @@ abstract class Repoman_parser {
     }
 
     /**
-     * Gather all elements as objects in the given directory
+     * Gather all files from the given directory, interpret them as Element Objects
      *
      * @param string $pkg_dir name
      *
@@ -148,7 +149,7 @@ abstract class Repoman_parser {
         // Calculate the element's directory given the repo dir...
         $dir = $this->Repoman->get_core_path($pkg_dir) . rtrim($this->Repoman->get($this->dir_key), '/') . '/';
         if (!file_exists($dir) || !is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Directory does not exist: ' . $dir);
+            $this->modx->log(\modX::LOG_LEVEL_DEBUG, 'Directory does not exist: ' . $dir);
 
             return array();
         }
@@ -157,17 +158,18 @@ abstract class Repoman_parser {
         $i = 0;
         foreach ($files as $f) {
             $content = file_get_contents($f);
-            $attributes = self::repossess($content, $this->dox_start, $this->dox_end);
+            $attributes = $this->getObjAttributes($content, $this->dox_start, $this->dox_end);
+            $properties = $this->getProperties($content, $this->dox_start, $this->dox_end);
             if ($this->Repoman->get('is_build')) {
-                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'is_build = true: preparing for build.');
+                $this->modx->log(\modX::LOG_LEVEL_DEBUG, 'is_build = true: preparing for build.');
                 $content = $this->prepare_for_pkg($content);
             }
             // Skip importing?
             if (isset($attributes['no_import'])) {
-                $this->modx->log(modX::LOG_LEVEL_DEBUG, '@no_import detected in ' . $f);
+                $this->modx->log(\modX::LOG_LEVEL_DEBUG, '@no_import detected in ' . $f);
                 continue;
             } elseif ($this->Repoman->get('require_docblocks') && empty($attributes)) {
-                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'require_docblocks set to true and no DocBlock detected in ' . $f);
+                $this->modx->log(\modX::LOG_LEVEL_DEBUG, 'require_docblocks set to true and no DocBlock detected in ' . $f);
                 continue;
             }
 
@@ -181,7 +183,7 @@ abstract class Repoman_parser {
             $Obj = $this->modx->getObject($this->objecttype, $this->Repoman->get_criteria($this->objecttype, $attributes));
             // Building should always create a new object.
             if ($this->Repoman->get('is_build') || !$Obj) {
-                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Creating new object from file ' . $f);
+                $this->modx->log(\modX::LOG_LEVEL_DEBUG, 'Creating new object from file ' . $f);
                 $Obj = $this->modx->newObject($this->objecttype);
             }
 
@@ -190,7 +192,7 @@ abstract class Repoman_parser {
 
             // Force Static
             if ($this->Repoman->get('force_static')) {
-                $this->modx->log(modX::LOG_LEVEL_DEBUG, 'force_static = true');
+                $this->modx->log(\modX::LOG_LEVEL_DEBUG, 'force_static = true');
                 $attributes['source'] = 1;
                 $attributes['static'] = 1;
                 // see https://github.com/craftsmancoding/repoman/issues/20
@@ -199,22 +201,27 @@ abstract class Repoman_parser {
                 $attributes['static_file'] = self::path_to_rel($f, MODX_BASE_PATH);
             }
 
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, "Gathered object attributes:\n" . print_r($attributes, true));
+            $this->modx->log(\modX::LOG_LEVEL_DEBUG, "Gathered object attributes:\n" . print_r($attributes, true));
 
             $Obj->fromArray($attributes);
+            if ($properties)
+            {
+                $Obj->setProperties($properties);
+            }
+
             if (!$this->Repoman->get('force_static')) {
-                $this->modx->log(modX::LOG_LEVEL_DEBUG, "Setting content for {$this->objecttype} \"" . $Obj->get($this->objectname) . "\":\n" . $content);
+                $this->modx->log(\modX::LOG_LEVEL_DEBUG, "Setting content for {$this->objecttype} \"" . $Obj->get($this->objectname) . "\":\n" . $content);
                 $Obj->setContent($content);
             }
 
             $this->relate($attributes, $Obj);
 
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Created/updated ' . $this->objecttype . ': ' . $Obj->get($this->objectname) . ' from file ' . $f);
-            Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
+            $this->modx->log(\modX::LOG_LEVEL_INFO, 'Created/updated ' . $this->objecttype . ': ' . $Obj->get($this->objectname) . ' from file ' . $f);
+            \Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
 
             if (!$this->Repoman->get('dry_run') && !$this->Repoman->get('is_build')) {
                 $data = $this->Repoman->get_criteria($this->objecttype, $attributes);
-                $this->modx->cacheManager->set($this->objecttype . '/' . $attributes[$this->objectname], $data, 0, Repoman::$cache_opts);
+                $this->modx->cacheManager->set($this->objecttype . '/' . $attributes[$this->objectname], $data, 0, \Repoman::$cache_opts);
             }
             $i++;
 
@@ -235,7 +242,7 @@ abstract class Repoman_parser {
     {
         if (!$this->source) {
             if (!$obj = $this->modx->getObject('modMediaSource', array('name' => 'Repoman'))) {
-                throw new Exception('Could not find Repoman Media Source');
+                throw new \Exception('Could not find Repoman Media Source');
             }
             $this->source = $obj->get('id');
         }
@@ -280,8 +287,7 @@ abstract class Repoman_parser {
     }
 
     /**
-     * Read parameters out of a DocBlock... like a repoman repossessing of
-     * outstanding leased objects.
+     * Read object attributes out of a DocBlock
      *
      * @param string $string    the unparsed contents of a file
      * @param string $dox_start string designating the start of a doc block
@@ -289,7 +295,7 @@ abstract class Repoman_parser {
      *
      * @return array on success | false on no doc block found
      */
-    public static function repossess($string, $dox_start = '/*', $dox_end = '*/')
+    public function getObjAttributes($string, $dox_start = '/*', $dox_end = '*/')
     {
 
         $dox_start = preg_quote($dox_start, '#');
@@ -316,5 +322,173 @@ abstract class Repoman_parser {
         return $a;
     }
 
+
+    /**
+     * Parse a DocBlock string into an array of properties
+     *
+     * @param string $string    the unparsed contents of a file
+     * @param string $dox_start string designating the start of a doc block
+     * @param string $dox_start string designating the start of a doc block
+     *
+     * @return array on success | false on no doc block found
+     */
+    public function getProperties($string, $dox_start = '/*', $dox_end = '*/')
+    {
+
+        $dox_start = preg_quote($dox_start, '#');
+        $dox_end = preg_quote($dox_end, '#');
+
+        preg_match("#$dox_start(.*)$dox_end#msU", $string, $matches);
+
+        if (!isset($matches[1])) {
+            return false; // No doc block found!
+        }
+
+        // Get the docblock
+        $dox = $matches[1];
+
+        // Loop over each line in the comment block
+        $properties = array();
+        foreach (preg_split('/((\r?\n)|(\r\n?))/', $dox) as $line) {
+
+            preg_match('/^\s*\**\s*@param(.*)$/', $line, $m);
+
+            if (isset($m[1])) {
+                $p = array();
+                $line = trim($m[1]);
+                $pos = strpos($line, ' ');
+                $p['type'] = substr($line,0,$pos);
+                $line = trim(substr($line,$pos));
+                $pos = strpos($line, ' ');
+                $p['name'] = ltrim(substr($line,0,$pos),'$&');
+                $line = trim(substr($line,$pos));
+                $p['value'] = $this->getDefault($line);
+                $p['options'] = $this->getOptions($line);
+                $p['desc'] = $line;
+
+                $properties[] = $p;
+            }
+        }
+
+        return $properties;
+    }
+
+    /**
+     * Parses out the default value and shortens the input $str. Built to parse a single line from the DocBlock.
+     * @param $str
+     * @return mixed
+     */
+    public function getDefault(&$str)
+    {
+        if (preg_match('/default\s?=\s?(.*)/', $str, $m))
+        {
+            $match = $m[1];
+
+            // Match double-quotes
+            if ($match[0] == '"')
+            {
+                $str = preg_replace('/default\s?=\s?".*"/U','', $str);
+                $match = ltrim($match,'"');
+                $pos = strpos($match,'"');
+                return substr($match, 0, $pos);
+            }
+            // Match single-quotes
+            elseif($match[0] == "'")
+            {
+                $str = preg_replace('/default\s?=\s?\'.*\'/U','', $str);
+                $match = ltrim($match,"'");
+                $pos = strpos($match,"'");
+                return substr($match, 0, $pos);
+            }
+            // Not quoted: get first word
+            else
+            {
+                $str = preg_replace('/default\s?=\s?\w+/','', $str); // greedy
+                $match = trim($match);
+                $pos = strpos($match, ' ');
+                // End of line?
+                if ($pos === false)
+                {
+                    return trim($match);
+                }
+                return trim(substr($match,0,$pos));
+            }
+        }
+        return '';
+    }
+
+    /**
+     * Parses out the options and shortens the $str. Built to parse a single line from the DocBlock.
+     * The options can be a single value in theory, but in practice this
+     * seems to be only used to provide options for a list.
+     *
+     * @param $str
+     *
+*@return mixed
+     */
+    public function getOptions(&$str)
+    {
+        if (preg_match('/options\s?=\s?(.*)/', $str, $m))
+        {
+            $match = ltrim($m[1]);
+
+            // Match double-quotes
+            if ($match[0] == '"')
+            {
+                $str = trim(preg_replace('/options\s?=\s?".*"/U','', $str));
+                $match = ltrim($match,'"');
+                $pos = strpos($match,'"');
+                return substr($match, 0, $pos);
+            }
+            // Match single-quotes
+            elseif($match[0] == "'")
+            {
+                $str = trim(preg_replace('/options\s?=\s?\'.*\'/U','', $str));
+                $match = ltrim($match,"'");
+                $pos = strpos($match,"'");
+                return substr($match, 0, $pos);
+            }
+            // Unquoted JSON hash
+            elseif($match[0] == '{')
+            {
+                $str = trim(preg_replace('/options\s?=\s?\{.*\}/U','', $str));
+                $options_raw = json_decode($match,true);
+                $options = array();
+                foreach ($options_raw as $k => $v)
+                {
+                    $options[] = array('value' => $k, 'text' => $v);
+                }
+                return $options;
+
+            }
+            // Unquoted JSON array
+            elseif($match[0] == '[')
+            {
+                $str = trim(preg_replace('/options\s?=\s?\[.*\]/U','', $str));
+                $array = json_decode($match,true);
+                $options_raw = array_combine($array,$array);
+                $options = array();
+                foreach ($options_raw as $k => $v)
+                {
+                    $options[] = array('value' => $k, 'text' => $v);
+                }
+                return $options;
+            }
+            // Not quoted: get first word
+            else
+            {
+                $str = trim(preg_replace('/options\s?=\s?\w+/','', $str)); // greedy
+                $match = trim($match);
+                $pos = strpos($match, ' ');
+                // End of line?
+                if ($pos === false)
+                {
+                    return trim($match);
+                }
+                return trim(substr($match,0,$pos));
+            }
+        }
+        return '';
+    }
 }
 /*EOF*/

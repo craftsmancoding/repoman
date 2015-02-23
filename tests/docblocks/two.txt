@@ -1,0 +1,7 @@
+<!--
+ @name RepomanSample
+ @description Iterates over pages containing location data to draw a Google Map with markers on it.
+ @url http://craftsmancoding.com/
+ @author Everett Griffiths <everett@craftsmancoding.com>
+ @package sample
+ -->

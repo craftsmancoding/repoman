@@ -1,10 +1,10 @@
-<?php
+<?php namespace Repoman\Parser;
 
 /**
  * The TV stores the "Default Value" as the "content"
  *
  */
-class modTemplateVar_parser extends Repoman_parser {
+class modtemplatevar extends Parser {
 
     public $dir_key = 'tvs_path';
     public $ext = '*.php';
@@ -36,7 +36,7 @@ class modTemplateVar_parser extends Repoman_parser {
         $dir = $this->Repoman->get_core_path($pkg_dir) . $this->Repoman->get($this->dir_key) . '/';
         $filename = $dir . '/' . $name . $this->write_ext;
         if (file_exists($filename) && !$this->Repoman->get('overwrite')) {
-            throw new Exception('Element already exists. Overwrite not allowed. ' . $filename);
+            throw new \Exception('Element already exists. Overwrite not allowed. ' . $filename);
         }
 
 
@@ -48,11 +48,11 @@ class modTemplateVar_parser extends Repoman_parser {
 
         // Create dir if doesn't exist
         if (!file_exists($dir) && false === mkdir($dir, $this->Repoman->get('dir_mode'), true)) {
-            throw new Exception('Could not create directory ' . $dir);
+            throw new \Exception('Could not create directory ' . $dir);
         }
 
         if (false === file_put_contents($filename, $content)) {
-            throw new Exception('Could not write to file ' . $filename);
+            throw new \Exception('Could not write to file ' . $filename);
         } else {
             $this->modx->log(modX::LOG_LEVEL_INFO, 'Created static element at ' . $filename);
         }
@@ -73,7 +73,7 @@ class modTemplateVar_parser extends Repoman_parser {
         // Calculate the element's directory given the repo dir...
         $dir = $this->Repoman->get_core_path($pkg_dir) . $this->Repoman->get($this->dir_key) . '/';
         if (!file_exists($dir) || !is_dir($dir)) {
-            $this->modx->log(modX::LOG_LEVEL_DEBUG, 'Directory does not exist: ' . $dir);
+            $this->modx->log(\modX::LOG_LEVEL_DEBUG, 'Directory does not exist: ' . $dir);
 
             return array();
         }
@@ -111,12 +111,12 @@ class modTemplateVar_parser extends Repoman_parser {
 
             $this->relate($attributes, $Obj);
 
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Created/updated ' . $this->objecttype . ': ' . $Obj->get($this->objectname));
-            Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
+            $this->modx->log(\modX::LOG_LEVEL_INFO, 'Created/updated ' . $this->objecttype . ': ' . $Obj->get($this->objectname));
+            \Repoman::$queue[$this->objecttype][] = $Obj->get($this->objectname);
 
             if (!$this->Repoman->get('dry_run') && !$this->Repoman->get('is_build')) {
                 $data = $this->Repoman->get_criteria($this->objecttype, $attributes);
-                $this->modx->cacheManager->set($this->objecttype . '/' . $attributes[$this->objectname], $data, 0, Repoman::$cache_opts);
+                $this->modx->cacheManager->set($this->objecttype . '/' . $attributes[$this->objectname], $data, 0, \Repoman::$cache_opts);
             }
             $i++;
 

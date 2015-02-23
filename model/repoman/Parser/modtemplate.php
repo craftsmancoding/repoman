@@ -1,10 +1,10 @@
-<?php
+<?php namespace Repoman\Parser;
 
 /**
  *
  *
  */
-class modTemplate_parser extends Repoman_parser {
+class modtemplate extends Parser {
 
     public $dir_key = 'templates_path';
     public $ext = '*.*';
@@ -89,7 +89,7 @@ class modTemplate_parser extends Repoman_parser {
 
                 $tvts[] = $TVT;
                 $TV->addMany($join);
-                Repoman::$queue[$this->objecttype][] = 'modTemplateVarTemplate: ' . $TV->get('name') . ' ' . $Obj->get('templatename');
+                \Repoman::$queue[$this->objecttype][] = 'modTemplateVarTemplate: ' . $TV->get('name') . ' ' . $Obj->get('templatename');
                 //$tvs[] = $TV;
             }
         } else {

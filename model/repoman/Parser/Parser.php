@@ -380,14 +380,14 @@ abstract class Parser {
      */
     public function getDefault(&$str)
     {
-        if (preg_match('/default\s?=\s?(.*)/', $str, $m))
+        if (preg_match('/default\s?[=:]\s?(.*)/', $str, $m))
         {
             $match = $m[1];
 
             // Match double-quotes
             if ($match[0] == '"')
             {
-                $str = preg_replace('/default\s?=\s?".*"/U','', $str);
+                $str = preg_replace('/default\s?[=:]\s?".*"/U','', $str);
                 $match = ltrim($match,'"');
                 $pos = strpos($match,'"');
                 return substr($match, 0, $pos);
@@ -395,7 +395,7 @@ abstract class Parser {
             // Match single-quotes
             elseif($match[0] == "'")
             {
-                $str = preg_replace('/default\s?=\s?\'.*\'/U','', $str);
+                $str = preg_replace('/default\s?[=:]\s?\'.*\'/U','', $str);
                 $match = ltrim($match,"'");
                 $pos = strpos($match,"'");
                 return substr($match, 0, $pos);
@@ -403,7 +403,7 @@ abstract class Parser {
             // Not quoted: get first word
             else
             {
-                $str = preg_replace('/default\s?=\s?\w+/','', $str); // greedy
+                $str = preg_replace('/default\s?[=:]\s?\w+/','', $str); // greedy
                 $match = trim($match);
                 $pos = strpos($match, ' ');
                 // End of line?
@@ -435,7 +435,7 @@ abstract class Parser {
             // Match double-quotes
             if ($match[0] == '"')
             {
-                $str = trim(preg_replace('/options\s?=\s?".*"/U','', $str));
+                $str = trim(preg_replace('/options\s?[=:]\s?".*"/U','', $str));
                 $match = ltrim($match,'"');
                 $pos = strpos($match,'"');
                 return substr($match, 0, $pos);
@@ -443,7 +443,7 @@ abstract class Parser {
             // Match single-quotes
             elseif($match[0] == "'")
             {
-                $str = trim(preg_replace('/options\s?=\s?\'.*\'/U','', $str));
+                $str = trim(preg_replace('/options\s?[=:]\s?\'.*\'/U','', $str));
                 $match = ltrim($match,"'");
                 $pos = strpos($match,"'");
                 return substr($match, 0, $pos);
@@ -451,7 +451,7 @@ abstract class Parser {
             // Unquoted JSON hash
             elseif($match[0] == '{')
             {
-                $str = trim(preg_replace('/options\s?=\s?\{.*\}/U','', $str));
+                $str = trim(preg_replace('/options\s?[=:]\s?\{.*\}/U','', $str));
                 $options_raw = json_decode($match,true);
                 $options = array();
                 foreach ($options_raw as $k => $v)
@@ -464,7 +464,7 @@ abstract class Parser {
             // Unquoted JSON array
             elseif($match[0] == '[')
             {
-                $str = trim(preg_replace('/options\s?=\s?\[.*\]/U','', $str));
+                $str = trim(preg_replace('/options\s?[=:]\s?\[.*\]/U','', $str));
                 $array = json_decode($match,true);
                 $options_raw = array_combine($array,$array);
                 $options = array();
@@ -477,7 +477,7 @@ abstract class Parser {
             // Not quoted: get first word
             else
             {
-                $str = trim(preg_replace('/options\s?=\s?\w+/','', $str)); // greedy
+                $str = trim(preg_replace('/options\s?[=:]\s?\w+/','', $str)); // greedy
                 $match = trim($match);
                 $pos = strpos($match, ' ');
                 // End of line?

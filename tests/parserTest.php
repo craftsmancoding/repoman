@@ -82,6 +82,12 @@ class parserTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($result, 'XYZ');
         $this->assertEquals('Some long line  ignore me options="zzz"', $line);
 
+        // Colon
+        $line = 'Some long line default:"XYZ" ignore me options="zzz"';
+        $result = $Parser->getDefault($line);
+        $this->assertEquals($result, 'XYZ');
+        $this->assertEquals('Some long line  ignore me options="zzz"', $line);
+
         // Single-quoted
         $line = "Some long line default='XYZ' ignore me options=\"zzz\"";
         $result = $Parser->getDefault($line);
@@ -121,17 +127,18 @@ class parserTest extends PHPUnit_Framework_TestCase {
         // Unquoted JSON Hash
         $line = 'Some long line default="XYZ" ignore me options={"int":"Integer","str":"String","bool":"True/False"}';
         $result = $Parser->getOptions($line);
+
         $this->assertTrue(is_array($result));
-        $this->assertEquals('Integer', $result['int']);
-        $this->assertEquals('String', $result['str']);
+        $this->assertEquals('Integer', $result[0]['text']);
+        $this->assertEquals('String', $result[1]['text']);
         $this->assertEquals('Some long line default="XYZ" ignore me',$line);
 
         // Unquoted JSON Array
         $line = 'Some long line default="XYZ" ignore me options=["int","str","bool"]';
         $result = $Parser->getOptions($line);
         $this->assertTrue(is_array($result));
-        $this->assertEquals('int', $result['int']);
-        $this->assertEquals('str', $result['str']);
+        $this->assertEquals('int', $result[0]['text']);
+        $this->assertEquals('str', $result[1]['text']);
         $this->assertEquals('Some long line default="XYZ" ignore me',$line);
 
         // Not Quoted

@@ -77,33 +77,53 @@ class parserTest extends PHPUnit_Framework_TestCase {
         $Parser = new \Repoman\Parser\modchunk(self::$repoman);
 
         // Double-quoted
-        $line = 'Some long line default="XYZ" ignore me options="zzz"';
+        $line = 'Some long line [default="XYZ"] ignore me [options="zzz"]';
         $result = $Parser->getDefault($line);
         $this->assertEquals($result, 'XYZ');
-        $this->assertEquals('Some long line  ignore me options="zzz"', $line);
+        $this->assertEquals('Some long line  ignore me [options="zzz"]', $line);
 
         // Colon
-        $line = 'Some long line default:"XYZ" ignore me options="zzz"';
+        $line = 'Some long line [default:"XYZ"] ignore me [options="zzz"]';
+        $result = $Parser->getDefault($line);
+        $this->assertEquals($result, 'XYZ');
+        $this->assertEquals('Some long line  ignore me [options="zzz"]', $line);
+
+        // Single-quoted
+        $line = "Some long line [default='XYZ'] ignore me [options=\"zzz\"]";
+        $result = $Parser->getDefault($line);
+        $this->assertEquals('XYZ', $result);
+        $this->assertEquals('Some long line  ignore me [options="zzz"]',$line);
+
+        // Not Quoted
+        $line = 'Some long line [default=XYZ] ignore me [options="zzz"]';
+        $result = $Parser->getDefault($line);
+        $this->assertEquals('XYZ', $result);
+        $this->assertEquals('Some long line  ignore me [options="zzz"]', $line);
+
+        // Mis Quoted
+        $line = 'Some long line [default="XYZ] ignore me';
+        $result = $Parser->getDefault($line);
+        $this->assertEquals('', $result);
+
+        // Literals
+        $line = 'Some long line [default=false] ignore me [options="zzz"]';
+        $result = $Parser->getDefault($line);
+        $this->assertEquals($result, false);
+        $this->assertEquals('Some long line  ignore me [options="zzz"]', $line);
+
+
+    }
+
+    public function testGetDefaultBrackets()
+    {
+
+        $Parser = new \Repoman\Parser\modchunk(self::$repoman);
+
+        // With Brackets
+        $line = 'Some long line [default="XYZ"] ignore me options="zzz"';
         $result = $Parser->getDefault($line);
         $this->assertEquals($result, 'XYZ');
         $this->assertEquals('Some long line  ignore me options="zzz"', $line);
-
-        // Single-quoted
-        $line = "Some long line default='XYZ' ignore me options=\"zzz\"";
-        $result = $Parser->getDefault($line);
-        $this->assertEquals('XYZ', $result);
-        $this->assertEquals('Some long line  ignore me options="zzz"',$line);
-
-        // Not Quoted
-        $line = 'Some long line default=XYZ ignore me options="zzz"';
-        $result = $Parser->getDefault($line);
-        $this->assertEquals('XYZ', $result);
-        $this->assertEquals('Some long line  ignore me options="zzz"', $line);
-
-        // Mis Quoted
-        $line = 'Some long line default="XYZ ignore me';
-        $result = $Parser->getDefault($line);
-        $this->assertEquals('', $result);
 
     }
 
@@ -113,42 +133,42 @@ class parserTest extends PHPUnit_Framework_TestCase {
         $Parser = new \Repoman\Parser\modchunk(self::$repoman);
 
         // Double-quoted
-        $line = 'Some long line default="XYZ" ignore me options="quoted word"';
+        $line = 'Some long line [default="XYZ"] ignore me [options="quoted word"]';
         $result = $Parser->getOptions($line);
         $this->assertEquals($result, 'quoted word');
-        $this->assertEquals('Some long line default="XYZ" ignore me', $line);
+        $this->assertEquals('Some long line [default="XYZ"] ignore me', $line);
 
         // Single-quoted
-        $line = "Some long line default='XYZ' ignore me options='quoted word again'";
+        $line = "Some long line [default='XYZ'] ignore me [options='quoted word again']";
         $result = $Parser->getOptions($line);
         $this->assertEquals('quoted word again', $result);
-        $this->assertEquals("Some long line default='XYZ' ignore me",$line);
+        $this->assertEquals("Some long line [default='XYZ'] ignore me",$line);
 
         // Unquoted JSON Hash
-        $line = 'Some long line default="XYZ" ignore me options={"int":"Integer","str":"String","bool":"True/False"}';
+        $line = 'Some long line [default="XYZ"] ignore me [options={"int":"Integer","str":"String","bool":"True/False"}]';
         $result = $Parser->getOptions($line);
 
         $this->assertTrue(is_array($result));
         $this->assertEquals('Integer', $result[0]['text']);
         $this->assertEquals('String', $result[1]['text']);
-        $this->assertEquals('Some long line default="XYZ" ignore me',$line);
+        $this->assertEquals('Some long line [default="XYZ"] ignore me',$line);
 
         // Unquoted JSON Array
-        $line = 'Some long line default="XYZ" ignore me options=["int","str","bool"]';
+        $line = 'Some long line [default="XYZ"] ignore me [options=["int","str","bool"]]';
         $result = $Parser->getOptions($line);
         $this->assertTrue(is_array($result));
         $this->assertEquals('int', $result[0]['text']);
         $this->assertEquals('str', $result[1]['text']);
-        $this->assertEquals('Some long line default="XYZ" ignore me',$line);
+        $this->assertEquals('Some long line [default="XYZ"] ignore me',$line);
 
         // Not Quoted
-        $line = 'Some long line default=XYZ ignore me options=zzz';
+        $line = 'Some long line [default=XYZ] ignore me [options=zzz]';
         $result = $Parser->getOptions($line);
         $this->assertEquals('zzz', $result);
-        $this->assertEquals('Some long line default=XYZ ignore me', $line);
+        $this->assertEquals('Some long line [default=XYZ] ignore me', $line);
 
         // Mis Quoted
-        $line = 'Some long line default="XYZ ignore me';
+        $line = 'Some long line [default="XYZ] ignore me';
         $result = $Parser->getOptions($line);
         $this->assertEquals('', $result);
 

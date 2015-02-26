@@ -111,21 +111,8 @@ class parserTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals($result, false);
         $this->assertEquals('Some long line  ignore me [options="zzz"]', $line);
 
-
     }
 
-    public function testGetDefaultBrackets()
-    {
-
-        $Parser = new \Repoman\Parser\modchunk(self::$repoman);
-
-        // With Brackets
-        $line = 'Some long line [default="XYZ"] ignore me options="zzz"';
-        $result = $Parser->getDefault($line);
-        $this->assertEquals($result, 'XYZ');
-        $this->assertEquals('Some long line  ignore me options="zzz"', $line);
-
-    }
 
     public function testGetOptions()
     {
@@ -179,11 +166,28 @@ class parserTest extends PHPUnit_Framework_TestCase {
         $docblock = file_get_contents(dirname(__FILE__).'/docblocks/props.txt');
         $Parser = new \Repoman\Parser\modchunk(self::$repoman);
         $result = $Parser->getProperties($docblock,'<!--','-->');
-        //print_r($result);
+
         $this->assertTrue(is_array($result));
         $this->assertEquals(4, count($result));
     }
 
+    public function testCleanLine()
+    {
 
+        $Parser = new \Repoman\Parser\modchunk(self::$repoman);
+
+        $line = ' - Some long     line   ';
+        $actual = $Parser->cleanLine($line);
+        $this->assertEquals('Some long line', $actual);
+    }
+
+    public function testGetType()
+    {
+        $Parser = new \Repoman\Parser\modchunk(self::$repoman);
+
+        $type = $Parser->getType('bool');
+
+        $this->assertEquals('combo-boolean',$type);
+    }
 }
 /*EOF*/

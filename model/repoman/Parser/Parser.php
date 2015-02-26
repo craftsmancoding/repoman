@@ -357,20 +357,53 @@ abstract class Parser {
                 $p = array();
                 $line = trim($m[1]);
                 $pos = strpos($line, ' ');
-                $p['type'] = substr($line,0,$pos);
+                $p['type'] = $this->getType(substr($line,0,$pos));
                 $line = trim(substr($line,$pos));
                 $pos = strpos($line, ' ');
                 $p['name'] = ltrim(substr($line,0,$pos),'$&');
                 $line = trim(substr($line,$pos));
                 $p['value'] = $this->getDefault($line);
                 $p['options'] = $this->getOptions($line);
-                $p['desc'] = $line;
+                $p['desc'] = $this->cleanLine($line);
 
                 $properties[] = $p;
             }
         }
 
         return $properties;
+    }
+
+    /**
+     * Convert any normal script var types (e.g. string, bool) to whatever the MODX property editor requires (e.g. textfield, combo-boolean)
+     * @param $str
+     * @return string
+     */
+    public function getType($str)
+    {
+        $str = strtolower(trim($str));
+        switch ($str)
+        {
+            case 'list':
+            case 'enum':
+                return 'list';
+                break;
+            case 'int':
+            case 'integer':
+                return 'numberfield';
+                break;
+            case 'bool':
+            case 'boolean':
+            case 'combo-boolean':
+                return 'combo-boolean';
+                break;
+            case 'string':
+            case 'textfield':
+            case 'text':
+            default:
+                return 'textfield';
+
+        }
+
     }
 
     /**
@@ -519,6 +552,21 @@ abstract class Parser {
             }
         }
         return '';
+    }
+
+    /**
+     * Cleanup a single line of a description.
+     *
+     * @param $str
+     *
+     * @return mixed
+     */
+    public function cleanLine($str)
+    {
+        $str = preg_replace('/^[\s\-:]+/','', $str);
+        $str = preg_replace('/[\s\-:]+$/','', $str);
+        $str = preg_replace('/\s+/', ' ', $str);
+        return $str;
     }
 }
 /*EOF*/

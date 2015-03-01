@@ -1,8 +1,8 @@
 <!--
-@param textfield $tpl This is my description. default="Something"
-@param textfield $tpl2 Other description. default='Single Quotes'
+@param textfield $tpl This is my description. [default="Something"]
+@param textfield $tpl2 Other description. [default='Single Quotes']
 @param textfield $tpl3 Yet another. default=NoQuotes
-@param list $choose A dropdown default=int options={"str":"String","int":"Integer"}
+@param list $choose A dropdown [default=int] [options={"str":"String","int":"Integer"}]
 -->
 
 Example from https://github.com/opengeek/getResources/blob/master/_build/properties.inc.php

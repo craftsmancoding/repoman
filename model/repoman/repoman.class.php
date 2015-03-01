@@ -205,7 +205,7 @@ class Repoman {
             throw new Exception('Invalid namespace: ' . $out['namespace']);
         }
         if (isset($out['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $out['version'])) {
-            throw new Exception('Invalid version.');
+            throw new Exception('Package version must contain 3 digits: n.n.n');
         }
 
         if ($out['core_path'] == $out['assets_path']) {
@@ -1057,7 +1057,7 @@ class Repoman {
             throw new Exception('Invalid namespace: ' . $this->config['namespace']);
         }
         if (isset($this->config['version']) && !preg_match('/^\d+\.\d+\.\d+$/', $this->config['version'])) {
-            throw new Exception('Invalid version.');
+            throw new Exception('Package version must contain 3 digits: n.n.n');
         }
         if (empty($this->config['category'])) {
             $this->config['category'] = ucfirst($namespace);

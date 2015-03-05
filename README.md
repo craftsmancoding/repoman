@@ -2,7 +2,7 @@
 
 Repoman is a package for [MODx Revolution](http://modx.com/) that makes it easier for developers to develop their own MODx packages or contribute to existing MODx projects.  Its goal is to simplify MODx AddOn development and maintainance: no more headaches and steep learning curves writing custom build scripts or laborious click-work adding objects to the manager in preparation for development. Repoman is taking back simplicity!
 
-[![Repoman Demo Video](https://raw2.github.com/craftsmancoding/repoman/master/screenshots/video_intro.jpg)](https://www.youtube.com/watch?v=byCNjy4Txfo)
+[![Repoman Demo Video](https://raw.githubusercontent.com/craftsmancoding/repoman/master/screenshots/video_intro.jpg)](https://www.youtube.com/watch?v=byCNjy4Txfo)
 
 -------------------------------
 

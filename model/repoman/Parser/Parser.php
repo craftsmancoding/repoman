@@ -399,6 +399,7 @@ abstract class Parser {
             case 'string':
             case 'textfield':
             case 'text':
+            case 'mixed':
             default:
                 return 'textfield';
 

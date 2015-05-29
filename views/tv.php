@@ -13,7 +13,7 @@ return array(
     'editor_type' => 0,
     'display' => '<?php print $array['display']; ?>',
     'default_text' => '<?php print $array['default_text']; ?>',
-    'properties' => '<?php print $array['properties']; ?>',
+    'properties' => '<?php print serialize($array['properties']); ?>',
     'input_properties' => '<?php print serialize($array['input_properties']); ?>', // serialized
     'output_properties' => '<?php print serialize($array['output_properties']); ?>', // serialized
 );

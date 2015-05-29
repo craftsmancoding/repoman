@@ -103,7 +103,7 @@ abstract class Parser {
         if (false === file_put_contents($filename, $content)) {
             throw new \Exception('Could not write to file ' . $filename);
         } else {
-            $this->modx->log(\modX::LOG_LEVEL_INFO, 'Created static element at ' . $f);
+            $this->modx->log(\modX::LOG_LEVEL_INFO, 'Created static element at ' . $filename);
         }
 
         // Do you want to mess with the original object?  Or just grab a snapshot of it?

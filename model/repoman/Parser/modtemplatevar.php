@@ -54,7 +54,7 @@ class modtemplatevar extends Parser {
         if (false === file_put_contents($filename, $content)) {
             throw new \Exception('Could not write to file ' . $filename);
         } else {
-            $this->modx->log(modX::LOG_LEVEL_INFO, 'Created static element at ' . $filename);
+            $this->modx->log(\modX::LOG_LEVEL_INFO, 'Created static element at ' . $filename);
         }
     }
 

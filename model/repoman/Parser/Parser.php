@@ -138,6 +138,7 @@ abstract class Parser {
      * @param string $pkg_dir name
      *
      * @return array
+     * @throws \Exception
      */
     public function gather($pkg_dir)
     {
@@ -315,7 +316,7 @@ abstract class Parser {
         foreach (preg_split('/((\r?\n)|(\r\n?))/', $dox) as $line) {
             preg_match('/^\s*\**\s*@(\w+)(.*)$/', $line, $m);
             if (isset($m[1]) && isset($m[2]) && !in_array($m[1], self::$skip_tags)) {
-                $a[$m[1]] = trim($m[2]);
+                $a[$m[1]] = ($m[1] == 'description') ? trim(substr($m[2], 0, 191)) : trim($m[2]);
             }
         }
 

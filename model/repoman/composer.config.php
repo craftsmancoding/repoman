@@ -39,7 +39,7 @@
         "core_path": "",
         "assets_path" : "assets/",
         "docs_path" : "docs/",
-	"seeds_dir" : ["model/seed/"]
+        "seeds_dir" : ["model/seed/"]
     }
 }
 */

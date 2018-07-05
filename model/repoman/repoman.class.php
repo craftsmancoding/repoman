@@ -1398,7 +1398,7 @@ class Repoman
         }
 
         $N = $this->modx->getObject('modNamespace', $this->get('namespace'));
-        print 'HERE...' . "\n";
+
         if (!$N) {
             $N = $this->modx->newObject('modNamespace');
             $N->set('name', $this->get('namespace'));
@@ -1412,7 +1412,6 @@ class Repoman
         Repoman::$queue['modNamespace'][$this->get('namespace')] = $N->toArray();
 
         if (!$this->get('dry_run')) {
-            print __LINE__ . "\n";
             if (!$N->save()) {
                 $this->modx->log(modX::LOG_LEVEL_ERROR, "Error saving Namespace: " . $this->get('namespace'));
             }

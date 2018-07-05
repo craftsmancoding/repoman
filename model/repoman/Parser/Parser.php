@@ -292,7 +292,7 @@ abstract class Parser {
      *
      * @param string $string    the unparsed contents of a file
      * @param string $dox_start string designating the start of a doc block
-     * @param string $dox_start string designating the start of a doc block
+     * @param string $dox_end string designating the end of a doc block
      *
      * @return array on success | false on no doc block found
      */
@@ -329,7 +329,7 @@ abstract class Parser {
      *
      * @param string $string    the unparsed contents of a file
      * @param string $dox_start string designating the start of a doc block
-     * @param string $dox_start string designating the start of a doc block
+     * @param string $dox_end string designating the end of a doc block
      *
      * @return array on success | false on no doc block found
      */

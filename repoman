@@ -17,7 +17,7 @@
  * php repoman help [function-name]
  *
  */
-require_once dirname(__FILE__).'/vendor/autoload.php';
+require_once dirname(__FILE__) . '/vendor/autoload.php';
 
 /**
  * Colorize text for cleaner CLI UX.
@@ -33,31 +33,32 @@ require_once dirname(__FILE__).'/vendor/autoload.php';
  * @throws Exception
  * @return string
  */
-function message($text, $status) {
+function message($text, $status)
+{
     $out = '';
-    switch($status) {
+    switch ($status) {
         case 'SUCCESS':
-            $out = '[42m SUCCESS: '.chr(27).'[0;32m '; //Green background
+            $out = '[42m SUCCESS: ' . chr(27) . '[0;32m '; //Green background
             break;
         case 'ERROR':
-            $out = '[41m ERROR: '. chr(27).'[0;31m '; //Red
+            $out = '[41m ERROR: ' . chr(27) . '[0;31m '; //Red
             break;
         case 'WARNING':
             $out = '[43m WARNING: '; //Yellow background
             break;
         case 'INFO':
-            $out = '[46m NOTE: '. chr(27).'[0;34m '; //Blue
+            $out = '[46m NOTE: ' . chr(27) . '[0;34m '; //Blue
             break;
         case 'HEADER':
             $out = '[46m '; //Blue            
             break;
         case 'HELP':
-            $out = '[46m HELP: '. chr(27).'[0;34m '; //Blue
+            $out = '[46m HELP: ' . chr(27) . '[0;34m '; //Blue
             break;
         default:
             throw new Exception('Invalid status: ' . $status);
     }
-    return "\n".chr(27) . $out . $text .' '. chr(27) . '[0m'."\n\n";
+    return "\n" . chr(27) . $out . $text . ' ' . chr(27) . '[0m' . "\n\n";
 }
 
 //------------------------------------------------------------------------------
@@ -83,50 +84,50 @@ if (!defined('MODX_CORE_PATH') && !defined('MODX_CONFIG_KEY')) {
     $max = 10;
     $i = 0;
     $dir = dirname(__FILE__);
-    while(true) {
-        if (file_exists($dir.'/config.core.php')) {
-            include $dir.'/config.core.php';
+    while (true) {
+        if (file_exists($dir . '/config.core.php')) {
+            include $dir . '/config.core.php';
             break;
         }
         $i++;
         $dir = dirname($dir);
         if ($i >= $max) {
             print message("Could not find a valid MODX config.core.php file.\n"
-            ."Make sure your repo is inside a MODX webroot and try again.",'ERROR');
+                . "Make sure your repo is inside a MODX webroot and try again.", 'ERROR');
             die(1);
         }
-	}
+    }
 }
 
 
-if (!defined('MODX_CORE_PATH') || !defined('MODX_CONFIG_KEY')) {    
+if (!defined('MODX_CORE_PATH') || !defined('MODX_CONFIG_KEY')) {
     print message("Could not load MODX.\n"
-    ."MODX_CORE_PATH or MODX_CONFIG_KEY undefined in\n"
-    ."{$dir}/config.core.php",'ERROR');
+        . "MODX_CORE_PATH or MODX_CONFIG_KEY undefined in\n"
+        . "{$dir}/config.core.php", 'ERROR');
     die(2);
 }
 
-if (!file_exists(MODX_CORE_PATH.'model/modx/modx.class.php')) {
-    print message("modx.class.php not found at ".MODX_CORE_PATH,'ERROR');
+if (!file_exists(MODX_CORE_PATH . 'model/modx/modx.class.php')) {
+    print message("modx.class.php not found at " . MODX_CORE_PATH, 'ERROR');
     die(3);
 }
 
 
 // fire up MODX
-require_once MODX_CORE_PATH.'config/'.MODX_CONFIG_KEY.'.inc.php';
-require_once MODX_CORE_PATH.'model/modx/modx.class.php';
-require_once dirname(__FILE__).'/model/repoman/repoman.class.php'; 
+require_once MODX_CORE_PATH . 'config/' . MODX_CONFIG_KEY . '.inc.php';
+require_once MODX_CORE_PATH . 'model/modx/modx.class.php';
+require_once dirname(__FILE__) . '/model/repoman/repoman.class.php';
 
 $modx = new modx();
 $modx->initialize('mgr');
 $modx->setLogLevel(modX::LOG_LEVEL_INFO);
-$modx->setLogTarget('ECHO'); 
+$modx->setLogTarget('ECHO');
 flush();
 
 // Get req'd <function> parameter
 if (!isset($argv[1])) {
-    print message('Missing required <function> parameter.','INFO');
-    print Repoman::rtfm('usage')."\n\n";;
+    print message('Missing required <function> parameter.', 'INFO');
+    print Repoman::rtfm('usage') . "\n\n";;
     exit(1);
 }
 
@@ -135,26 +136,25 @@ $function = strtolower($argv[1]);
 $pkg_path = '';
 switch ($function) {
     case 'graph':
-        $classname = (isset($argv[2]))? $argv[2] : '';
+        $classname = (isset($argv[2])) ? $argv[2] : '';
         unset($argv[0]);
         unset($argv[1]);
         unset($argv[2]);
         $args = Repoman::parse_args($argv);
         try {
-            $Repoman = new Repoman($modx,array());
+            $Repoman = new Repoman($modx, array());
             $out = $Repoman->graph($classname, $args);
-            $out = print_r($out,true); 
+            $out = print_r($out, true);
             // Try to make the result pretty. TODO: make it have correct syntax!!!
-            $out = str_replace(array('Array','[',']',')'), array('array',"'","'",'),'), $out);
-            
+            $out = str_replace(array('Array', '[', ']', ')'), array('array', "'", "'", '),'), $out);
+
             print $out;
             exit;
-        }  
-        catch (Exception $e) {
-            print message($e->getMessage(),'ERROR');
+        } catch (Exception $e) {
+            print message($e->getMessage(), 'ERROR');
             exit(1);
         }
-        
+
         break;
     case 'uninstall':
         // But only the namespace is required... prob'ly safer to require a pkg_path param
@@ -167,15 +167,14 @@ switch ($function) {
     case 'schema:write':
     case 'seed':
     case 'update':
-        if (!isset($argv[2]) || substr ($argv[2],0,2) == '--') {
-            print message('Missing <repo_path> parameter.','ERROR');
+        if (!isset($argv[2]) || substr($argv[2], 0, 2) == '--') {
+            print message('Missing <repo_path> parameter.', 'ERROR');
             exit(2);
         }
         try {
             $pkg_path = Repoman::get_dir($argv[2]);
-        }  
-        catch (Exception $e) {
-            print message($e->getMessage(),'ERROR');
+        } catch (Exception $e) {
+            print message($e->getMessage(), 'ERROR');
             exit(3);
         }
 
@@ -183,8 +182,8 @@ switch ($function) {
 
     // Create is different because the directory doesn't exist yet
     case 'create':
-        if (!isset($argv[2]) || substr ($argv[2],0,2) == '--') {
-            print message('Missing <namespace> parameter.','ERROR');
+        if (!isset($argv[2]) || substr($argv[2], 0, 2) == '--') {
+            print message('Missing <namespace> parameter.', 'ERROR');
             exit(2);
         }
 
@@ -192,30 +191,28 @@ switch ($function) {
         unset($argv[0]);
         unset($argv[1]);
         unset($argv[2]);
-        $args = Repoman::parse_args($argv);    
+        $args = Repoman::parse_args($argv);
         try {
-            $Repoman = new Repoman($modx,array());
-            print $Repoman->create($namespace,$args);
-        }  
-        catch (Exception $e) {
-            print message($e->getMessage(),'ERROR');
+            $Repoman = new Repoman($modx, array());
+            print $Repoman->create($namespace, $args);
+        } catch (Exception $e) {
+            print message($e->getMessage(), 'ERROR');
             exit(4);
         }
-        print message(ucfirst(strtolower('create')) .' complete '.date('Y-m-d H:i:s'),'SUCCESS');
-        break;    
+        print message(ucfirst(strtolower('create')) . ' complete ' . date('Y-m-d H:i:s'), 'SUCCESS');
+        break;
     case 'help':
         if (isset($argv[2])) {
-            print message($argv[2],'HELP');
-            print Repoman::rtfm($argv[2])."\n\n";
-        }
-        else {
-            print message('Repoman: Repository Manager for MODX Revolution','HEADER');
-            print Repoman::rtfm('usage')."\n\n";;   
+            print message($argv[2], 'HELP');
+            print Repoman::rtfm($argv[2]) . "\n\n";
+        } else {
+            print message('Repoman: Repository Manager for MODX Revolution', 'HEADER');
+            print Repoman::rtfm('usage') . "\n\n";;
         }
         exit();
     default:
-        print message('Unknown function','ERROR');
-        print Repoman::rtfm('usage')."\n\n";;
+        print message('Unknown function', 'ERROR');
+        print Repoman::rtfm('usage') . "\n\n";;
         exit(1);
 }
 
@@ -225,15 +222,14 @@ unset($argv[0]);
 unset($argv[2]);
 $overrides = Repoman::parse_args($argv);
 
-if (!file_exists($pkg_path.'config.php') && !file_exists($pkg_path.'composer.json')) {
-    print message('No config.php or composer.json file detected.','WARNING');
+if (!file_exists($pkg_path . 'config.php') && !file_exists($pkg_path . 'composer.json')) {
+    print message('No config.php or composer.json file detected.', 'WARNING');
 }
 
 try {
-    $config = Repoman::load_config($pkg_path,$overrides);
-}  
-catch (Exception $e) {
-    print message($e->getMessage(),'ERROR');
+    $config = Repoman::load_config($pkg_path, $overrides);
+} catch (Exception $e) {
+    print message($e->getMessage(), 'ERROR');
     print "Try running 'composer update' to get more detailed information on where your syntax is wrong.\n";
     exit(5);
 }
@@ -243,15 +239,14 @@ catch (Exception $e) {
 $modx->setLogLevel($config['log_level']);
 
 try {
-    $function = str_replace(':','_', $function);
-    $Repoman = new Repoman($modx,$config);
+    $function = str_replace(':', '_', $function);
+    $Repoman = new Repoman($modx, $config);
     print $Repoman->$function($pkg_path);
-}  
-catch (Exception $e) {
-    print message($e->getMessage(),'ERROR');
+} catch (Exception $e) {
+    print message($e->getMessage(), 'ERROR');
     exit(4);
 }
 
-print message(ucfirst(strtolower($function)) .' complete '.date('Y-m-d H:i:s'),'SUCCESS');
+print message(ucfirst(strtolower($function)) . ' complete ' . date('Y-m-d H:i:s'), 'SUCCESS');
 
 /*EOF*/

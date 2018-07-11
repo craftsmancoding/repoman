@@ -238,7 +238,7 @@ class Repoman
     /**
      * Verify a directory, converting for any OS variants and convert
      * any relative paths to absolute .
-     *
+     * Note: some hosts (e.g. MODx Cloud) will not return an accurate realpath)
      * @param string $path path (or relative path) to package
      *
      * @throws Exception
@@ -246,13 +246,19 @@ class Repoman
      */
     public static function get_dir($path)
     {
-        $realpath = strtr(realpath($path), '\\', '/');
-        if (!file_exists($realpath)) {
-            throw new Exception('Directory does not exist: ' . $path);
-        } elseif (!is_dir($realpath)) {
-            throw new Exception('Path is not a directory: ' . $realpath);
+        if (!is_file($path) && !is_dir($path)) {
+            $realpath = strtr(realpath($path), '\\', '/');
+            if (!file_exists($realpath)) {
+                throw new Exception('Directory does not exist: ' . $path);
+            } elseif (!is_dir($realpath)) {
+                throw new Exception('Path is not a directory: ' . $realpath);
+            }
+        }
+        else {
+            $realpath = $path;
         }
 
+        // remove trailing slashes
         return preg_replace('#/+$#', '', $realpath) . '/';
     }
 
@@ -790,6 +796,7 @@ class Repoman
      * @param string $pkg_root_dir path to local package root
      *
      * @return array
+     * @throws Exception
      */
     public function get_seed_dirs($pkg_root_dir)
     {

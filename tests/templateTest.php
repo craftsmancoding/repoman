@@ -1,5 +1,9 @@
 <?php
-class templateTest extends PHPUnit_Framework_TestCase {
+
+use PHPUnit\Framework\TestCase;
+
+class templateTest extends TestCase
+{
 
     // Must be static because we set it up inside a static function
     public static $modx;
@@ -40,12 +44,10 @@ class templateTest extends PHPUnit_Framework_TestCase {
 
     public static function tearDownAfterClass()
     {
-        if ($Template = self::$modx->getObject('modTemplate', array('templatename'=>'Test Template')))
-        {
+        if ($Template = self::$modx->getObject('modTemplate', array('templatename' => 'Test Template'))) {
             $Template->remove();
         }
-        if ($TV = self::$modx->getObject('modTemplateVar', array('name'=>'TestTV')))
-        {
+        if ($TV = self::$modx->getObject('modTemplateVar', array('name' => 'TestTV'))) {
             $TV->remove();
         }
     }
@@ -66,7 +68,7 @@ class templateTest extends PHPUnit_Framework_TestCase {
         //$this->assertTrue($result);
 
         $TVT = self::$modx->newObject('modTemplateVarTemplate');
-        $TVT->set('templateid',$templateid);
+        $TVT->set('templateid', $templateid);
         $TVT->set('rank', 6);
         $TVT->addOne($TV);
 
@@ -76,7 +78,7 @@ class templateTest extends PHPUnit_Framework_TestCase {
         $this->assertTrue($result);
 
 
-        $findTV = self::$modx->getObject('modTemplateVar', array('name'=>'TestTV'));
+        $findTV = self::$modx->getObject('modTemplateVar', array('name' => 'TestTV'));
         $this->assertTrue(!empty($findTV));
 
     }

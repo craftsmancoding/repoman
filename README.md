@@ -61,8 +61,8 @@ For example, look at this require statement for a PHP file in the "mypackage" pa
 Repoman will set the "mypackage.core_path" System Setting, and on a production site, that setting won't exist, so getOption will fall back to the produciton
 location inside of core/components.  
 
-The path in dev might be: /Users/myuser/Sites/modx/public_html/repos/mypackage/
-The path in prod might be: /var/www/html/core/components/mypackage/
+The path in dev might be: `/Users/myuser/Sites/modx/public_html/repos/mypackage/`
+The path in prod might be: `/var/www/html/core/components/mypackage/`
 
 See the Wiki for more discussion and examples of Repoman's [Conventions](https://github.com/craftsmancoding/repoman/wiki/Conventions).
 

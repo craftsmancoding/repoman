@@ -14,7 +14,7 @@ schema:write - Write an XML schema based on existing database tables
 schema:parse - Create PHP classes for the ORM layer from an XML schema file
 seed         - Install seed data into your database
 uninstall    - Remove all installed elements and migrations
-update       - Run any outstanding migrations, load new seed data, update permitted seed data.
+update       - Run any outstanding migrations, load new seed data, update permitted seed data, fix repo paths.
 
 To get help on a function, you can run:
 

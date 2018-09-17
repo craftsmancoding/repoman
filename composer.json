@@ -1,56 +1,69 @@
 {
-    "name": "craftsmancoding/repoman",
-    "description": "Repository manager for MODX Revolution.",
-    "type": "modx-package",
-    "keywords": ["modx","composer","repository","manager","autoload","git"],
-    "homepage": "https://github.com/craftsmancoding/repoman",
-    "license": "GPL-2.0+",
-    "authors": [
-        {
-            "name": "Everett Griffiths",
-            "email": "everett@craftsmancoding.com",
-            "homepage" : "https://github.com/craftsmancoding/repoman"
-        }        
-    ],
-    "support": {
-        "email": "donotreply@craftsmancoding.org",
-        "issues": "https://github.com/craftsmancoding/repoman/issues",
-        "forum": "http://forums.modx.com/",
-        "wiki": "https://github.com/craftsmancoding/repoman/wiki",
-        "source": "https://github.com/craftsmancoding/repoman"
-    },    
-    "require": {
-        "php": ">=5.3",
-        "composer-plugin-api": "1.0.0"
-    },
-    "autoload": {
-        "classmap":["model/repoman/"],
-        "psr-4": {
-            "Repoman\\":"model/repoman/"
-        }
-    },
-
-    "extra": {
-        "repoman": "1.1.2",
-        "package_name": "Repoman",
-        "namespace": "repoman",
-        "version": "1.1.2",
-        "release": "pl",
-        "category":"repoman",
-        "core_path": "",
-        "assets_path" : "assets/",
-        "seeds_path": ["model/seeds/"],
-        "build_attributes":{
-            "modSystemSetting": {
-        	   "unique_key": "key",
-        	   "preserve_keys": true,
-        	   "update_object": false
-            },
-            "modMediaSource":{
-                "unique_key":"name",
-                "preserve_keys": true,
-                "update_object": true
-            }
-        }
+  "name": "craftsmancoding/repoman",
+  "description": "Repository manager for MODX Revolution.",
+  "type": "modx-package",
+  "keywords": [
+    "modx",
+    "composer",
+    "repository",
+    "manager",
+    "autoload",
+    "git"
+  ],
+  "homepage": "https://github.com/craftsmancoding/repoman",
+  "license": "GPL-2.0+",
+  "authors": [
+    {
+      "name": "Everett Griffiths",
+      "email": "everett@craftsmancoding.com",
+      "homepage": "https://github.com/craftsmancoding/repoman"
     }
+  ],
+  "support": {
+    "email": "donotreply@craftsmancoding.org",
+    "issues": "https://github.com/craftsmancoding/repoman/issues",
+    "forum": "http://forums.modx.com/",
+    "wiki": "https://github.com/craftsmancoding/repoman/wiki",
+    "source": "https://github.com/craftsmancoding/repoman"
+  },
+  "require": {
+    "php": ">=7.1",
+    "composer-plugin-api": "1.1.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "7.2.6"
+  },
+  "autoload": {
+    "classmap": [
+      "model/repoman/"
+    ],
+    "psr-4": {
+      "Repoman\\": "model/repoman/"
+    }
+  },
+  "extra": {
+    "repoman": "1.2.0",
+    "package_name": "Repoman",
+    "namespace": "repoman",
+    "version": "1.1.2",
+    "release": "pl",
+    "category": "repoman",
+    "core_path": "",
+    "assets_path": "assets/",
+    "seeds_path": [
+      "model/seeds/"
+    ],
+    "build_attributes": {
+      "modSystemSetting": {
+        "unique_key": "key",
+        "preserve_keys": true,
+        "update_object": false
+      },
+      "modMediaSource": {
+        "unique_key": "name",
+        "preserve_keys": true,
+        "update_object": true
+      }
+    }
+  }
 }

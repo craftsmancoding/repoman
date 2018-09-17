@@ -1,8 +1,9 @@
 Update
 
 Update the specified package and its elements.  This will re-import all the package elements,
-seed data, and run outstanding migrations.  If your seed data has "build_attributes" that permit
-updates ("update_object":true), then seed data will be updated.
+seed data, and run outstanding migrations.  This will also update the paths used in MODx system
+settings and namespaces to point to the package root directory you specify. If your seed data has
+"build_attributes" that permit updates ("update_object":true), then seed data will be updated.
 
 Usage:
 
